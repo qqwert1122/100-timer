@@ -83,9 +83,9 @@ class _TextIndicatorState extends State<TextIndicator>
                       text: '눌러서 ',
                       style: TextStyle(
                         fontSize: 20,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
                         fontFamily: 'NanumSquare',
+                        color: Colors.white,
                       ),
                     ),
                     widget.timerProvider.isRunning
@@ -111,9 +111,9 @@ class _TextIndicatorState extends State<TextIndicator>
                       text: '하기',
                       style: TextStyle(
                         fontSize: 20,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
                         fontFamily: 'NanumSquare',
+                        color: Colors.white,
                       ),
                     ),
                   ],
@@ -125,9 +125,9 @@ class _TextIndicatorState extends State<TextIndicator>
                 key: ValueKey(true),
                 style: TextStyle(
                   fontSize: 20,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
                   fontFamily: 'NanumSquare',
+                  color: Colors.white,
                 ),
               ),
       ),

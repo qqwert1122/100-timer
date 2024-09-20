@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:project1/models/achievement.dart';
+import 'package:project1/widgets/options.dart';
 import 'package:project1/widgets/text_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/timer_provider.dart';
@@ -97,12 +98,14 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final timerProvider = Provider.of<TimerProvider>(context);
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     return Scaffold(
       body: Stack(
         children: [
           Container(
-            decoration: const BoxDecoration(color: Color(0xff181C14)),
+            decoration: const BoxDecoration(),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
@@ -128,7 +131,9 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                                     Colors.white,
                                     Colors.yellow,
                                     Colors.orange,
-                                    Colors.redAccent.shade200
+                                    isDarkMode
+                                        ? Colors.redAccent.shade200
+                                        : Colors.lime
                                   ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
@@ -173,7 +178,9 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                                   Colors.white,
                                   Colors.yellow,
                                   Colors.orange,
-                                  Colors.redAccent.shade200
+                                  isDarkMode
+                                      ? Colors.redAccent.shade200
+                                      : Colors.lime
                                 ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
@@ -243,7 +250,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
-                    color: Colors.black,
+                    color: isDarkMode ? Colors.black : Colors.grey.shade100,
                     borderRadius: _sheetSize >= 0.9
                         ? const BorderRadius.vertical(
                             top: Radius.circular(0),
@@ -273,7 +280,9 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                                         Colors.white,
                                         Colors.yellow,
                                         Colors.orange,
-                                        Colors.redAccent.shade200
+                                        isDarkMode
+                                            ? Colors.redAccent.shade200
+                                            : Colors.lime
                                       ],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
@@ -305,7 +314,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                                 width: 60, // 고정된 너비
                                 height: 5,
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color:
+                                      isDarkMode ? Colors.white : Colors.black,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
@@ -318,7 +328,6 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                             child: Text(
                               '내 기록',
                               style: TextStyle(
-                                color: Colors.white,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 16,
                               ),
@@ -328,7 +337,6 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                             padding: EdgeInsets.all(16),
                             child: Icon(
                               Icons.history_rounded,
-                              color: Colors.white,
                             ),
                           ),
                         ],
@@ -346,7 +354,6 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                             Text(
                               '이번주의 기록',
                               style: TextStyle(
-                                color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -437,55 +444,10 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                           child: const Text(
                             '더 보기',
                             style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w900),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 30,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          left: 16,
-                          right: 16,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              '오늘의 격언',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: _generateRandomQuote,
-                              color: Colors.white,
-                              icon: const Icon(Icons.refresh_rounded),
-                            )
-                          ],
-                        ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.only(
-                          left: 16,
-                          right: 16,
-                        ),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          _randomQuote,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 24,
+                              fontSize: 14,
                               fontWeight: FontWeight.w900,
-                              fontFamily: 'Wiro'),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(
@@ -497,9 +459,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '나의 달성  ',
+                              '나의 달성',
                               style: TextStyle(
-                                color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -550,7 +511,25 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                       const SizedBox(
                         height: 30,
                       ),
-
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '옵션',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Options(),
+                      const SizedBox(
+                        height: 30,
+                      ),
                       const Footer(),
                     ],
                   ),

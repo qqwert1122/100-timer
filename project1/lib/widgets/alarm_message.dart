@@ -36,6 +36,7 @@ class _AlarmMessageState extends State<AlarmMessage> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     IconButton(
+                      color: Colors.grey.shade500,
                       onPressed: () {
                         closeMessage();
                       },

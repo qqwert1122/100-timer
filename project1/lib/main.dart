@@ -19,8 +19,32 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '타이머 앱',
+      // 라이트 모드 테마
       theme: ThemeData(
+        brightness: Brightness.light,
+        primarySwatch: Colors.red,
+        scaffoldBackgroundColor: Colors.redAccent.shade200,
+        floatingActionButtonTheme:
+            const FloatingActionButtonThemeData(backgroundColor: Colors.red),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.red,
+          elevation: 0.2,
+        ),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
         primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: const Color(0xff181C14),
+        floatingActionButtonTheme:
+            const FloatingActionButtonThemeData(backgroundColor: Colors.blue),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.blue,
+          shadowColor: Colors.black,
+          elevation: 0.2,
+        ),
       ),
       home: const TimerPage(),
     );
