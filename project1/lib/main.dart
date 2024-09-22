@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project1/screens/splash_page.dart';
 import 'package:project1/screens/timer_page.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
@@ -23,7 +24,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.light,
         primarySwatch: Colors.red,
-        scaffoldBackgroundColor: Colors.redAccent.shade200,
+        scaffoldBackgroundColor: Colors.white,
         floatingActionButtonTheme:
             const FloatingActionButtonThemeData(backgroundColor: Colors.red),
         appBarTheme: const AppBarTheme(
@@ -46,7 +47,7 @@ class MyApp extends StatelessWidget {
           elevation: 0.2,
         ),
       ),
-      home: const TimerPage(),
+      home: SplashScreen(),
     );
   }
 }

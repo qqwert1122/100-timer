@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "453221488701",
+    "project_id": "timer-537ba",
+    "storage_bucket": "timer-537ba.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:453221488701:android:fc369975be42b6b73ab254",
+        "android_client_info": {
+          "package_name": "com.burning.timer100"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCb9Yfwq9cFF0BFFklEpHtaPMj9fvQ84yk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

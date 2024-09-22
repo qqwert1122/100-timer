@@ -6,9 +6,9 @@ class TextIndicator extends StatefulWidget {
   final TimerProvider timerProvider; // 타입을 명확히 지정하는 것이 좋습니다 (예: TimerProvider)
 
   const TextIndicator({
-    Key? key,
+    super.key,
     required this.timerProvider,
-  }) : super(key: key);
+  });
 
   @override
   State<TextIndicator> createState() => _TextIndicatorState();
@@ -71,6 +71,8 @@ class _TextIndicatorState extends State<TextIndicator>
 
   @override
   Widget build(BuildContext context) {
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return SlideTransition(
       position: _textAnimation,
       child: Opacity(
@@ -79,13 +81,13 @@ class _TextIndicatorState extends State<TextIndicator>
             ? Text.rich(
                 TextSpan(
                   children: [
-                    const TextSpan(
+                    TextSpan(
                       text: '눌러서 ',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'NanumSquare',
-                        color: Colors.white,
+                        color: isDarkMode ? Colors.white : Colors.black,
                       ),
                     ),
                     widget.timerProvider.isRunning
@@ -107,27 +109,27 @@ class _TextIndicatorState extends State<TextIndicator>
                               fontFamily: 'NanumSquare',
                             ),
                           ),
-                    const TextSpan(
+                    TextSpan(
                       text: '하기',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'NanumSquare',
-                        color: Colors.white,
+                        color: isDarkMode ? Colors.white : Colors.black,
                       ),
                     ),
                   ],
                 ),
                 key: const ValueKey(false), // Text.rich에도 키 추가
               )
-            : const Text(
+            : Text(
                 "9월 2주차",
-                key: ValueKey(true),
+                key: const ValueKey(true),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
                   fontFamily: 'NanumSquare',
-                  color: Colors.white,
+                  color: isDarkMode ? Colors.white : Colors.black,
                 ),
               ),
       ),

@@ -20,7 +20,7 @@ class _AchievementCardState extends State<AchievementCard>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
 
@@ -61,29 +61,36 @@ class _AchievementCardState extends State<AchievementCard>
     return Card(
       elevation: 4,
       margin: const EdgeInsets.all(8.0),
-      child: Container(
-        height: 300,
+      child: SizedBox(
+        height: 400,
         width: 300,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch, // 가로로 꽉 차도록 설정
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8.0),
-              child: Image.network(
-                widget.achievement.imageUrl,
-                height: 100,
-                width: double.infinity,
-                fit: BoxFit.cover,
+            Expanded(
+              // 이미지가 남은 공간을 차지하도록 설정
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(8.0)), // 위쪽 모서리만 둥글게
+                child: Image.asset(
+                  widget.achievement.imageUrl,
+                  fit: BoxFit.cover, // 이미지를 꽉 채움
+                  cacheHeight: 400, // 리사이즈하여 메모리 최적화
+                ),
               ),
             ),
             const SizedBox(height: 8.0),
-            Text(
-              widget.achievement.title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                widget.achievement.title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 36,
+                  fontFamily: 'Wiro',
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -97,8 +104,8 @@ class _AchievementCardState extends State<AchievementCard>
       child: Card(
         elevation: 4,
         margin: const EdgeInsets.all(8.0),
-        child: Container(
-          height: 300,
+        child: SizedBox(
+          height: 400,
           width: 300,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
