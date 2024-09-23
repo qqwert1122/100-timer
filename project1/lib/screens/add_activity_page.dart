@@ -18,8 +18,8 @@ class AddActivityPage extends StatelessWidget {
           },
         ),
       ),
-      body: Center(
-        child: const Text(
+      body: const Center(
+        child: Text(
           '여기에 활동 추가를 구현하세요.',
           style: TextStyle(fontSize: 20),
         ),

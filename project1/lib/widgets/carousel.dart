@@ -36,7 +36,7 @@ class _MyWidgetState extends State<MyWidget> {
               return GestureDetector(
                 onTap: () {},
                 child: AnimatedContainer(
-                  duration: Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOut,
                   transform:
                       Matrix4.translationValues(0, isCentered ? -30 : -25, 0),
@@ -51,11 +51,11 @@ class _MyWidgetState extends State<MyWidget> {
                           color: Colors.grey.withOpacity(0.5), // 그림자 색상
                           spreadRadius: 2, // 그림자 퍼짐 정도
                           blurRadius: 10, // 그림자 흐림 정도
-                          offset: Offset(0, 4), // 그림자 위치 (x, y)
+                          offset: const Offset(0, 4), // 그림자 위치 (x, y)
                         ),
                         BoxShadow(
                           color: Colors.black.withOpacity(0.2),
-                          offset: Offset(0, -1), // 위쪽 그림자 추가
+                          offset: const Offset(0, -1), // 위쪽 그림자 추가
                           blurRadius: 5,
                         ),
                       ], // 그림자로 3D 효과 추가
@@ -77,7 +77,7 @@ class _MyWidgetState extends State<MyWidget> {
                             color: Colors.blue,
                             shadows: [
                               Shadow(
-                                offset: Offset(1.0, 1.0),
+                                offset: const Offset(1.0, 1.0),
                                 blurRadius: 3.0,
                                 color: Colors.grey.shade700,
                               ),

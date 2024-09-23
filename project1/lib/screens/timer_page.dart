@@ -23,7 +23,9 @@ import 'package:project1/data/achievement_data.dart';
 import 'package:project1/data/quotes_data.dart';
 
 class TimerPage extends StatefulWidget {
-  const TimerPage({super.key});
+  final Map<String, dynamic> timerData;
+
+  const TimerPage({super.key, required this.timerData});
 
   @override
   _TimerPageState createState() => _TimerPageState();
@@ -35,10 +37,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
       DraggableScrollableController();
 
   late Timer _timer;
-  bool _isRunning = false;
 
-  int _remainingSeconds = TimerService.weeklyTotalTimeInSeconds;
-  int _activityId = 1;
   int _currentIndex = 0;
 
   bool isSuspected = false;
@@ -50,6 +49,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
   late AnimationController _breathingAnimationController;
   late Animation<double> _breathingAnimation;
 
+  late int remainingSeconds; // 남은 시간(초 단위)
+
   final List<Color> _colors = getWeekColos();
   final List<Map<String, String>> _weekdays = getSampleRecords();
   final List<String> imgList = getSampleImages();
@@ -58,8 +59,12 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    Provider.of<TimerProvider>(context, listen: false)
-        .createOrLoadTimer(1); // userId 1로 예시
+    Future.delayed(Duration.zero, () {
+      final timerProvider = Provider.of<TimerProvider>(context, listen: false);
+      timerProvider.setTimerData(widget.timerData);
+      print('TimerPage에서 타이머 데이터를 설정했습니다: $widget.timerData');
+    });
+
     _initAnimations();
   }
 
@@ -349,6 +354,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final timerProvider = Provider.of<TimerProvider>(context);
+
     final isDarkMode =
         MediaQuery.of(context).platformBrightness == Brightness.dark;
 
@@ -613,7 +619,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Padding(
-                              padding: EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(16),
                               child: Text(
                                 '내 기록',
                                 style: TextStyle(
@@ -628,7 +634,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                               ),
                             ),
                             Padding(
-                              padding: EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(16),
                               child: Icon(
                                 Icons.history_rounded,
                                 color: _sheetSize >= 0.3

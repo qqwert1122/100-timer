@@ -111,7 +111,7 @@ class _AlarmMessageState extends State<AlarmMessage> {
                     ),
                   ],
                 )
-              : SizedBox(),
+              : const SizedBox(),
         ));
   }
 }
