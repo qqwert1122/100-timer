@@ -34,16 +34,17 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _initializeTimer() async {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
-    const String userId = '1a';
+
+    const String userId = 'v3_2';
     DateTime now = DateTime.now();
-    DateTime _weekStart = getWeekStart(now); // 예시 2024-09-23 00:00:00.000
+    String weekStart = getWeekStart(now); // 예시 2024-09-23 00:00:00.000
 
     // 타이머가 있는지 확인
-    Map<String, dynamic>? timer = await dbService.getTimer(userId, _weekStart);
+    Map<String, dynamic>? timer = await dbService.getTimer(userId, weekStart);
 
     // 타이머가 없으면 생성
     if (timer == null) {
-      timer = _createDefaultTimer(userId, _weekStart);
+      timer = _createDefaultTimer(userId);
       await dbService.createTimer(timer);
       print('새로운 타이머가 생성되었습니다.');
     }
@@ -70,27 +71,29 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   // 기본 타이머 생성 메서드
-  Map<String, dynamic> _createDefaultTimer(String userId, DateTime weekStart) {
+  Map<String, dynamic> _createDefaultTimer(String userId) {
     final now = DateTime.now();
-    final timerId = Uuid().v4();
+    final timerId = const Uuid().v4();
 
     return {
       'timer_id': timerId,
       'user_id': userId, // 기본 사용자 ID (예시)
-      'week_start': now.toIso8601String(), // 현재 주 시작 시간
+      'week_start': getWeekStart(now), // 현재 주 시작 시간
       'total_seconds': 100 * 3600, // 100시간(초 단위)
       'remaining_seconds': 100 * 3600, // 초기 남은 시간은 100시간
       'last_activity_id': null, // 아직 활동 없음
-      'created_at': now.toIso8601String(),
-      'last_updated_at': now.toIso8601String(),
+      'created_at': now.toIso8601String(), // 생성시간을 문자열로 저장
+      'last_updated_at': now.toIso8601String(), // 마지막 업데이트 = 생성
+      'last_started_at': null, // 아직 시작하지 않음
+      'is_running': 0, // 아직 시작하지 않음
     };
   }
 
-  DateTime getWeekStart(DateTime date) {
+  String getWeekStart(DateTime date) {
     int weekday = date.weekday;
     // 월요일을 기준으로 주 시작일을 계산 (월요일이 1, 일요일이 7)
     DateTime weekStart = date.subtract(Duration(days: weekday - 1));
-    return DateTime(weekStart.year, weekStart.month, weekStart.day);
+    return weekStart.toIso8601String().split('T').first;
   }
 
   @override

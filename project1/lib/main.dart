@@ -1,12 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:project1/screens/splash_page.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
 
 void main() {
   runApp(
@@ -56,7 +52,7 @@ class MyApp extends StatelessWidget {
           elevation: 0.2,
         ),
       ),
-      home: SplashScreen(),
+      home: const SplashScreen(),
     );
   }
 }

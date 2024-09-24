@@ -1,14 +1,10 @@
 import 'dart:async';
-import 'dart:math';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/models/achievement.dart';
 import 'package:project1/screens/add_activity_page.dart';
-import 'package:project1/utils/activity_service.dart';
-import 'package:project1/utils/timer_service.dart';
 import 'package:project1/widgets/options.dart';
 import 'package:project1/widgets/text_indicator.dart';
 import 'package:provider/provider.dart';
@@ -20,7 +16,6 @@ import 'package:project1/widgets/achievement_card.dart';
 import 'package:project1/data/sample_records_data.dart';
 import 'package:project1/data/sample_image_data.dart';
 import 'package:project1/data/achievement_data.dart';
-import 'package:project1/data/quotes_data.dart';
 
 class TimerPage extends StatefulWidget {
   final Map<String, dynamic> timerData;

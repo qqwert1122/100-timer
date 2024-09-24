@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:project1/utils/database_service.dart';
-import 'timer_service.dart'; // TimerService import
 
 class TimerProvider with ChangeNotifier {
   Timer? _timer;
@@ -16,6 +15,20 @@ class TimerProvider with ChangeNotifier {
     _timerData = timerData;
     _remainingSeconds =
         _timerData?['remaining_seconds'] ?? 0; // 타이머 데이터를 받아 남은 시간 설정
+    _isRunning = _timerData?['is_running'] == 1 ? true : false;
+
+    if (_isRunning) {
+      // 타이머가 실행 중이라면, 마지막 시작 시간과 현재 시간의 차이를 계산
+      DateTime lastStarted = DateTime.parse(_timerData!['last_started_at']);
+      DateTime now = DateTime.now();
+      int elapsedSeconds = now.difference(lastStarted).inSeconds;
+
+      // 지난 시간을 remaining_seconds에서 차감
+      _remainingSeconds -= elapsedSeconds;
+      if (_remainingSeconds < 0) _remainingSeconds = 0;
+
+      startTimer(resume: true); // 타이머를 이어서 시작
+    }
     notifyListeners(); // UI 업데이트
   }
 
@@ -32,13 +45,23 @@ class TimerProvider with ChangeNotifier {
   bool get isRunning => _isRunning;
 
   // 타이머 시작
-  void startTimer() {
-    if (!_isRunning) {
+  void startTimer({bool resume = false}) async {
+    if (!_isRunning || resume) {
       _isRunning = true;
+
+      // 타이머가 처음 시작될 때만 last_started_at 기록
+      if (!resume) {
+        await _dbService.updateTimer(
+            _timerData!['timer_id'], _timerData!['user_id'], {
+          'last_started_at': DateTime.now().toIso8601String(),
+          'is_running': 1
+        });
+      }
+
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (_remainingSeconds > 0) {
           _remainingSeconds--;
-          notifyListeners(); // UI 업데이트를 위해 알림
+          notifyListeners();
         } else {
           stopTimer();
         }
@@ -66,6 +89,7 @@ class TimerProvider with ChangeNotifier {
       // 남은 시간을 업데이트한 새로운 데이터
       Map<String, dynamic> updatedData = {
         'remaining_seconds': _remainingSeconds,
+        'is_running': 0,
         'last_updated_at': now.toIso8601String(),
       };
 
