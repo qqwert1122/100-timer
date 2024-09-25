@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/models/achievement.dart';
-import 'package:project1/screens/add_activity_page.dart';
+import 'package:project1/screens/activity_picker.dart';
+import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/widgets/options.dart';
 import 'package:project1/widgets/text_indicator.dart';
 import 'package:provider/provider.dart';
@@ -125,74 +125,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
   // Activities
 
   String _selectedActivity = '전체'; // 초기 선택된 활동
-  final List<Map<String, dynamic>> activities = [
-    {'name': '전체', 'icon': Icons.list},
-    {'name': '운동', 'icon': Icons.fitness_center},
-    {'name': '공부', 'icon': Icons.school},
-    {'name': '독서', 'icon': Icons.book},
-    {'name': '명상', 'icon': Icons.self_improvement},
-    {'name': '요리', 'icon': Icons.restaurant},
-    {'name': '산책', 'icon': Icons.directions_walk},
-    {'name': '기타', 'icon': Icons.more_horiz},
-  ];
-
-  void _removeActivity(int index) {
-    setState(() {
-      activities.removeAt(index); // 해당 인덱스의 항목 삭제
-    });
-  }
-
-  Future<void> _showDeleteConfirmationDialog(int index) async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false, // 외부 클릭으로 다이얼로그 닫히지 않음
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text(
-            '정말 삭제하시겠습니까',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.redAccent,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          content: const Text('삭제할 경우 해당 활동의 기록이 모두 삭제되며 복구할 수 없습니다.'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text(
-                '취소',
-                style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop(); // 다이얼로그 닫기
-              },
-            ),
-            TextButton(
-              child: const Text(
-                '삭제',
-                style: TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900),
-              ),
-              onPressed: () {
-                _removeActivity(index); // 항목 삭제
-                Navigator.of(context).pop(); // 다이얼로그 닫기
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content:
-                          Text('${activities[index]['name']} 활동이 삭제되었습니다.')),
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  String _selectedActivityIcon = 'category_rounded';
 
   void _showActivityModal(TimerProvider timerProvider) {
     if (timerProvider.isRunning) {
@@ -214,133 +147,16 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
           ),
         ),
         builder: (BuildContext context) {
-          return Container(
-            height: 400,
-            padding:
-                const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0),
-            child: Column(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(
-                    top: 16,
-                    left: 8,
-                  ),
-                  child: Align(
-                    alignment: Alignment.centerLeft, // 제목을 왼쪽에 정렬
-                    child: Text(
-                      '활동 선택하기',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10), // 제목과 리스트 간 간격
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: activities.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == activities.length) {
-                        // 마지막 항목은 '활동 추가' 버튼
-                        return ListTile(
-                          leading: const Icon(Icons.add, color: Colors.blue),
-                          title: const Text(
-                            '활동 추가',
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          onTap: () {
-                            // 활동 추가 페이지로 이동
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const AddActivityPage()),
-                            );
-                          },
-                        );
-                      }
-
-                      if (activities[index]['name'] == '전체') {
-                        return ListTile(
-                          leading: Icon(activities[index]['icon']),
-                          title: Text(
-                            activities[index]['name'],
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          onTap: () {
-                            setState(() {
-                              _selectedActivity =
-                                  activities[index]['name']; // 활동 선택
-                            });
-                            Navigator.pop(context); // 모달 닫기
-                          },
-                        );
-                      }
-
-                      return Slidable(
-                        key: Key(activities[index]['name']),
-                        closeOnScroll: true,
-                        endActionPane: ActionPane(
-                          motion: const DrawerMotion(),
-                          children: [
-                            SlidableAction(
-                              onPressed: (context) {
-                                () {}; // 수정 기능
-                              },
-                              backgroundColor: Colors.blueAccent,
-                              foregroundColor: Colors.white,
-                              icon: Icons.edit,
-                              flex: 1,
-                              autoClose: true,
-                            ),
-                            SlidableAction(
-                              onPressed: (context) {
-                                _showDeleteConfirmationDialog(index);
-                              },
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                              icon: Icons.delete,
-                              flex: 1,
-                            ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 0), // 항목 간 간격을 좁게 설정
-                          child: ListTile(
-                            leading:
-                                Icon(activities[index]['icon']), // 아이콘을 왼쪽에 표시
-                            title: Text(
-                              activities[index]['name'],
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            onTap: () {
-                              setState(() {
-                                _selectedActivity =
-                                    activities[index]['name']; // 활동 선택
-                              });
-                              Navigator.pop(context); // 모달 닫기
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          );
+          return ActivityPicker(
+              onSelectActivity:
+                  (String selectedActivity, String selectedActivityIcon) {
+                setState(() {
+                  _selectedActivity = selectedActivity; // 선택된 액티비티 업데이트
+                  _selectedActivityIcon = selectedActivityIcon;
+                });
+                Navigator.pop(context);
+              },
+              selectedActivity: _selectedActivity);
         },
       );
     }
@@ -391,6 +207,13 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      Icon(
+                        getIconData(_selectedActivityIcon),
+                        color: Colors.redAccent.shade200,
+                      ),
+                      const SizedBox(
+                        width: 5,
+                      ),
                       Text(
                         _selectedActivity,
                         style: TextStyle(

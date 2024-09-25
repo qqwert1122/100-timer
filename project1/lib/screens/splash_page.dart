@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:project1/utils/database_service.dart';
-import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'timer_page.dart'; // 메인 화면 파일
@@ -16,6 +15,7 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+  final String userId = 'v3_3';
 
   @override
   void initState() {
@@ -29,13 +29,13 @@ class _SplashScreenState extends State<SplashScreen>
     // 투명도 애니메이션 (1 -> 0으로 서서히 사라짐)
     _animation = Tween<double>(begin: 1.0, end: 0.0).animate(_controller);
 
-    _initializeTimer(); // 비동기 작업을 호출
+    _initializeApp(); // 비동기 작업을 호출
   }
 
-  Future<void> _initializeTimer() async {
+  Future<void> _initializeApp() async {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
+    final db = await dbService.database;
 
-    const String userId = 'v3_2';
     DateTime now = DateTime.now();
     String weekStart = getWeekStart(now); // 예시 2024-09-23 00:00:00.000
 
@@ -49,6 +49,9 @@ class _SplashScreenState extends State<SplashScreen>
       print('새로운 타이머가 생성되었습니다.');
     }
     print('타이머가 데이터베이스에서 불러와졌습니다: $timer');
+
+    // activity
+    await dbService.initializeActivitiyList(db, userId);
 
     // 1초 후에 메인 화면으로 전환
     Future.delayed(const Duration(milliseconds: 1300), () {
