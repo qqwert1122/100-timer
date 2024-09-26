@@ -15,7 +15,7 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  final String userId = 'v3_3';
+  final String userId = 'v3_4';
 
   @override
   void initState() {

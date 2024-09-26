@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/models/achievement.dart';
+import 'package:project1/screens/activity_log_page.dart';
 import 'package:project1/screens/activity_picker.dart';
+import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/widgets/options.dart';
 import 'package:project1/widgets/text_indicator.dart';
@@ -30,6 +32,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
   double _sheetSize = 0.1; // 초기 크기
   final DraggableScrollableController _controller =
       DraggableScrollableController();
+  final DatabaseService _dbService = DatabaseService(); // 데이터베이스 서비스 인스턴스 생성
 
   late Timer _timer;
 
@@ -50,6 +53,10 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
   final List<Map<String, String>> _weekdays = getSampleRecords();
   final List<String> imgList = getSampleImages();
   final List<Achievement> achievements = getAchievements();
+  String userId = 'v3_4';
+  String _selectedActivity = '전체'; // 초기 선택된 활동
+  late String _selectedActivityListId = '${userId}1';
+  String _selectedActivityIcon = 'category_rounded';
 
   @override
   void initState() {
@@ -59,7 +66,6 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
       timerProvider.setTimerData(widget.timerData);
       print('TimerPage에서 타이머 데이터를 설정했습니다: $widget.timerData');
     });
-
     _initAnimations();
   }
 
@@ -123,10 +129,6 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
   }
 
   // Activities
-
-  String _selectedActivity = '전체'; // 초기 선택된 활동
-  String _selectedActivityIcon = 'category_rounded';
-
   void _showActivityModal(TimerProvider timerProvider) {
     if (timerProvider.isRunning) {
       // 타이머가 작동 중일 때는 토스트 메시지 띄우기
@@ -148,11 +150,12 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
         ),
         builder: (BuildContext context) {
           return ActivityPicker(
-              onSelectActivity:
-                  (String selectedActivity, String selectedActivityIcon) {
+              onSelectActivity: (String selectedActivity,
+                  String selectedActivityIcon, String selectedActivityListId) {
                 setState(() {
                   _selectedActivity = selectedActivity; // 선택된 액티비티 업데이트
                   _selectedActivityIcon = selectedActivityIcon;
+                  _selectedActivityListId = selectedActivityListId;
                 });
                 Navigator.pop(context);
               },
@@ -318,7 +321,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                                   if (timerProvider.isRunning) {
                                     timerProvider.stopTimer();
                                   } else {
-                                    timerProvider.startTimer();
+                                    timerProvider.startTimer(
+                                        activityId: _selectedActivityListId);
                                   }
                                 },
                               ),
@@ -352,7 +356,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                             if (timerProvider.isRunning) {
                               timerProvider.stopTimer();
                             } else {
-                              timerProvider.startTimer();
+                              timerProvider.startTimer(
+                                  activityId: _selectedActivityListId);
                             }
                           },
                         ),
@@ -559,7 +564,13 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                         Padding(
                           padding: const EdgeInsets.only(left: 16, right: 16),
                           child: TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => ActivityLogPage()),
+                              );
+                            },
                             style: ButtonStyle(
                               foregroundColor: WidgetStateProperty.all(
                                   Colors.white), // 텍스트 색상

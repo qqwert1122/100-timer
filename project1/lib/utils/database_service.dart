@@ -33,6 +33,8 @@ class DatabaseService {
 
   // 테이블 생성
   Future<void> _createDb(Database db, int version) async {
+    print('데이터베이스 초기화 시작');
+
     await db.execute('''
       CREATE TABLE timers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,18 +50,20 @@ class DatabaseService {
         last_started_at TEXT
       )
     ''');
+    print('timers 테이블이 생성되었습니다.');
 
     await db.execute('''
-      CREATE TABLE activities (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        activity_id TEXT,
-        user_id TEXT,
-        timer_id TEXT,
-        activity_time TEXT,
-        created_at TEXT,
-        last_updated_at TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS activity_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      activity_log_id TEXT,
+      activity_id TEXT,
+      timer_id TEXT,
+      start_time TEXT,
+      end_time TEXT,
+      activity_duration INTEGER
+    )
+  ''');
+    print('activity_logs 테이블이 생성되었습니다.');
 
     await db.execute('''
     CREATE TABLE activity_list (
@@ -71,6 +75,7 @@ class DatabaseService {
       created_at TEXT
     )
   ''');
+    print('activity_list 테이블이 생성되었습니다.');
   }
 
   // 타이머 생성
@@ -126,46 +131,38 @@ class DatabaseService {
 
   // 기본 액티비티 리스트
   Future<void> initializeActivitiyList(Database db, String userId) async {
-    final activityId = const Uuid().v4();
     final now = DateTime.now();
 
     // 기본 액티비티 리스트
     List<Map<String, dynamic>> defaultActivitiyList = [
       {
-        'activity_list_id': '${activityId}1',
+        'activity_list_id': '${userId}1',
         'user_id': userId,
         'activity_name': '전체',
         'activity_icon': 'category_rounded',
         'created_at': now.toIso8601String(),
       },
       {
-        'activity_list_id': '${activityId}2',
+        'activity_list_id': '${userId}2',
         'user_id': userId,
         'activity_name': '공부',
         'activity_icon': 'school_rounded',
         'created_at': now.toIso8601String(),
       },
       {
-        'activity_list_id': '${activityId}3',
+        'activity_list_id': '${userId}3',
         'user_id': userId,
         'activity_name': '업무',
         'activity_icon': 'work_rounded',
         'created_at': now.toIso8601String(),
       },
       {
-        'activity_list_id': '${activityId}4',
+        'activity_list_id': '${userId}4',
         'user_id': userId,
         'activity_name': '운동',
         'activity_icon': 'fitness_center_rounded',
         'created_at': now.toIso8601String(),
       },
-      {
-        'activity_list_id': '${activityId}5',
-        'user_id': userId,
-        'activity_name': '기타',
-        'activity_icon': 'more_horiz_rounded',
-        'created_at': now.toIso8601String(),
-      }
     ];
 
     // 이미 데이터가 있는지 확인
@@ -177,17 +174,17 @@ class DatabaseService {
     );
     if (result.isEmpty) {
       // 데이터베이스가 비어 있을 경우 기본 액티비티 추가
-      for (var activity_list in defaultActivitiyList) {
-        await db.insert('activity_list', activity_list);
+      for (var activityList in defaultActivitiyList) {
+        await db.insert('activity_list', activityList);
       }
       print('기본 액티비티가 데이터베이스에 추가되었습니다.');
     }
   }
 
-  Future<void> addActivity(String activityName, String activityIcon) async {
+  Future<void> addActivityList(String activityName, String activityIcon) async {
     final db = await database;
-    final uuid = Uuid().v4(); // 고유 ID 생성
-    String userId = 'v3_3'; // 사용자 ID 예시 (실제 앱에서는 유저 ID를 동적으로 받을 수 있음)
+    final uuid = const Uuid().v4(); // 고유 ID 생성
+    String userId = 'v3_4'; // 사용자 ID 예시 (실제 앱에서는 유저 ID를 동적으로 받을 수 있음)
     String createdAt = DateTime.now().toIso8601String(); // 현재 시간
 
     // 데이터 삽입
@@ -200,14 +197,21 @@ class DatabaseService {
     });
   }
 
-  Future<void> updateActivityList(
-      String activityListId, String newActivityName) async {
+  Future<void> updateActivityList(String activityListId, String newActivityName,
+      String newActivityIcon) async {
     final db = await database;
 
-    await db.update('activity_list', {'activity_name': newActivityName},
-        where: 'activity_id = ?', whereArgs: [activityListId]);
+    await db.update(
+      'activity_list',
+      {
+        'activity_name': newActivityName,
+        'activity_icon': newActivityIcon,
+      },
+      where: 'activity_list_id = ?', // activity_list_id를 사용해 업데이트 조건 지정
+      whereArgs: [activityListId],
+    );
 
-    print('액티비티 이름이 수정되었습니다: $newActivityName');
+    print('액티비티가 수정되었습니다: $newActivityName, 아이콘: $newActivityIcon');
   }
 
   Future<void> deleteActivity(String activityListId) async {
@@ -233,5 +237,115 @@ class DatabaseService {
     print('액티비티 리스트: $result');
 
     return result;
+  }
+
+  Future<String?> getActivityListIdByName(String activityName) async {
+    final db = await database;
+
+    // activity_name에 해당하는 activity_list_id 가져오기
+    final result = await db.query(
+      'activity_list',
+      where: 'activity_name = ?',
+      whereArgs: [activityName],
+      limit: 1,
+    );
+
+    if (result.isNotEmpty) {
+      return result.first['activity_list_id'] as String; // activity_list_id 반환
+    }
+    return null; // 찾지 못한 경우 null 반환
+  }
+
+  Future<void> createActivityLog(String activityId, String timerId) async {
+    final db = await database;
+
+    // UUID 생성
+    const uuid = Uuid();
+    final String activityLogId = uuid.v4(); // 고유 ID 생성
+
+    // 로그 생성
+    print('activity_logs 테이블에 데이터 삽입 시도');
+    try {
+      await db.insert('activity_logs', {
+        'activity_log_id': activityLogId, // 생성한 고유 ID 저장
+        'activity_id': activityId,
+        'timer_id': timerId,
+        'start_time': DateTime.now().toIso8601String(),
+        'end_time': null,
+        'activity_duration': null
+      });
+      print('데이터 삽입 성공: activity_log_id = $activityLogId');
+    } catch (e) {
+      print('데이터 삽입 실패: $e');
+    }
+  }
+
+  Future<void> updateActivityLog(String activityLogId) async {
+    final db = await database;
+
+    // 해당 타이머와 마지막 액티비티에 대한 로그 가져오기
+    final log = await db.query(
+      'activity_logs',
+      where: 'activity_log_id = ?',
+      whereArgs: [activityLogId],
+      limit: 1,
+    );
+
+    final startTime = DateTime.parse(log.first['start_time'] as String);
+    final endTime = DateTime.now();
+    final duration = endTime.difference(startTime).inSeconds;
+
+    // 로그 업데이트 (종료 시간과 활동 지속 시간)
+    await db.update(
+      'activity_logs',
+      {
+        'end_time': endTime.toIso8601String(),
+        'activity_duration': duration, // 지속 시간 (초)
+      },
+      where: 'activity_log_id = ?',
+      whereArgs: [activityLogId],
+    );
+  }
+
+  Future<Map<String, dynamic>?> getActivityLog(String activityLogId) async {
+    final db = await database;
+
+    // timer_id에 해당하는 가장 최근 activity_logs 가져오기
+    final result = await db.query(
+      'activity_logs',
+      where: 'activity_log_id = ?',
+      whereArgs: [activityLogId],
+    );
+
+    // 만약 결과가 비어있지 않으면 첫 번째 로그 반환
+
+    return result.isNotEmpty ? result.first : null;
+  }
+
+  Future<Map<String, dynamic>?> getLastActivityLog(String timerId) async {
+    final db = await database;
+
+    // timer_id에 해당하는 가장 최근 activity_logs 가져오기
+    final logs = await db.query(
+      'activity_logs',
+      where: 'timer_id = ?',
+      whereArgs: [timerId],
+      orderBy: 'start_time DESC', // 최신 로그가 가장 위로 오도록 내림차순 정렬
+      limit: 1, // 가장 최근의 로그 하나만 가져옴
+    );
+
+    // 만약 결과가 비어있지 않으면 첫 번째 로그 반환
+    return logs.isNotEmpty ? logs.first : null;
+  }
+
+  Future<List<Map<String, dynamic>>> getAllActivityLogs() async {
+    final db = await database; // 데이터베이스 연결
+    // activity_logs와 activity_list를 JOIN하여 activity_name과 관련된 정보를 가져옴
+    return await db.rawQuery('''
+      SELECT activity_logs.*, activity_list.activity_name, activity_list.activity_icon
+      FROM activity_logs
+      JOIN activity_list
+      ON activity_logs.activity_id = activity_list.activity_list_id
+    ''');
   }
 }

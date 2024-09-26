@@ -4,7 +4,18 @@ import 'package:project1/utils/database_service.dart';
 import 'package:provider/provider.dart';
 
 class AddActivityPage extends StatefulWidget {
-  const AddActivityPage({super.key});
+  final bool isEdit; // 생성 또는 수정 모드 구분
+  final String? activityListId; // 수정할 때의 activity_list_id
+  final String? activityName; // 수정할 때 기존 활동 이름
+  final String? activityIcon; // 수정할 때 기존 활동 아이콘
+
+  const AddActivityPage({
+    Key? key,
+    this.isEdit = false, // 기본값은 생성 모드
+    this.activityListId, // 수정 모드일 때 활동 ID
+    this.activityName, // 수정 모드일 때 활동 이름
+    this.activityIcon, // 수정 모드일 때 활동 아이콘
+  }) : super(key: key);
 
   @override
   _AddActivityPageState createState() => _AddActivityPageState();
@@ -20,7 +31,12 @@ class _AddActivityPageState extends State<AddActivityPage> {
   @override
   void initState() {
     super.initState();
+
     _activityNameController.addListener(_validateForm); // 이름 입력시 상태 확인
+    if (widget.isEdit) {
+      _activityNameController.text = widget.activityName ?? '';
+      _selectedIconName = widget.activityIcon;
+    }
   }
 
   @override
@@ -52,8 +68,27 @@ class _AddActivityPageState extends State<AddActivityPage> {
     final String? iconName = _selectedIconName;
 
     // 이름과 아이콘이 선택되었을 때만 저장
-    if (activityName.isNotEmpty && iconName != null) {
-      await _dbService.addActivity(activityName, iconName); // DB에 활동 저장
+    if (activityName.isEmpty || iconName == null) {
+      // 필수 항목 입력되지 않았을 때 경고 메시지
+      Fluttertoast.showToast(
+        msg: "활동 이름과 아이콘을 입력해주세요",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.redAccent.shade200,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+      return;
+    }
+
+    if (widget.isEdit) {
+      // 수정
+      await _dbService.updateActivityList(
+          widget.activityListId!, activityName, iconName);
+      Navigator.pop(context, {'name': activityName, 'icon': iconName});
+    } else {
+      // 생성
+      await _dbService.addActivityList(activityName, iconName); // DB에 활동 저장
       final newActivity = {
         'name': _activityNameController.text,
         'icon': _selectedIconName,
@@ -70,16 +105,6 @@ class _AddActivityPageState extends State<AddActivityPage> {
       );
 
       Navigator.pop(context, newActivity); // 저장 후 이전 화면으로 돌아가기
-    } else {
-      // 필수 항목 입력되지 않았을 때 경고 메시지
-      Fluttertoast.showToast(
-        msg: "활동 이름과 아이콘을 입력해주세요",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.TOP,
-        backgroundColor: Colors.redAccent.shade200,
-        textColor: Colors.white,
-        fontSize: 14.0,
-      );
     }
   }
 
@@ -302,7 +327,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                   ),
                 ),
                 child: Text(
-                  _currentStep == 0 ? '다음' : '추가',
+                  _currentStep == 0 ? '다음' : '저장',
                   style: TextStyle(
                     color: ((_currentStep == 0 && isActivityNameValid) ||
                             (_currentStep > 0 && isIconSelected))
@@ -324,8 +349,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
       child: Scaffold(
         backgroundColor: isDarkMode ? Colors.black : Colors.white,
         appBar: AppBar(
-          title: const Text(
-            '활동 추가',
+          title: Text(
+            widget.isEdit ? '활동 수정' : '활동 추가',
             style: TextStyle(fontWeight: FontWeight.w400, fontSize: 18),
           ),
           leading: IconButton(
