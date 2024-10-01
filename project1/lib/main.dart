@@ -3,23 +3,32 @@ import 'package:project1/screens/splash_page.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart'; // 로컬 데이터 초기화 패키지
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('ko_KR', null);
+  String userId = 'v3_4';
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (context) => TimerProvider(),
+          create: (context) => TimerProvider(userId: userId),
         ),
         Provider(create: (context) => DatabaseService()), // DatabaseService 제공
       ],
-      child: const MyApp(),
+      child: MyApp(
+        userId: userId,
+      ),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String userId;
+
+  MyApp({Key? key, required this.userId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +61,9 @@ class MyApp extends StatelessWidget {
           elevation: 0.2,
         ),
       ),
-      home: const SplashScreen(),
+      home: SplashScreen(
+        userId: userId,
+      ),
     );
   }
 }

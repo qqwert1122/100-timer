@@ -9,6 +9,7 @@ import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/widgets/options.dart';
 import 'package:project1/widgets/text_indicator.dart';
+import 'package:project1/widgets/weekly_activity_chart.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/styles/week_colors.dart';
@@ -32,11 +33,10 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
   double _sheetSize = 0.1; // 초기 크기
   final DraggableScrollableController _controller =
       DraggableScrollableController();
-  final DatabaseService _dbService = DatabaseService(); // 데이터베이스 서비스 인스턴스 생성
-
-  late Timer _timer;
-
+  bool isTimeClicked = false;
   int _currentIndex = 0;
+  String userId = 'v3_4';
+  String activityTimeText = '00:00:00'; // 초기 활동 시간 표시 값
 
   bool isSuspected = false;
 
@@ -46,17 +46,14 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
   late Animation<double> _waveAnimation;
   late AnimationController _breathingAnimationController;
   late Animation<double> _breathingAnimation;
-
-  late int remainingSeconds; // 남은 시간(초 단위)
+  late AnimationController _timeAnimationController;
+  late Animation<double> _totalTimeAnimation;
+  late Animation<double> _activityTimeAnimation;
 
   final List<Color> _colors = getWeekColos();
   final List<Map<String, String>> _weekdays = getSampleRecords();
   final List<String> imgList = getSampleImages();
   final List<Achievement> achievements = getAchievements();
-  String userId = 'v3_4';
-  String _selectedActivity = '전체'; // 초기 선택된 활동
-  late String _selectedActivityListId = '${userId}1';
-  String _selectedActivityIcon = 'category_rounded';
 
   @override
   void initState() {
@@ -64,18 +61,18 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
     Future.delayed(Duration.zero, () {
       final timerProvider = Provider.of<TimerProvider>(context, listen: false);
       timerProvider.setTimerData(widget.timerData);
-      print('TimerPage에서 타이머 데이터를 설정했습니다: $widget.timerData');
+      timerProvider.initializeWeeklyActivityData();
     });
     _initAnimations();
   }
 
   @override
   void dispose() {
-    _timer.cancel(); // 타이머 해제
     _controller.dispose();
     _slipAnimationController.dispose();
     _waveAnimationController.dispose();
     _breathingAnimationController.dispose();
+    _timeAnimationController.dispose();
     super.dispose();
   }
 
@@ -120,12 +117,89 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
         curve: Curves.easeInOut, // 부드러운 숨쉬기 효과
       ),
     );
+
+    _timeAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+
+    _totalTimeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _timeAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _activityTimeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _timeAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
   }
 
   void closeMessage() {
     setState(() {
       isSuspected = !isSuspected;
     });
+  }
+
+  void _toggleTimeView() {
+    setState(() {
+      isTimeClicked = !isTimeClicked;
+    });
+
+    if (isTimeClicked) {
+      _timeAnimationController.forward(); // 애니메이션 실행
+    } else {
+      _timeAnimationController.reverse(); // 애니메이션 되돌리기
+    }
+  }
+
+  Widget _buildTimeDisplay(TimerProvider timerProvider, bool isDarkMode) {
+    return GestureDetector(
+      onTap: _toggleTimeView,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // 총 활동 시간 텍스트 (애니메이션으로 사라짐)
+          FadeTransition(
+            opacity: _totalTimeAnimation,
+            child: AnimatedOpacity(
+              opacity: isTimeClicked ? 0.0 : 1.0,
+              duration: const Duration(milliseconds: 500),
+              child: Text(
+                timerProvider.formattedTime,
+                style: TextStyle(
+                    color: isDarkMode ? Colors.white : Colors.redAccent,
+                    fontSize: 60,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'chab'),
+              ),
+            ),
+          ),
+
+          // 활동 시간 텍스트 (애니메이션으로 나타남)
+          FadeTransition(
+            opacity: _activityTimeAnimation,
+            child: AnimatedOpacity(
+              opacity: isTimeClicked ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 500),
+              child: isTimeClicked
+                  ? Text(
+                      timerProvider.formattedActivityTime,
+                      style: TextStyle(
+                          color: isDarkMode ? Colors.white : Colors.redAccent,
+                          fontSize: 60,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'chab'),
+                    )
+                  : Container(), // 클릭하지 않았을 때는 비어있는 컨테이너로 유지
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // Activities
@@ -150,16 +224,15 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
         ),
         builder: (BuildContext context) {
           return ActivityPicker(
-              onSelectActivity: (String selectedActivity,
-                  String selectedActivityIcon, String selectedActivityListId) {
-                setState(() {
-                  _selectedActivity = selectedActivity; // 선택된 액티비티 업데이트
-                  _selectedActivityIcon = selectedActivityIcon;
-                  _selectedActivityListId = selectedActivityListId;
-                });
-                Navigator.pop(context);
-              },
-              selectedActivity: _selectedActivity);
+            onSelectActivity: (String selectedActivity,
+                String selectedActivityIcon, String selectedActivityListId) {
+              timerProvider.setCurrentActivity(selectedActivityListId,
+                  selectedActivity, selectedActivityIcon);
+              Navigator.pop(context);
+            },
+            selectedActivity: timerProvider.currentActivityName ?? '전체',
+            userId: userId,
+          );
         },
       );
     }
@@ -211,19 +284,20 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        getIconData(_selectedActivityIcon),
+                        getIconData(timerProvider.currentActivityIcon ??
+                            'category_rounded'),
                         color: Colors.redAccent.shade200,
                       ),
                       const SizedBox(
                         width: 5,
                       ),
                       Text(
-                        _selectedActivity,
+                        timerProvider.currentActivityName ?? '전체',
                         style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.redAccent.shade200,
-                            fontFamily: 'Wiro'),
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.redAccent.shade200,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       const Icon(Icons.keyboard_arrow_down_rounded,
@@ -242,37 +316,28 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                           builder: (context, child) {
                             // 색상이 파도치는 효과를 주기 위해 그라데이션 사용
                             return ShaderMask(
-                              shaderCallback: (bounds) {
-                                return LinearGradient(
-                                  colors: [
-                                    Colors.white,
-                                    Colors.yellow,
-                                    Colors.orange,
-                                    isDarkMode
-                                        ? Colors.redAccent.shade200
-                                        : Colors.pink
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  stops: [
-                                    _waveAnimation.value,
-                                    _waveAnimation.value + 0.2,
-                                    _waveAnimation.value + 0.4,
-                                    _waveAnimation.value + 0.6,
-                                  ],
-                                ).createShader(bounds);
-                              },
-                              child: Text(
-                                timerProvider.formattedTime,
-                                style: TextStyle(
-                                    color: isDarkMode
-                                        ? Colors.white
-                                        : Colors.redAccent,
-                                    fontSize: 60,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'chab'),
-                              ),
-                            );
+                                shaderCallback: (bounds) {
+                                  return LinearGradient(
+                                    colors: [
+                                      Colors.white,
+                                      Colors.yellow,
+                                      Colors.orange,
+                                      isDarkMode
+                                          ? Colors.redAccent.shade200
+                                          : Colors.redAccent.shade700
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    stops: [
+                                      _waveAnimation.value,
+                                      _waveAnimation.value + 0.2,
+                                      _waveAnimation.value + 0.4,
+                                      _waveAnimation.value + 0.6,
+                                    ],
+                                  ).createShader(bounds);
+                                },
+                                child: _buildTimeDisplay(
+                                    timerProvider, isDarkMode));
                           },
                         )
                       : Text(
@@ -303,7 +368,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black
-                                          .withOpacity(0.3), // 그림자 색상 (흰색)
+                                          .withOpacity(0.3), // 그림자 색상
                                       spreadRadius: 2, // 그림자가 퍼지는 정도
                                       blurRadius: 10, // 그림자 흐림 정도
                                       offset:
@@ -322,7 +387,9 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                                     timerProvider.stopTimer();
                                   } else {
                                     timerProvider.startTimer(
-                                        activityId: _selectedActivityListId);
+                                        activityId:
+                                            timerProvider.currentActivityId ??
+                                                '${userId}1');
                                   }
                                 },
                               ),
@@ -338,8 +405,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black
-                                    .withOpacity(0.3), // 그림자 색상 (흰색)
+                                color: Colors.black.withOpacity(0.3), // 그림자 색상
                                 spreadRadius: 2, // 그림자가 퍼지는 정도
                                 blurRadius: 10, // 그림자 흐림 정도
                                 offset: const Offset(0, 5), // 그림자 위치 (x, y)
@@ -357,7 +423,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                               timerProvider.stopTimer();
                             } else {
                               timerProvider.startTimer(
-                                  activityId: _selectedActivityListId);
+                                  activityId: timerProvider.currentActivityId ??
+                                      '${userId}1');
                             }
                           },
                         ),
@@ -391,9 +458,9 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                     return true;
                   },
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: const Duration(milliseconds: 100),
                     decoration: BoxDecoration(
-                      color: _sheetSize >= 0.3
+                      color: _sheetSize >= 0.2
                           ? (isDarkMode
                               ? const Color(0xff181C14)
                               : Colors.white)
@@ -402,7 +469,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                               : Colors.redAccent.shade200),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.3), // 그림자 색상 (흰색)
+                          color: Colors.black.withOpacity(0.3), // 그림자 색상
                           spreadRadius: 4, // 그림자가 퍼지는 정도
                           blurRadius: 10, // 그림자 흐림 정도
                           offset: const Offset(0, -1), // 그림자 위치 (x, y)
@@ -431,7 +498,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                             width: 60, // 고정된 너비
                             height: 5,
                             decoration: BoxDecoration(
-                              color: _sheetSize >= 0.3
+                              color: _sheetSize >= 0.2
                                   ? (isDarkMode ? Colors.white : Colors.black)
                                   : Colors.white,
                               borderRadius: BorderRadius.circular(10),
@@ -448,7 +515,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w900,
                                   fontSize: 16,
-                                  color: _sheetSize >= 0.3
+                                  color: _sheetSize >= 0.2
                                       ? (isDarkMode
                                           ? Colors.white
                                           : Colors.black)
@@ -460,7 +527,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                               padding: const EdgeInsets.all(16),
                               child: Icon(
                                 Icons.history_rounded,
-                                color: _sheetSize >= 0.3
+                                color: _sheetSize >= 0.2
                                     ? (isDarkMode ? Colors.white : Colors.black)
                                     : Colors.white,
                               ),
@@ -487,80 +554,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                             ],
                           ),
                         ),
-                        GridView.builder(
-                          physics:
-                              const NeverScrollableScrollPhysics(), // 스크롤 비활성화
-                          shrinkWrap: true, // GridView의 크기를 자식에 맞추기
-                          padding: const EdgeInsets.all(10.0),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2, // 2열
-                            childAspectRatio: 2, // 정사각형 모양
-                            crossAxisSpacing: 10, // 열 간격
-                            mainAxisSpacing: 10, // 행 간격
-                          ),
-
-                          itemCount: _colors.length, // 총 8개
-                          itemBuilder: (context, index) {
-                            return Container(
-                              margin: const EdgeInsets.all(2), // 높이를 명시적으로 설정
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    _colors[index],
-                                    Colors.pink.shade50,
-                                  ],
-                                  begin: index % 2 == 0
-                                      ? Alignment.topLeft
-                                      : Alignment.bottomRight,
-                                  end: index % 2 == 0
-                                      ? Alignment.bottomRight
-                                      : Alignment.topLeft,
-                                ),
-                                borderRadius:
-                                    BorderRadius.circular(15), // 둥근 모서리
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black
-                                        .withOpacity(0.3), // 그림자 색상 (흰색)
-                                    spreadRadius: 1, // 그림자가 퍼지는 정도
-                                    blurRadius: 5, // 그림자 흐림 정도
-                                    offset: const Offset(0, 2), // 그림자 위치 (x, y)
-                                  ),
-                                ],
-                              ),
-                              child: Stack(
-                                children: [
-                                  Positioned(
-                                    top: 5,
-                                    left: 15,
-                                    child: Text(
-                                      _weekdays[index]['day'] ?? 'Unknown',
-                                      style: const TextStyle(
-                                        color: Colors.black87,
-                                        fontSize: 36,
-                                        fontWeight: FontWeight.w900,
-                                        fontFamily: 'Wiro',
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    bottom: 10,
-                                    right: 10,
-                                    child: Text(
-                                      _weekdays[index]['burntime'] ?? 'Unknown',
-                                      style: const TextStyle(
-                                        color: Colors.black87,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
+                        WeeklyActivityChart(),
                         Padding(
                           padding: const EdgeInsets.only(left: 16, right: 16),
                           child: TextButton(
@@ -568,7 +562,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => ActivityLogPage()),
+                                    builder: (context) =>
+                                        const ActivityLogPage()),
                               );
                             },
                             style: ButtonStyle(

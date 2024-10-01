@@ -5,7 +5,9 @@ import 'package:uuid/uuid.dart';
 import 'timer_page.dart'; // 메인 화면 파일
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final String userId;
+
+  const SplashScreen({Key? key, required this.userId}) : super(key: key);
 
   @override
   _SplashScreenState createState() => _SplashScreenState();
@@ -45,13 +47,13 @@ class _SplashScreenState extends State<SplashScreen>
     // 타이머가 없으면 생성
     if (timer == null) {
       timer = _createDefaultTimer(userId);
-      await dbService.createTimer(timer);
+      await dbService.createTimer(userId, timer);
       print('새로운 타이머가 생성되었습니다.');
     }
     print('타이머가 데이터베이스에서 불러와졌습니다: $timer');
 
     // activity
-    await dbService.initializeActivitiyList(db, userId);
+    await dbService.initializeActivityList(db, userId);
 
     // 1초 후에 메인 화면으로 전환
     Future.delayed(const Duration(milliseconds: 1300), () {
@@ -84,11 +86,11 @@ class _SplashScreenState extends State<SplashScreen>
       'week_start': getWeekStart(now), // 현재 주 시작 시간
       'total_seconds': 100 * 3600, // 100시간(초 단위)
       'remaining_seconds': 100 * 3600, // 초기 남은 시간은 100시간
-      'last_activity_id': null, // 아직 활동 없음
+      'last_activity_log_id': null, // 아직 활동 없음
+      'is_running': 0, // 아직 시작하지 않음
       'created_at': now.toIso8601String(), // 생성시간을 문자열로 저장
       'last_updated_at': now.toIso8601String(), // 마지막 업데이트 = 생성
       'last_started_at': null, // 아직 시작하지 않음
-      'is_running': 0, // 아직 시작하지 않음
     };
   }
 

@@ -87,7 +87,7 @@ class _AchievementCardState extends State<AchievementCard>
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 36,
-                  fontFamily: 'Wiro',
+                  fontFamily: 'Star',
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -119,7 +119,7 @@ class _AchievementCardState extends State<AchievementCard>
                     widget.achievement.content,
                     style: const TextStyle(
                       fontSize: 24,
-                      fontFamily: 'Wiro',
+                      fontFamily: 'Star',
                       fontWeight: FontWeight.w900,
                     ),
                     textAlign: TextAlign.center,

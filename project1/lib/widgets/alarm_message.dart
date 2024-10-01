@@ -69,7 +69,7 @@ class _AlarmMessageState extends State<AlarmMessage> {
                           color: Colors.black87,
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          fontFamily: 'Wiro'),
+                          fontFamily: 'Star'),
                     ),
                     const Text(
                       "기록을 올바르게 수정해주세요",
@@ -78,7 +78,7 @@ class _AlarmMessageState extends State<AlarmMessage> {
                           color: Colors.black87,
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          fontFamily: 'Wiro'),
+                          fontFamily: 'Star'),
                     ),
                     const SizedBox(
                       height: 10,

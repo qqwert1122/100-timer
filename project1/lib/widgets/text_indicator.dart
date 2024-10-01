@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:project1/utils/timer_provider.dart';
 
 class TextIndicator extends StatefulWidget {
@@ -22,6 +23,18 @@ class _TextIndicatorState extends State<TextIndicator>
   late Timer _textSwitchTimer;
 
   bool _showText1 = true;
+
+  String formatToMonthWeek(DateTime date) {
+    // 날짜의 해당 월의 첫 번째 날짜를 가져옴
+    DateTime firstDayOfMonth = DateTime(date.year, date.month, 1);
+
+    // 주차 계산: 해당 월의 첫 번째 날짜와 현재 날짜의 차이
+    int weekOfMonth = ((date.day + firstDayOfMonth.weekday - 1) / 7).ceil();
+
+    // "월 주차" 형식으로 반환
+    String month = DateFormat.MMMM('ko_KR').format(date); // 예: 10월
+    return "$month ${weekOfMonth}주차";
+  }
 
   @override
   void initState() {
@@ -73,6 +86,9 @@ class _TextIndicatorState extends State<TextIndicator>
   Widget build(BuildContext context) {
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
+    DateTime now = DateTime.now(); // 현재 날짜
+    String formattedDate = formatToMonthWeek(now);
+
     return SlideTransition(
       position: _textAnimation,
       child: Opacity(
@@ -123,7 +139,7 @@ class _TextIndicatorState extends State<TextIndicator>
                 key: const ValueKey(false), // Text.rich에도 키 추가
               )
             : Text(
-                "9월 2주차",
+                formattedDate,
                 key: const ValueKey(true),
                 style: TextStyle(
                   fontSize: 20,

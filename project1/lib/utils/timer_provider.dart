@@ -1,41 +1,80 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:project1/utils/database_service.dart';
 
 class TimerProvider with ChangeNotifier {
   Timer? _timer;
   bool _isRunning = false;
   int _remainingSeconds = 360000; // 기본값 100시간 (초 단위)
-  Map<String, dynamic>? _timerData; // 타이머 데이터 저장용
-  String? _currentActivityId; // 현재 액티비티 ID를 저장
+  int _currentActivityDuration = 0; // **현재 활동 시간 추가**
+  Map<String, dynamic>? _timerData;
+  String? _currentActivityLogId;
+  Map<String, double> _weeklyActivityData = {
+    '월': 0.0,
+    '화': 0.0,
+    '수': 0.0,
+    '목': 0.0,
+    '금': 0.0,
+    '토': 0.0,
+    '일': 0.0,
+  };
 
-  final DatabaseService _dbService = DatabaseService(); // 데이터베이스 서비스
+  final DatabaseService _dbService = DatabaseService();
+  final String userId;
+  String? _currentActivityId;
+  String? _currentActivityName;
+  String? _currentActivityIcon;
 
-  // 타이머 데이터를 받아서 초기화
-  void setTimerData(Map<String, dynamic> timerData) {
-    _timerData = timerData;
-    _remainingSeconds =
-        _timerData?['remaining_seconds'] ?? 0; // 타이머 데이터를 받아 남은 시간 설정
-    _isRunning = _timerData?['is_running'] == 1 ? true : false;
+  // 현재 활동 정보를 가져오는 getter
+  String? get currentActivityId => _currentActivityId;
+  String? get currentActivityName => _currentActivityName;
+  String? get currentActivityIcon => _currentActivityIcon;
 
-    String lastActivityId = _timerData?['last_activity_id'] ?? '';
+  TimerProvider({required this.userId});
 
-    if (_isRunning) {
-      // 타이머가 실행 중이라면, 마지막 시작 시간과 현재 시간의 차이를 계산
-      DateTime lastStarted = DateTime.parse(_timerData!['last_started_at']);
-      DateTime now = DateTime.now();
-      int elapsedSeconds = now.difference(lastStarted).inSeconds;
-
-      // 지난 시간을 remaining_seconds에서 차감
-      _remainingSeconds -= elapsedSeconds;
-      if (_remainingSeconds < 0) _remainingSeconds = 0;
-
-      startTimer(activityId: lastActivityId);
-    }
-    notifyListeners(); // UI 업데이트
+  // 현재 활동 정보를 설정하는 메서드
+  void setCurrentActivity(
+      String activityId, String activityName, String activityIcon) {
+    _currentActivityId = activityId;
+    _currentActivityName = activityName;
+    _currentActivityIcon = activityIcon;
+    notifyListeners();
   }
 
-  // 남은 시간을 '시:분:초' 형식으로 변환하는 getter
+  void setTimerData(Map<String, dynamic> timerData) async {
+    _timerData = timerData;
+    _remainingSeconds = _timerData?['remaining_seconds'] ?? 0;
+    _currentActivityDuration = 0; // **활동 시간 초기화**
+    _isRunning = _timerData?['is_running'] == 1;
+
+    String lastActivityLogId = _timerData?['last_activity_log_id'] ?? '';
+    final activityLog = await _dbService.getActivityLog(lastActivityLogId);
+    _currentActivityId = activityLog?['activity_id'];
+    _currentActivityLogId = lastActivityLogId;
+
+    await _updateCurrentActivityDetails();
+
+    if (_isRunning) {
+      DateTime lastStarted =
+          DateTime.parse(_timerData!['last_started_at']).toUtc();
+      DateTime now = DateTime.now().toUtc();
+      int elapsedSeconds = now.difference(lastStarted).inSeconds;
+
+      _remainingSeconds -= elapsedSeconds;
+      _currentActivityDuration += elapsedSeconds; // **현재 활동 시간 업데이트**
+
+      if (_remainingSeconds < 0) _remainingSeconds = 0;
+
+      if (_currentActivityId != null) {
+        await startTimer(activityId: _currentActivityId!);
+      } else {
+        print('현재 활동 ID를 찾을 수 없습니다.');
+      }
+    }
+    notifyListeners();
+  }
+
   String get formattedTime {
     final hours = (_remainingSeconds ~/ 3600).toString().padLeft(2, '0');
     final minutes =
@@ -44,157 +83,201 @@ class TimerProvider with ChangeNotifier {
     return '$hours:$minutes:$seconds';
   }
 
-  // 타이머가 실행 중인지 확인하는 getter
+  String get formattedActivityTime {
+    final hours = (_currentActivityDuration ~/ 3600).toString().padLeft(2, '0');
+    final minutes =
+        ((_currentActivityDuration % 3600) ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_currentActivityDuration % 60).toString().padLeft(2, '0');
+    return '$hours:$minutes:$seconds';
+  }
+
   bool get isRunning => _isRunning;
-  String userId = 'v3_4';
 
   String getWeekStart(DateTime date) {
     int weekday = date.weekday;
-    // 월요일을 기준으로 주 시작일을 계산 (월요일이 1, 일요일이 7)
     DateTime weekStart = date.subtract(Duration(days: weekday - 1));
-    return weekStart.toIso8601String().split('T').first;
+    return weekStart.toUtc().toIso8601String().split('T').first;
   }
 
-  // 타이머 시작
-  void startTimer({required String activityId}) async {
-    _currentActivityId = activityId;
-    // 타이머 데이터를 DB에서 가져옴
-
-    DateTime now = DateTime.now();
+  Future<void> startTimer({required String activityId}) async {
+    DateTime now = DateTime.now().toUtc();
     String weekStart = getWeekStart(now);
+
     final timerData = await _dbService.getTimer(userId, weekStart);
 
     if (timerData == null) {
       print('타이머 데이터를 찾을 수 없습니다.');
       return;
     }
-    print('타이머 데이터를 가져왔습니다.');
 
-    // 타이머가 실행 중인 경우를 확인
+    _timerData = timerData;
+
     final isRunning = timerData['is_running'] == 1;
-    // last_activity_log_id가 null이 아닌지 확인
-    final lastActivityId =
-        timerData['last_activity_id']; // null 또는 activity_log_id
+    final lastActivityLogId = timerData['last_activity_log_id'];
+    final activityLog =
+        await _dbService.getLastActivityLog(timerData['timer_id']);
 
     bool isResume = false;
-
     bool shouldCreateNewLog = false;
 
-    // last_activity_log_id가 null이 아닌 경우만 처리
-    if (lastActivityId != null) {
-      // 마지막 시작 시간과 지금 시간을 비교해서 11분이 넘는지 확인
-      final lastStartedAt = DateTime.parse(timerData['last_started_at']);
-      isResume =
-          now.difference(lastStartedAt).inSeconds <= 660; // 11분 이내면 resume
+    if (lastActivityLogId != null && lastActivityLogId != '') {
+      final lastStartedAt =
+          DateTime.parse(timerData['last_started_at']).toUtc();
+      isResume = now.difference(lastStartedAt).inSeconds <= 660;
 
-      // 마지막 액티비티 로그에서 활동 ID를 가져옴
-      final activityLog =
-          await _dbService.getLastActivityLog(timerData['timer_id']);
-
-      final activityListId =
-          activityLog?['activity_id']; // 기존 로그의 activity_list_id
+      final activityListId = activityLog?['activity_id'];
+      print('최근 활동 ID: $activityListId, 현재 활동 ID: $activityId');
 
       if (activityListId != activityId) {
-        // print('activityListId != activityId:  $shouldCreateNewLog');
-        // print('activityListId: $activityListId');
-        // print('activityId: $activityId');
-        // 다른 활동을 선택했으므로 새로운 로그 생성 필요
         shouldCreateNewLog = true;
       } else if (!isResume) {
-        // 동일한 활동이지만 11분 이상 경과했으면 새로운 로그 생성
-
         shouldCreateNewLog = true;
       }
     } else {
-      // 로그가 없는 경우 신규 로그를 생성해야 함
       shouldCreateNewLog = true;
     }
-    print('shouldCreateNewLog: $shouldCreateNewLog');
-    String activityLogId;
 
     if (!isRunning || !isResume) {
       _isRunning = true;
 
-      String activityLogId;
-
       if (shouldCreateNewLog) {
-        // 새로운 로그 생성
+        // 새로운 활동 로그 생성
         await _dbService.createActivityLog(activityId, _timerData!['timer_id']);
 
-        // 새로 생성된 activity_log_id를 받아서 타이머 업데이트
-        final logData =
+        // 새로 생성된 활동 로그의 ID 가져오기
+        final newActivityLog =
             await _dbService.getLastActivityLog(_timerData!['timer_id']);
-        activityLogId = logData?['activity_log_id'] ?? ''; // 로그가 있으면 ID 사용
 
-        // 타이머에 새 로그 ID와 시작 시간을 업데이트
+        _currentActivityLogId = newActivityLog?['activity_log_id'];
+        _currentActivityId = activityId;
+
+        await _updateCurrentActivityDetails();
+
         await _dbService
             .updateTimer(_timerData!['timer_id'], _timerData!['user_id'], {
           'last_started_at': now.toIso8601String(),
-          'last_activity_id': activityLogId, // 새 로그 ID 저장
+          'last_activity_log_id': _currentActivityLogId,
           'is_running': 1
         });
-      }
-    } else {
-      // 기존 타이머 유지, 로그 업데이트
-      activityLogId = lastActivityId;
+      } else {
+        _currentActivityLogId = lastActivityLogId;
+        _currentActivityId = activityLog?['activity_id'];
+        await _updateCurrentActivityDetails();
 
-      // 11분 이내라면 기존 로그를 업데이트 (예: 활동 시간을 업데이트)
-      await _dbService.updateActivityLog(activityLogId);
+        await _dbService.updateActivityLog(_currentActivityLogId,
+            resetEndTime: true);
+      }
     }
 
-    // 타이머 실행
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
-      if (_remainingSeconds > 0) {
-        _remainingSeconds--;
-        notifyListeners();
-
-        if (_remainingSeconds % 60 == 0) {
-          await _dbService
-              .updateTimer(_timerData!['timer_id'], _timerData!['user_id'], {
-            'remaining_seconds': _remainingSeconds,
-            'last_updated_at': DateTime.now().toIso8601String()
-          });
-        }
-      } else {
-        stopTimer();
-      }
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _onTimerTick();
     });
+    print("타이머가 시작되었습니다.");
   }
 
-  // 타이머 정지
-  void stopTimer() {
+  Future<void> _updateCurrentActivityDetails() async {
+    if (_currentActivityId != null) {
+      final activity = await _dbService.getActivityById(_currentActivityId!);
+      if (activity.isNotEmpty) {
+        _currentActivityName = activity.first['activity_name'];
+        _currentActivityIcon = activity.first['activity_icon'];
+        notifyListeners();
+      } else {
+        // 활동이 없을 경우 기본값 설정
+        _currentActivityName = '전체';
+        _currentActivityIcon = 'category_rounded';
+      }
+    } else {
+      // 활동 ID가 없을 경우 기본값 설정
+      _currentActivityName = '전체';
+      _currentActivityIcon = 'category_rounded';
+    }
+  }
+
+  Future<void> _onTimerTick() async {
+    if (_remainingSeconds > 0) {
+      _remainingSeconds--;
+      _currentActivityDuration++; // **현재 활동 시간 증가**
+      notifyListeners();
+
+      if (_remainingSeconds % 60 == 0) {
+        await _updateTimerInDatabase();
+      }
+    } else {
+      await stopTimer();
+    }
+  }
+
+  Future<void> _updateTimerInDatabase() async {
+    try {
+      await _dbService
+          .updateTimer(_timerData!['timer_id'], _timerData!['user_id'], {
+        'remaining_seconds': _remainingSeconds,
+        'last_updated_at': DateTime.now().toUtc().toIso8601String()
+      });
+    } catch (e) {
+      print('타이머 업데이트 중 오류 발생: $e');
+    }
+  }
+
+  Future<void> stopTimer() async {
     if (_isRunning) {
       _isRunning = false;
       _timer?.cancel();
-      notifyListeners(); // UI 업데이트를 위해 알림
-      _updateTimerData();
+      await _updateTimerData();
+      await _dbService.updateActivityLog(_currentActivityLogId,
+          resetEndTime: false);
+      notifyListeners();
     }
   }
 
-// 데이터베이스에 남은 시간과 last_updated_at 업데이트
   Future<void> _updateTimerData() async {
-    DateTime now = DateTime.now();
+    DateTime now = DateTime.now().toUtc();
     String weekStart = getWeekStart(now);
     final timerData = await _dbService.getTimer(userId, weekStart);
 
-    if (_timerData != null) {
-      final String timerId = _timerData!['timer_id'];
-      final String userId = _timerData!['user_id'];
-      DateTime now = DateTime.now();
+    if (timerData != null) {
+      final String timerId = timerData['timer_id'];
+      final String userId = timerData['user_id'];
 
-      // 남은 시간을 업데이트한 새로운 데이터
       Map<String, dynamic> updatedData = {
         'remaining_seconds': _remainingSeconds,
         'is_running': 0,
         'last_updated_at': now.toIso8601String(),
-        'last_activity_id': _currentActivityId,
+        'last_activity_log_id': _currentActivityLogId,
       };
 
-      // 데이터베이스 업데이트
       await _dbService.updateTimer(timerId, userId, updatedData);
-      print(_currentActivityId);
     }
   }
 
-  // activity_log로 update
+  List<Map<String, dynamic>> get weeklyActivityData {
+    return _weeklyActivityData.entries.map((entry) {
+      int hours = entry.value ~/ 60;
+      int minutes = (entry.value % 60).toInt(); // double을 int로 변환
+      return {'day': entry.key, 'hours': hours, 'minutes': minutes};
+    }).toList();
+  } // 주간 활동 데이터 초기화 메서드
+
+  void initializeWeeklyActivityData() async {
+    List<Map<String, dynamic>> logs = await activityLogs; // 활동 로그 데이터 가져오기
+    _weeklyActivityData.updateAll((key, value) => 0.0);
+
+    for (var log in logs) {
+      String startTimeString = log['start_time'];
+      int duration = log['activity_duration'] ?? 0;
+      if (startTimeString.isNotEmpty) {
+        DateTime startTime = DateTime.parse(startTimeString).toLocal();
+        String dayOfWeek = DateFormat.E('ko_KR').format(startTime);
+        _weeklyActivityData[dayOfWeek] =
+            (_weeklyActivityData[dayOfWeek] ?? 0) + (duration / 60); // 분 단위로 더함
+      }
+    }
+    notifyListeners();
+  }
+
+  // activityLogs 메서드 추가 - 활동 로그 가져오기
+  Future<List<Map<String, dynamic>>> get activityLogs async {
+    return await _dbService.getAllActivityLogs(); // DB의 모든 활동 로그 가져오기
+  }
 }
