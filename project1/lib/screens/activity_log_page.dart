@@ -142,7 +142,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
 
     for (var log in logs) {
       if (log.containsKey('start_time') && log['start_time'] != null) {
-        String date = log['start_time'].substring(0, 10);
+        String date = DateTime.parse(log['start_time'])
+            .toLocal()
+            .toIso8601String()
+            .substring(0, 10);
 
         if (!groupedLogs.containsKey(date)) {
           groupedLogs[date] = [];
