@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/utils/database_service.dart';
+import 'package:project1/utils/icon_utils.dart';
 import 'package:provider/provider.dart';
 
 class AddActivityPage extends StatefulWidget {
@@ -28,6 +29,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
   final TextEditingController _activityNameController = TextEditingController();
   String? _selectedIconName;
   int _currentStep = 0;
+  String? _nameErrorMessage;
 
   @override
   void initState() {
@@ -45,7 +47,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
   }
 
   bool get isActivityNameValid =>
-      _activityNameController.text.trim().isNotEmpty;
+      _activityNameController.text.trim().isNotEmpty &&
+      _nameErrorMessage == null;
+
   bool get isIconSelected => _selectedIconName != null;
 
   void _nextStep() {
@@ -73,6 +77,21 @@ class _AddActivityPageState extends State<AddActivityPage> {
     }
 
     final dbService = Provider.of<DatabaseService>(context, listen: false);
+
+    // 중복 이름 확인
+    bool isDuplicate =
+        await dbService.isActivityNameDuplicate(widget.userId, activityName);
+
+    if (isDuplicate && !widget.isEdit) {
+      setState(() {
+        _nameErrorMessage = '중복된 이름이 있습니다'; // 에러 메시지 설정
+      });
+      return;
+    } else {
+      setState(() {
+        _nameErrorMessage = null; // 에러 메시지 초기화
+      });
+    }
 
     try {
       if (widget.isEdit) {
@@ -116,59 +135,172 @@ class _AddActivityPageState extends State<AddActivityPage> {
   Widget build(BuildContext context) {
     final isDarkMode =
         MediaQuery.of(context).platformBrightness == Brightness.dark;
+    bool isDuplicate = false;
 
     Widget buildActivityName() {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
-          key: _formKey,
-          child: TextFormField(
-            controller: _activityNameController,
-            style: TextStyle(
-              color: isDarkMode ? Colors.white : Colors.black,
-            ),
-            maxLength: 15,
-            decoration: InputDecoration(
-              border: const UnderlineInputBorder(),
-              enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(
-                color: isDarkMode ? Colors.white : Colors.black,
-              )),
-              focusedBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.blueAccent),
-              ),
-              hintText: '예시. 타이머 어플 코딩',
-              hintStyle: TextStyle(color: Colors.grey.shade400),
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return '활동 이름을 입력해주세요';
-              }
-              return null;
-            },
-          ),
-        ),
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
+                  controller: _activityNameController,
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white : Colors.black,
+                  ),
+                  maxLength: 15,
+                  decoration: InputDecoration(
+                    border: const UnderlineInputBorder(),
+                    enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                      color: isDarkMode ? Colors.white : Colors.black,
+                    )),
+                    focusedBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.blueAccent),
+                    ),
+                    hintText: '예시. 타이머 어플 코딩',
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return '활동 이름을 입력해주세요';
+                    } else if (isDuplicate) {
+                      return '중복된 이름이 있습니다';
+                    }
+                    return null;
+                  },
+                  onChanged: (value) async {
+                    // 입력된 이름 변경 시 중복 확인
+                    isDuplicate = await Provider.of<DatabaseService>(context,
+                            listen: false)
+                        .isActivityNameDuplicate(widget.userId, value);
+                    _formKey.currentState?.validate(); // 입력 변경 시마다 validate 호출
+                  },
+                ),
+              ],
+            )),
       );
     }
 
     Widget buildIconSelection() {
       final Map<String, List<Map<String, dynamic>>> iconCategories = {
-        '공부': [
-          {'icon': Icons.school, 'name': 'school'},
-          {'icon': Icons.local_library, 'name': 'library'},
-          // ... 추가 아이콘
+        '추천': [
+          {'icon': getIconData('category_rounded'), 'name': 'category_rounded'},
+          {'icon': getIconData('school_rounded'), 'name': 'school_rounded'},
+          {'icon': getIconData('library'), 'name': 'library'},
+          {'icon': getIconData('computer'), 'name': 'computer'},
+          {'icon': getIconData('edit'), 'name': 'edit'},
+          {'icon': getIconData('work_rounded'), 'name': 'work_rounded'},
+          {'icon': getIconData('art'), 'name': 'art'},
+          {'icon': getIconData('library_books'), 'name': 'library_books'},
+          {'icon': getIconData('language'), 'name': 'language'},
+          {
+            'icon': getIconData('fitness_center_rounded'),
+            'name': 'fitness_center_rounded'
+          },
+        ],
+        '자기계발': [
+          {'icon': getIconData('school_rounded'), 'name': 'school_rounded'},
+          {'icon': getIconData('library'), 'name': 'library'},
+          {'icon': getIconData('computer'), 'name': 'computer'},
+          {'icon': getIconData('edit'), 'name': 'edit'},
+          {'icon': getIconData('ideas'), 'name': 'ideas'},
+          {'icon': getIconData('tools'), 'name': 'tools'},
+          {'icon': getIconData('healing'), 'name': 'healing'},
+          {'icon': getIconData('spa'), 'name': 'spa'},
+          {'icon': getIconData('gavel'), 'name': 'gavel'},
+          {'icon': getIconData('group_work'), 'name': 'group_work'},
+          {'icon': getIconData('security'), 'name': 'security'},
+          {'icon': getIconData('volunteer'), 'name': 'volunteer'},
+          {'icon': getIconData('mentoring'), 'name': 'mentoring'},
+          {'icon': getIconData('library_books'), 'name': 'library_books'},
+          {'icon': getIconData('language'), 'name': 'language'},
         ],
         '업무': [
-          {'icon': Icons.work, 'name': 'work'},
-          {'icon': Icons.business, 'name': 'business'},
-          // ... 추가 아이콘
+          {'icon': getIconData('work_rounded'), 'name': 'work_rounded'},
+          {'icon': getIconData('business'), 'name': 'business'},
+          {'icon': getIconData('phone'), 'name': 'phone'},
+          {'icon': getIconData('email'), 'name': 'email'},
+          {'icon': getIconData('timeline'), 'name': 'timeline'},
+          {'icon': getIconData('chart'), 'name': 'chart'},
+          {'icon': getIconData('keyboard'), 'name': 'keyboard'},
+          {'icon': getIconData('money'), 'name': 'money'},
+          {'icon': getIconData('meeting'), 'name': 'meeting'},
+          {'icon': getIconData('analytics'), 'name': 'analytics'},
+          {'icon': getIconData('assignment'), 'name': 'assignment'},
+          {'icon': getIconData('person_add'), 'name': 'person_add'},
+          {'icon': getIconData('print'), 'name': 'print'},
+          {'icon': getIconData('folder_open'), 'name': 'folder_open'},
+          {'icon': getIconData('fact_check'), 'name': 'fact_check'},
+          {'icon': getIconData('science'), 'name': 'science'},
+          {'icon': getIconData('architecture'), 'name': 'architecture'},
+          {'icon': getIconData('art'), 'name': 'art'},
         ],
-        // ... 추가 카테고리
+        '운동': [
+          {
+            'icon': getIconData('fitness_center_rounded'),
+            'name': 'fitness_center_rounded'
+          },
+          {'icon': getIconData('running'), 'name': 'running'},
+          {'icon': getIconData('bike'), 'name': 'bike'},
+          {'icon': getIconData('soccer'), 'name': 'soccer'},
+          {'icon': getIconData('park'), 'name': 'park'},
+          {'icon': getIconData('golf'), 'name': 'golf'},
+          {'icon': getIconData('swimming'), 'name': 'swimming'},
+          {'icon': getIconData('tennis'), 'name': 'tennis'},
+          {'icon': getIconData('basketball'), 'name': 'basketball'},
+          {'icon': getIconData('volleyball'), 'name': 'volleyball'},
+          {'icon': getIconData('mma'), 'name': 'mma'},
+          {'icon': getIconData('cricket'), 'name': 'cricket'},
+          {'icon': getIconData('esports'), 'name': 'esports'},
+          {'icon': getIconData('hiking'), 'name': 'hiking'},
+        ],
+        '일상': [
+          {'icon': getIconData('home'), 'name': 'home'},
+          {'icon': getIconData('restaurant'), 'name': 'restaurant'},
+          {'icon': getIconData('pets'), 'name': 'pets'},
+          {'icon': getIconData('cleaning'), 'name': 'cleaning'},
+          {'icon': getIconData('coffee'), 'name': 'coffee'},
+          {'icon': getIconData('hospital'), 'name': 'hospital'},
+          {'icon': getIconData('shopping'), 'name': 'shopping'},
+          {'icon': getIconData('movie'), 'name': 'movie'},
+          {'icon': getIconData('music'), 'name': 'music'},
+          {'icon': getIconData('flight'), 'name': 'flight'},
+          {'icon': getIconData('hotel'), 'name': 'hotel'},
+          {'icon': getIconData('camera'), 'name': 'camera'},
+          {'icon': getIconData('car'), 'name': 'car'},
+          {'icon': getIconData('boat'), 'name': 'boat'},
+          {'icon': getIconData('train'), 'name': 'train'},
+          {'icon': getIconData('subway'), 'name': 'subway'},
+          {'icon': getIconData('walk'), 'name': 'walk'},
+          {'icon': getIconData('cafe'), 'name': 'cafe'},
+          {'icon': getIconData('tv'), 'name': 'tv'},
+          {'icon': getIconData('gaming'), 'name': 'gaming'},
+          {'icon': getIconData('theater'), 'name': 'theater'},
+          {'icon': getIconData('radio'), 'name': 'radio'},
+          {'icon': getIconData('headset'), 'name': 'headset'},
+          {'icon': getIconData('mic'), 'name': 'mic'},
+          {'icon': getIconData('music_video'), 'name': 'music_video'},
+          {'icon': getIconData('bus'), 'name': 'bus'},
+          {'icon': getIconData('painting'), 'name': 'painting'},
+          {'icon': getIconData('map'), 'name': 'map'},
+          {'icon': getIconData('photo'), 'name': 'photo'},
+          {'icon': getIconData('beach'), 'name': 'beach'},
+          {'icon': getIconData('bubble_chart'), 'name': 'bubble_chart'},
+          {'icon': getIconData('wine_bar'), 'name': 'wine_bar'},
+          {'icon': getIconData('weather'), 'name': 'weather'},
+          {'icon': getIconData('kabaddi'), 'name': 'kabaddi'},
+          {'icon': getIconData('village'), 'name': 'village'},
+        ],
       };
 
       return Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(), // 스크롤 비활성화
           children: iconCategories.entries.map((entry) {
             final categoryName = entry.key;
             final icons = entry.value;
@@ -179,9 +311,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 Text(
                   categoryName,
                   style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
+                      fontSize: 14, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 GridView.builder(
                   physics: const NeverScrollableScrollPhysics(),
                   shrinkWrap: true,
@@ -254,7 +386,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
             // '다음' 또는 '저장' 버튼
             Expanded(
               child: ElevatedButton(
-                onPressed: _currentStep == 0
+                onPressed: _currentStep == 0 && isDuplicate == false
                     ? _nextStep
                     : (isIconSelected ? _submit : null),
                 style: ElevatedButton.styleFrom(
@@ -313,83 +445,87 @@ class _AddActivityPageState extends State<AddActivityPage> {
                     primary: Colors.blueAccent,
                   ),
                 ),
-                child: Stepper(
-                  currentStep: _currentStep,
-                  onStepContinue: _currentStep < 1
-                      ? () => setState(() => _currentStep += 1)
-                      : null,
-                  onStepCancel: _currentStep > 0
-                      ? () => setState(() => _currentStep -= 1)
-                      : null,
-                  controlsBuilder:
-                      (BuildContext context, ControlsDetails details) {
-                    return const SizedBox();
-                  },
-                  steps: [
-                    Step(
-                      title: _currentStep == 0
-                          ? const Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '활동 이름을',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.blueAccent,
+                child: SingleChildScrollView(
+                  child: Stepper(
+                    physics: const ClampingScrollPhysics(),
+                    currentStep: _currentStep,
+                    onStepContinue: _currentStep < 1
+                        ? () => setState(() => _currentStep += 1)
+                        : null,
+                    onStepCancel: _currentStep > 0
+                        ? () => setState(() => _currentStep -= 1)
+                        : null,
+                    controlsBuilder:
+                        (BuildContext context, ControlsDetails details) {
+                      return const SizedBox();
+                    },
+                    steps: [
+                      Step(
+                        title: _currentStep == 0
+                            ? const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '활동 이름을',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blueAccent,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    '입력해주세요',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.blueAccent,
+                                    Text(
+                                      '입력해주세요',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blueAccent,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : Container(),
-                      content:
-                          _currentStep == 0 ? buildActivityName() : Container(),
-                      isActive: _currentStep == 0,
-                    ),
-                    Step(
-                      title: _currentStep == 1
-                          ? const Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '아이콘을',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.blueAccent,
+                                  ],
+                                ),
+                              )
+                            : Container(),
+                        content: _currentStep == 0
+                            ? buildActivityName()
+                            : Container(),
+                        isActive: _currentStep == 0,
+                      ),
+                      Step(
+                        title: _currentStep == 1
+                            ? const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '아이콘을',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blueAccent,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    '선택해주세요',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.blueAccent,
+                                    Text(
+                                      '선택해주세요',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blueAccent,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : Container(),
-                      content: _currentStep == 1
-                          ? buildIconSelection()
-                          : Container(),
-                      isActive: _currentStep == 1,
-                    ),
-                  ],
+                                  ],
+                                ),
+                              )
+                            : Container(),
+                        content: _currentStep == 1
+                            ? buildIconSelection()
+                            : Container(),
+                        isActive: _currentStep == 1,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

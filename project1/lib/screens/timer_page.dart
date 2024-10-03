@@ -7,6 +7,7 @@ import 'package:project1/screens/activity_log_page.dart';
 import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/widgets/activity_heat_map.dart';
 import 'package:project1/widgets/options.dart';
 import 'package:project1/widgets/text_indicator.dart';
 import 'package:project1/widgets/weekly_activity_chart.dart';
@@ -62,6 +63,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
       final timerProvider = Provider.of<TimerProvider>(context, listen: false);
       timerProvider.setTimerData(widget.timerData);
       timerProvider.initializeWeeklyActivityData();
+      timerProvider.initializeHeatMapData(); // HeatMap 데이터 초기화
     });
     _initAnimations();
   }
@@ -555,6 +557,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                           ),
                         ),
                         WeeklyActivityChart(),
+
                         Padding(
                           padding: const EdgeInsets.only(left: 16, right: 16),
                           child: TextButton(
@@ -589,6 +592,18 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                         ),
                         const SizedBox(
                           height: 30,
+                        ),
+                        SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              // ... 기존 코드 ...
+                              Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: ActivityHeatMap(),
+                              ),
+                              // ... 기존 코드 ...
+                            ],
+                          ),
                         ),
                         const Padding(
                           padding: EdgeInsets.all(16),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 // 아이콘 이름을 IconData로 변환하는 함수
 IconData getIconData(String? iconName) {
   switch (iconName) {
+    // 1. 추천
     case 'category_rounded':
       return Icons.category_rounded;
     case 'school_rounded':
@@ -13,8 +14,6 @@ IconData getIconData(String? iconName) {
       return Icons.fitness_center_rounded;
     case 'more_horiz_rounded':
       return Icons.more_horiz_rounded;
-    case 'school':
-      return Icons.school;
     case 'library':
       return Icons.local_library;
     case 'art':
@@ -33,8 +32,6 @@ IconData getIconData(String? iconName) {
       return Icons.science;
 
     // 2. 업무와 관련된 아이콘
-    case 'work':
-      return Icons.work;
     case 'business':
       return Icons.business;
     case 'money':
@@ -63,8 +60,6 @@ IconData getIconData(String? iconName) {
       return Icons.fact_check;
 
     // 3. 운동과 관련된 아이콘
-    case 'fitness_center':
-      return Icons.fitness_center;
     case 'running':
       return Icons.directions_run;
     case 'swimming':

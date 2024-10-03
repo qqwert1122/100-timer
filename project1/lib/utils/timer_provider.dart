@@ -10,7 +10,7 @@ class TimerProvider with ChangeNotifier {
   int _currentActivityDuration = 0; // **현재 활동 시간 추가**
   Map<String, dynamic>? _timerData;
   String? _currentActivityLogId;
-  Map<String, double> _weeklyActivityData = {
+  final Map<String, double> _weeklyActivityData = {
     '월': 0.0,
     '화': 0.0,
     '수': 0.0,
@@ -55,14 +55,20 @@ class TimerProvider with ChangeNotifier {
 
     await _updateCurrentActivityDetails();
 
+    bool isResume = false;
+
     if (_isRunning) {
       DateTime lastStarted =
           DateTime.parse(_timerData!['last_started_at']).toUtc();
       DateTime now = DateTime.now().toUtc();
       int elapsedSeconds = now.difference(lastStarted).inSeconds;
 
+      isResume = now.difference(lastStarted).inSeconds <= 660;
+
       _remainingSeconds -= elapsedSeconds;
-      _currentActivityDuration += elapsedSeconds; // **현재 활동 시간 업데이트**
+      if (isResume) {
+        _currentActivityDuration += elapsedSeconds; // **현재 활동 시간 업데이트**
+      }
 
       if (_remainingSeconds < 0) _remainingSeconds = 0;
 
@@ -114,59 +120,61 @@ class TimerProvider with ChangeNotifier {
 
     final isRunning = timerData['is_running'] == 1;
     final lastActivityLogId = timerData['last_activity_log_id'];
-    final activityLog =
-        await _dbService.getLastActivityLog(timerData['timer_id']);
+    final lastActivityLog = await _dbService.getActivityLog(lastActivityLogId);
+    final lastActivityListId = lastActivityLog?['activity_id'];
+    final lastActivity = await _dbService.getActivityById(lastActivityListId);
 
     bool isResume = false;
     bool shouldCreateNewLog = false;
+    bool isContinue = false;
 
     if (lastActivityLogId != null && lastActivityLogId != '') {
-      final lastStartedAt =
-          DateTime.parse(timerData['last_started_at']).toUtc();
-      isResume = now.difference(lastStartedAt).inSeconds <= 660;
+      if (isRunning == false) {
+        _isRunning = true;
+        final lastStartedAt =
+            DateTime.parse(timerData['last_started_at']).toUtc();
+        isResume = now.difference(lastStartedAt).inSeconds <= 660;
+        isContinue = lastActivityListId == activityId;
 
-      final activityListId = activityLog?['activity_id'];
-      print('최근 활동 ID: $activityListId, 현재 활동 ID: $activityId');
-
-      if (activityListId != activityId) {
-        shouldCreateNewLog = true;
-      } else if (!isResume) {
-        shouldCreateNewLog = true;
+        if (isResume == false || isContinue == false) {
+          print("11분이 지났거나 활동이 달라져서 새로운 활동을 기록합니다");
+          shouldCreateNewLog = true;
+          _currentActivityDuration = 0;
+        }
       }
     } else {
+      print("마지막 활동 로그가 없어 새로운 활동을 기록합니다");
       shouldCreateNewLog = true;
     }
 
-    if (!isRunning || !isResume) {
-      _isRunning = true;
+    if (shouldCreateNewLog) {
+      print("새로운 활동 기록!");
+      // 새로운 활동 로그 생성
+      await _dbService.createActivityLog(activityId, _timerData!['timer_id']);
 
-      if (shouldCreateNewLog) {
-        // 새로운 활동 로그 생성
-        await _dbService.createActivityLog(activityId, _timerData!['timer_id']);
+      // 새로 생성된 활동 로그의 ID 가져오기
+      final newActivityLog =
+          await _dbService.getLastActivityLog(_timerData!['timer_id']);
 
-        // 새로 생성된 활동 로그의 ID 가져오기
-        final newActivityLog =
-            await _dbService.getLastActivityLog(_timerData!['timer_id']);
+      _currentActivityLogId = newActivityLog?['activity_log_id'];
+      _currentActivityId = activityId;
 
-        _currentActivityLogId = newActivityLog?['activity_log_id'];
-        _currentActivityId = activityId;
+      await _updateCurrentActivityDetails();
 
-        await _updateCurrentActivityDetails();
+      await _dbService
+          .updateTimer(_timerData!['timer_id'], _timerData!['user_id'], {
+        'last_started_at': now.toIso8601String(),
+        'last_activity_log_id': _currentActivityLogId,
+        'is_running': 1
+      });
+    } else {
+      print("기존 활동 기록 업데이트!");
+      _currentActivityLogId = lastActivityLogId;
+      _currentActivityId = lastActivity.first['activity_list_id'] as String;
+      await _updateCurrentActivityDetails();
 
-        await _dbService
-            .updateTimer(_timerData!['timer_id'], _timerData!['user_id'], {
-          'last_started_at': now.toIso8601String(),
-          'last_activity_log_id': _currentActivityLogId,
-          'is_running': 1
-        });
-      } else {
-        _currentActivityLogId = lastActivityLogId;
-        _currentActivityId = activityLog?['activity_id'];
-        await _updateCurrentActivityDetails();
-
-        await _dbService.updateActivityLog(_currentActivityLogId,
-            resetEndTime: true);
-      }
+      await _dbService.updateActivityLog(_currentActivityLogId,
+          resetEndTime: true);
     }
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -279,5 +287,38 @@ class TimerProvider with ChangeNotifier {
   // activityLogs 메서드 추가 - 활동 로그 가져오기
   Future<List<Map<String, dynamic>>> get activityLogs async {
     return await _dbService.getAllActivityLogs(); // DB의 모든 활동 로그 가져오기
+  }
+
+  // 활동 데이터를 저장할 맵
+  Map<DateTime, int> _heatMapDataSet = {};
+
+  // heatMapDataSet의 getter
+  Map<DateTime, int> get heatMapDataSet => _heatMapDataSet;
+
+  // 활동 로그 데이터를 기반으로 heatmap 데이터를 초기화하는 메서드
+  Future<void> initializeHeatMapData() async {
+    List<Map<String, dynamic>> logs = await _dbService.getAllActivityLogs();
+
+    // 맵 초기화
+    _heatMapDataSet = {};
+
+    for (var log in logs) {
+      String? startTimeString = log['start_time'];
+      int duration = log['activity_duration'] ?? 0;
+      if (startTimeString != null && startTimeString.isNotEmpty) {
+        DateTime date = DateTime.parse(startTimeString).toLocal();
+
+        // 날짜 부분만 사용하기 위해 시간 정보 제거
+        DateTime dateOnly = DateTime(date.year, date.month, date.day);
+
+        // 기존 값이 있으면 누적
+        if (_heatMapDataSet.containsKey(dateOnly)) {
+          _heatMapDataSet[dateOnly] = _heatMapDataSet[dateOnly]! + duration;
+        } else {
+          _heatMapDataSet[dateOnly] = duration;
+        }
+      }
+    }
+    notifyListeners();
   }
 }

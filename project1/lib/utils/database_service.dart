@@ -203,6 +203,26 @@ class DatabaseService {
     }
   }
 
+  // 사용자 ID와 활동 이름으로 중복 여부를 확인하는 메서드
+  Future<bool> isActivityNameDuplicate(
+      String userId, String activityName) async {
+    final db = await database;
+    try {
+      // 사용자 ID와 활동 이름을 기반으로 중복 확인
+      final List<Map<String, dynamic>> result = await db.query(
+        'activity_list',
+        where: 'user_id = ? AND activity_name = ?',
+        whereArgs: [userId, activityName],
+      );
+
+      // 결과가 비어있지 않으면 중복된 이름이 존재한다는 뜻
+      return result.isNotEmpty;
+    } catch (e) {
+      print('활동 이름 중복 확인 중 오류 발생: $e');
+      return false;
+    }
+  }
+
   Future<void> deleteActivity(String activityListId) async {
     final db = await database;
     try {
