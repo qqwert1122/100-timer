@@ -9,7 +9,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ko_KR', null);
   String userId = 'v3_4';
-
   runApp(
     MultiProvider(
       providers: [
@@ -28,7 +27,7 @@ void main() async {
 class MyApp extends StatelessWidget {
   final String userId;
 
-  MyApp({Key? key, required this.userId}) : super(key: key);
+  const MyApp({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {
@@ -39,8 +38,7 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.light,
         primarySwatch: Colors.red,
         scaffoldBackgroundColor: Colors.white,
-        floatingActionButtonTheme:
-            const FloatingActionButtonThemeData(backgroundColor: Colors.red),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(backgroundColor: Colors.red),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -52,8 +50,7 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.dark,
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: const Color(0xff181C14),
-        floatingActionButtonTheme:
-            const FloatingActionButtonThemeData(backgroundColor: Colors.blue),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(backgroundColor: Colors.blue),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,

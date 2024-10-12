@@ -1,3 +1,17 @@
+buildscript {
+    ext.kotlin_version = '2.0.20' // 최신 Kotlin 버전으로 설정합니다.
+
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.0.0' // Android Gradle Plugin 버전 확인 및 필요 시 업데이트
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" // Kotlin Gradle Plugin 추가
+    }
+}
+
 allprojects {
     repositories {
         google()

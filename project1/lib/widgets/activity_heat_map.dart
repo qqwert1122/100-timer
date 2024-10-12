@@ -5,13 +5,15 @@ import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 
 class ActivityHeatMap extends StatefulWidget {
+  const ActivityHeatMap({super.key});
+
   @override
   _ActivityHeatMapState createState() => _ActivityHeatMapState();
 }
 
 class _ActivityHeatMapState extends State<ActivityHeatMap> {
   Map<DateTime, int> activityData = {};
-  DateTime startDate = DateTime.now().subtract(Duration(days: 30));
+  DateTime startDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime endDate = DateTime.now();
 
   @override
@@ -24,9 +26,9 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
     // 예시 데이터: 실제로는 데이터베이스나 상태 관리에서 가져와야 합니다.
     setState(() {
       activityData = {
-        DateTime.now().subtract(Duration(days: 3)): 18000, // 5시간
-        DateTime.now().subtract(Duration(days: 2)): 36000, // 10시간
-        DateTime.now().subtract(Duration(days: 1)): 9000, // 2.5시간
+        DateTime.now().subtract(const Duration(days: 3)): 18000, // 5시간
+        DateTime.now().subtract(const Duration(days: 2)): 36000, // 10시간
+        DateTime.now().subtract(const Duration(days: 1)): 9000, // 2.5시간
         DateTime.now(): 27000, // 7.5시간
       };
     });
@@ -35,16 +37,14 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
   void _goToPreviousMonth() {
     setState(() {
       startDate = DateTime(startDate.year, startDate.month - 1, 1);
-      endDate = DateTime(endDate.year, endDate.month - 1,
-          DateTime(endDate.year, endDate.month - 1 + 1, 0).day);
+      endDate = DateTime(endDate.year, endDate.month - 1, DateTime(endDate.year, endDate.month - 1 + 1, 0).day);
     });
   }
 
   void _goToNextMonth() {
     setState(() {
       startDate = DateTime(startDate.year, startDate.month + 1, 1);
-      endDate = DateTime(endDate.year, endDate.month + 1,
-          DateTime(endDate.year, endDate.month + 1 + 1, 0).day);
+      endDate = DateTime(endDate.year, endDate.month + 1, DateTime(endDate.year, endDate.month + 1 + 1, 0).day);
     });
   }
 
@@ -54,8 +54,7 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
   @override
   Widget build(BuildContext context) {
     final timerProvider = Provider.of<TimerProvider>(context);
-    final isDarkMode =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     final locale = Localizations.localeOf(context).toString();
 
@@ -68,7 +67,7 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
     return Padding(
       padding: const EdgeInsets.all(0.0),
       child: HeatMapCalendar(
-        initDate: DateTime.now().subtract(Duration(days: 30)),
+        initDate: DateTime.now().subtract(const Duration(days: 30)),
         datasets: timerProvider.heatMapDataSet.map((date, value) {
           // 활동 시간에 따라 1부터 4까지의 값을 할당
           int level = ((value / 36000) * 4).ceil();
@@ -77,10 +76,10 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
         }),
         colorMode: ColorMode.opacity,
         colorsets: {
-          1: Colors.redAccent.shade100,
-          2: Colors.redAccent.shade200,
-          3: Colors.redAccent.shade400,
-          4: Colors.redAccent.shade700,
+          1: Colors.greenAccent.shade200,
+          2: Colors.greenAccent.shade400,
+          3: Colors.greenAccent.shade700,
+          4: Colors.green.shade900,
         },
         defaultColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
         textColor: Colors.black87,
@@ -92,9 +91,7 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
           // 날짜 클릭 시 동작
           String formattedDate = DateFormat.yMMMd(locale).format(value);
           int? seconds = timerProvider.heatMapDataSet[value];
-          String activityTime = seconds != null
-              ? '${(seconds / 3600).toStringAsFixed(1)}시간'
-              : '데이터 없음';
+          String activityTime = seconds != null ? '${(seconds / 3600).toStringAsFixed(1)}시간' : '데이터 없음';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('$formattedDate: $activityTime')),
           );

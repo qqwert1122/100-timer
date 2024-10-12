@@ -15,8 +15,7 @@ class TextIndicator extends StatefulWidget {
   State<TextIndicator> createState() => _TextIndicatorState();
 }
 
-class _TextIndicatorState extends State<TextIndicator>
-    with TickerProviderStateMixin {
+class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateMixin {
   late AnimationController _textAnimationController;
   late Animation<Offset> _textAnimation;
   late Animation<double> _opacityAnimation;
@@ -33,7 +32,7 @@ class _TextIndicatorState extends State<TextIndicator>
 
     // "월 주차" 형식으로 반환
     String month = DateFormat.MMMM('ko_KR').format(date); // 예: 10월
-    return "$month ${weekOfMonth}주차";
+    return "$month $weekOfMonth주차";
   }
 
   @override

@@ -12,11 +12,11 @@ class ActivityPicker extends StatefulWidget {
   final String userId;
 
   const ActivityPicker({
-    Key? key,
+    super.key,
     required this.selectedActivity,
     required this.onSelectActivity,
     required this.userId,
-  }) : super(key: key);
+  });
 
   @override
   _ActivityPickerState createState() => _ActivityPickerState();
@@ -51,8 +51,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
     }
   }
 
-  Future<void> _navigateToEditActivityPage(BuildContext context,
-      String activityListId, String activityName, String activityIcon) async {
+  Future<void> _navigateToEditActivityPage(BuildContext context, String activityListId, String activityName, String activityIcon) async {
     final updatedActivity = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -71,10 +70,8 @@ class _ActivityPickerState extends State<ActivityPicker> {
     }
   }
 
-  Future<void> _deleteActivity(
-      BuildContext context, String activityListId, String activityName) async {
-    final shouldDelete =
-        await _showDeleteConfirmationDialog(context, activityName);
+  Future<void> _deleteActivity(BuildContext context, String activityListId, String activityName) async {
+    final shouldDelete = await _showDeleteConfirmationDialog(context, activityName);
     if (shouldDelete) {
       await dbService.deleteActivity(activityListId);
       _refreshActivityList();
@@ -92,8 +89,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
     }
   }
 
-  Future<bool> _showDeleteConfirmationDialog(
-      BuildContext context, String activity) async {
+  Future<bool> _showDeleteConfirmationDialog(BuildContext context, String activity) async {
     return await showDialog<bool>(
           context: context,
           barrierDismissible: false,
@@ -112,10 +108,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
                 TextButton(
                   child: const Text(
                     '취소',
-                    style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900),
+                    style: TextStyle(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.w900),
                   ),
                   onPressed: () {
                     Navigator.of(context).pop(false);
@@ -124,10 +117,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
                 TextButton(
                   child: const Text(
                     '삭제',
-                    style: TextStyle(
-                        color: Colors.redAccent,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900),
+                    style: TextStyle(color: Colors.redAccent, fontSize: 18, fontWeight: FontWeight.w900),
                   ),
                   onPressed: () {
                     Navigator.of(context).pop(true);
@@ -212,20 +202,14 @@ class _ActivityPickerState extends State<ActivityPicker> {
                       return ListTile(
                         leading: Icon(
                           iconData,
-                          color: activity['activity_name'] ==
-                                  widget.selectedActivity
-                              ? Colors.redAccent.shade200
-                              : null,
+                          color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null,
                         ),
                         title: Text(
                           activity['activity_name'],
                           style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: activity['activity_name'] ==
-                                      widget.selectedActivity
-                                  ? Colors.redAccent.shade200
-                                  : null),
+                              color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
                         ),
                         onTap: () {
                           widget.onSelectActivity(
@@ -260,10 +244,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
                           ),
                           SlidableAction(
                             onPressed: (context) {
-                              _deleteActivity(
-                                  context,
-                                  activity['activity_list_id'],
-                                  activity['activity_name']);
+                              _deleteActivity(context, activity['activity_list_id'], activity['activity_name']);
                             },
                             backgroundColor: Colors.red,
                             foregroundColor: Colors.white,
@@ -276,19 +257,13 @@ class _ActivityPickerState extends State<ActivityPicker> {
                         padding: const EdgeInsets.symmetric(vertical: 0),
                         child: ListTile(
                           leading: Icon(iconData,
-                              color: activity['activity_name'] ==
-                                      widget.selectedActivity
-                                  ? Colors.redAccent.shade200
-                                  : null),
+                              color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
                           title: Text(
                             activity['activity_name'],
                             style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: activity['activity_name'] ==
-                                        widget.selectedActivity
-                                    ? Colors.redAccent.shade200
-                                    : null),
+                                color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
                           ),
                           onTap: () {
                             widget.onSelectActivity(

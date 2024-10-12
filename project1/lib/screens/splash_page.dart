@@ -7,14 +7,13 @@ import 'timer_page.dart'; // 메인 화면 파일
 class SplashScreen extends StatefulWidget {
   final String userId;
 
-  const SplashScreen({Key? key, required this.userId}) : super(key: key);
+  const SplashScreen({super.key, required this.userId});
 
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
   final String userId = 'v3_4';
@@ -22,9 +21,8 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    // 애니메이션 컨트롤러 설정 (2초간 지속되는 애니메이션)
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 700), // 1초간 서서히 사라짐
+      duration: const Duration(milliseconds: 500), // 1초간 서서히 사라짐
       vsync: this,
     );
 
@@ -56,9 +54,9 @@ class _SplashScreenState extends State<SplashScreen>
     await dbService.initializeActivityList(db, userId);
 
     // 1초 후에 메인 화면으로 전환
-    Future.delayed(const Duration(milliseconds: 1300), () {
+    Future.delayed(const Duration(milliseconds: 1000), () {
       _controller.forward();
-      Future.delayed(const Duration(milliseconds: 700), () {
+      Future.delayed(const Duration(milliseconds: 500), () {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -77,20 +75,20 @@ class _SplashScreenState extends State<SplashScreen>
 
   // 기본 타이머 생성 메서드
   Map<String, dynamic> _createDefaultTimer(String userId) {
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc();
     final timerId = const Uuid().v4();
 
     return {
       'timer_id': timerId,
-      'user_id': userId, // 기본 사용자 ID (예시)
-      'week_start': getWeekStart(now), // 현재 주 시작 시간
-      'total_seconds': 100 * 3600, // 100시간(초 단위)
-      'remaining_seconds': 100 * 3600, // 초기 남은 시간은 100시간
-      'last_activity_log_id': null, // 아직 활동 없음
-      'is_running': 0, // 아직 시작하지 않음
-      'created_at': now.toIso8601String(), // 생성시간을 문자열로 저장
-      'last_updated_at': now.toIso8601String(), // 마지막 업데이트 = 생성
-      'last_started_at': null, // 아직 시작하지 않음
+      'user_id': userId,
+      'week_start': getWeekStart(now),
+      'total_seconds': 100 * 3600,
+      'remaining_seconds': 100 * 3600,
+      'last_activity_log_id': null,
+      'is_running': 0,
+      'created_at': now.toIso8601String(),
+      'last_started_at': null,
+      'last_updated_at': null,
     };
   }
 
@@ -104,14 +102,14 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // 흰색 배경
+      backgroundColor: Colors.white,
       body: Center(
         child: FadeTransition(
-          opacity: _animation, // 애니메이션 연결
+          opacity: _animation,
           child: Image.asset(
-            'assets/images/logo_1.png', // 로고 이미지 경로
-            width: 150, // 로고 너비
-            height: 150, // 로고 높이
+            'assets/images/logo_1.png',
+            width: 150,
+            height: 150,
           ),
         ),
       ),

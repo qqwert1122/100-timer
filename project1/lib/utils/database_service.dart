@@ -43,8 +43,8 @@ class DatabaseService {
         last_activity_log_id TEXT,
         is_running INTEGER,
         created_at TEXT,
-        last_updated_at TEXT,
-        last_started_at TEXT
+        last_started_at TEXT,
+        last_updated_at TEXT
       )
     ''');
 
@@ -84,12 +84,10 @@ class DatabaseService {
   // }
 
   // 타이머 생성
-  Future<void> createTimer(
-      String userId, Map<String, dynamic> timerData) async {
+  Future<void> createTimer(String userId, Map<String, dynamic> timerData) async {
     final db = await database;
     try {
-      await db.insert('timers', timerData,
-          conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.insert('timers', timerData, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       print('타이머 생성 중 오류 발생: $e');
     }
@@ -110,8 +108,7 @@ class DatabaseService {
     }
   }
 
-  Future<void> updateTimer(
-      String timerId, String userId, Map<String, dynamic> updatedData) async {
+  Future<void> updateTimer(String timerId, String userId, Map<String, dynamic> updatedData) async {
     final db = await database;
     try {
       await db.update(
@@ -125,8 +122,7 @@ class DatabaseService {
     }
   }
 
-  Future<Map<String, dynamic>?> getTimer(
-      String userId, String weekStart) async {
+  Future<Map<String, dynamic>?> getTimer(String userId, String weekStart) async {
     final db = await database;
 
     final List<Map<String, dynamic>> result = await db.query(
@@ -166,8 +162,7 @@ class DatabaseService {
     }
   }
 
-  Future<void> addActivityList(
-      String userId, String activityName, String activityIcon) async {
+  Future<void> addActivityList(String userId, String activityName, String activityIcon) async {
     final db = await database;
     final uuid = const Uuid().v4();
     String createdAt = DateTime.now().toUtc().toIso8601String();
@@ -185,8 +180,7 @@ class DatabaseService {
     }
   }
 
-  Future<void> updateActivityList(String activityListId, String newActivityName,
-      String newActivityIcon) async {
+  Future<void> updateActivityList(String activityListId, String newActivityName, String newActivityIcon) async {
     final db = await database;
     try {
       await db.update(
@@ -204,8 +198,7 @@ class DatabaseService {
   }
 
   // 사용자 ID와 활동 이름으로 중복 여부를 확인하는 메서드
-  Future<bool> isActivityNameDuplicate(
-      String userId, String activityName) async {
+  Future<bool> isActivityNameDuplicate(String userId, String activityName) async {
     final db = await database;
     try {
       // 사용자 ID와 활동 이름을 기반으로 중복 확인
@@ -247,8 +240,7 @@ class DatabaseService {
     return result;
   }
 
-  Future<List<Map<String, dynamic>>> getActivityById(
-      String activityListId) async {
+  Future<List<Map<String, dynamic>>> getActivityById(String activityListId) async {
     final db = await database;
     final List<Map<String, dynamic>> result = await db.query(
       'activity_list',
@@ -259,8 +251,7 @@ class DatabaseService {
     return result;
   }
 
-  Future<String?> getActivityListIdByName(
-      String userId, String activityName) async {
+  Future<String?> getActivityListIdByName(String userId, String activityName) async {
     final db = await database;
 
     final result = await db.query(
@@ -296,8 +287,7 @@ class DatabaseService {
     }
   }
 
-  Future<void> updateActivityLog(String? activityLogId,
-      {required bool resetEndTime}) async {
+  Future<void> updateActivityLog(String? activityLogId, {required bool resetEndTime}) async {
     final db = await database;
 
     if (activityLogId == null || activityLogId.isEmpty) {
@@ -320,22 +310,16 @@ class DatabaseService {
     // 트랜잭션 시작
     await db.transaction((txn) async {
       final lastEndTimeString = log.first['end_time'] as String?;
-      final lastEndTime = (lastEndTimeString != null)
-          ? DateTime.parse(lastEndTimeString).toUtc()
-          : null;
+      final lastEndTime = (lastEndTimeString != null) ? DateTime.parse(lastEndTimeString).toUtc() : null;
 
-      final restTime = lastEndTime != null
-          ? DateTime.now().toUtc().difference(lastEndTime).inSeconds
-          : 0;
+      final restTime = lastEndTime != null ? DateTime.now().toUtc().difference(lastEndTime).inSeconds : 0;
 
       final existingRestTime = log.first['rest_time'] as int? ?? 0;
       final totalRestTime = existingRestTime + restTime;
 
-      final startTime =
-          DateTime.parse(log.first['start_time'] as String).toUtc();
+      final startTime = DateTime.parse(log.first['start_time'] as String).toUtc();
       final endTime = resetEndTime ? null : DateTime.now().toUtc();
-      final duration =
-          resetEndTime ? null : endTime?.difference(startTime).inSeconds;
+      final duration = resetEndTime ? null : endTime?.difference(startTime).inSeconds;
 
       // 업데이트할 데이터 구성
       Map<String, dynamic> updateData = {
@@ -407,14 +391,12 @@ class DatabaseService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getActivityLogsForCurrentWeek(
-      String userId) async {
+  Future<List<Map<String, dynamic>>> getActivityLogsForCurrentWeek(String userId) async {
     final db = await database;
 
     // 이번 주의 시작일 (UTC 기준)
     DateTime now = DateTime.now().toUtc();
-    DateTime weekStartDate =
-        now.subtract(Duration(days: now.weekday - 1)); // 월요일 기준으로 주 시작일 계산
+    DateTime weekStartDate = now.subtract(Duration(days: now.weekday - 1)); // 월요일 기준으로 주 시작일 계산
     String weekStart = weekStartDate.toIso8601String().split('T').first;
 
     // 해당 주의 타이머 ID 조회

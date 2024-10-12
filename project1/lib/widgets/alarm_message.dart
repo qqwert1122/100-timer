@@ -66,19 +66,17 @@ class _AlarmMessageState extends State<AlarmMessage> {
                       "혹시 휴식 누르는 걸 잊지 않으셨나요?",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          color: Colors.black87,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Star'),
+                        color: Colors.black87,
+                        fontSize: 14,
+                      ),
                     ),
                     const Text(
                       "기록을 올바르게 수정해주세요",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          color: Colors.black87,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Star'),
+                        color: Colors.black87,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(
                       height: 10,
@@ -90,21 +88,17 @@ class _AlarmMessageState extends State<AlarmMessage> {
                         child: TextButton(
                           onPressed: () {},
                           style: ButtonStyle(
-                            foregroundColor:
-                                WidgetStateProperty.all(Colors.white), // 텍스트 색상
-                            backgroundColor: WidgetStateProperty.all(
-                                Colors.blueAccent.shade400), // 배경색
+                            foregroundColor: WidgetStateProperty.all(Colors.white), // 텍스트 색상
+                            backgroundColor: WidgetStateProperty.all(Colors.blueAccent.shade400), // 배경색
                             shape: WidgetStateProperty.all(
                               RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(12.0), // 둥근 모서리 반경
+                                borderRadius: BorderRadius.circular(12.0), // 둥근 모서리 반경
                               ),
                             ),
                           ),
                           child: const Text(
                             '기록 수정하러 가기',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w900),
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
                           ),
                         ),
                       ),

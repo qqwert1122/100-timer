@@ -3,10 +3,11 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart'; // 아이콘 유틸리티
+import 'package:project1/widgets/edit_activity_log_modal.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class ActivityLogPage extends StatefulWidget {
-  const ActivityLogPage({Key? key}) : super(key: key);
+  const ActivityLogPage({super.key});
 
   @override
   _ActivityLogPageState createState() => _ActivityLogPageState();
@@ -20,8 +21,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
   Map<String, int> dayToIndexMap = {};
 
   final ItemScrollController _scrollController = ItemScrollController();
-  final ItemPositionsListener _itemPositionsListener =
-      ItemPositionsListener.create();
+  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
   bool isProgrammaticScroll = false;
 
   @override
@@ -70,18 +70,13 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
 
     final positions = _itemPositionsListener.itemPositions.value;
     if (positions.isNotEmpty) {
-      final screenMiddle = 0.5;
+      const screenMiddle = 0.5;
 
       final middlePosition = positions.reduce((closest, position) {
-        final itemMiddle =
-            (position.itemLeadingEdge + position.itemTrailingEdge) / 2;
-        final closestItemMiddle =
-            (closest.itemLeadingEdge + closest.itemTrailingEdge) / 2;
+        final itemMiddle = (position.itemLeadingEdge + position.itemTrailingEdge) / 2;
+        final closestItemMiddle = (closest.itemLeadingEdge + closest.itemTrailingEdge) / 2;
 
-        return (itemMiddle - screenMiddle).abs() <
-                (closestItemMiddle - screenMiddle).abs()
-            ? position
-            : closest;
+        return (itemMiddle - screenMiddle).abs() < (closestItemMiddle - screenMiddle).abs() ? position : closest;
       });
 
       final index = middlePosition.index;
@@ -124,8 +119,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                       itemBuilder: (context, index) {
                         final logGroup = groupedLogs[index];
                         final date = logGroup['date'] as String;
-                        final logs =
-                            logGroup['logs'] as List<Map<String, dynamic>>;
+                        final logs = logGroup['logs'] as List<Map<String, dynamic>>;
 
                         return _buildDateGroup(date, logs);
                       },
@@ -142,10 +136,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
 
     for (var log in logs) {
       if (log.containsKey('start_time') && log['start_time'] != null) {
-        String date = DateTime.parse(log['start_time'])
-            .toLocal()
-            .toIso8601String()
-            .substring(0, 10);
+        String date = DateTime.parse(log['start_time']).toLocal().toIso8601String().substring(0, 10);
 
         if (!groupedLogs.containsKey(date)) {
           groupedLogs[date] = [];
@@ -155,15 +146,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
       }
     }
 
-    List<Map<String, dynamic>> groupedLogList =
-        groupedLogs.entries.map((entry) {
-      entry.value.sort((a, b) => DateTime.parse(b['start_time'])
-          .compareTo(DateTime.parse(a['start_time'])));
+    List<Map<String, dynamic>> groupedLogList = groupedLogs.entries.map((entry) {
+      entry.value.sort((a, b) => DateTime.parse(b['start_time']).compareTo(DateTime.parse(a['start_time'])));
       return {'date': entry.key, 'logs': entry.value};
     }).toList();
 
-    groupedLogList.sort((a, b) =>
-        DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
+    groupedLogList.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
 
     return groupedLogList;
   }
@@ -181,8 +169,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
   }
 
   Widget _buildDateGroup(String date, List<Map<String, dynamic>> logs) {
-    final isDarkMode =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     final DateFormat formatter = DateFormat('yyyy-MM-dd');
     final DateTime dateTime = formatter.parse(date);
@@ -192,11 +179,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding:
-              const EdgeInsets.only(left: 12, right: 12, top: 36, bottom: 4),
-          child: Text('$date $dayOfWeek요일',
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          padding: const EdgeInsets.only(left: 12, right: 12, top: 36, bottom: 4),
+          child: Text('$date $dayOfWeek요일', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ),
         Container(
           margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
@@ -216,7 +200,15 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                     motion: const ScrollMotion(),
                     children: [
                       SlidableAction(
-                        onPressed: (context) {},
+                        onPressed: (context) {
+                          showModalBottomSheet(
+                              context: context,
+                              builder: (BuildContext context) {
+                                // 초기값 설정
+
+                                return const EditActivityLogModal();
+                              });
+                        },
                         backgroundColor: Colors.blueAccent,
                         foregroundColor: Colors.white,
                         icon: Icons.edit,
@@ -251,8 +243,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                             const SizedBox(
                               width: 15,
                             ),
-                            Text(DateFormat('yyyy-MM-dd HH:mm:ss').format(
-                                DateTime.parse(log['start_time']).toLocal())),
+                            Text(DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.parse(log['start_time']).toLocal())),
                           ],
                         ),
                         Row(
@@ -267,14 +258,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                             ),
                             Text(
                               log['end_time'] != null
-                                  ? DateFormat('yyyy-MM-dd HH:mm:ss').format(
-                                      DateTime.parse(log['end_time']).toLocal())
+                                  ? DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.parse(log['end_time']).toLocal())
                                   : "진행 중",
                             ),
                           ],
                         ),
-                        if (log['activity_duration'] != null &&
-                            log['rest_time'] != null)
+                        if (log['activity_duration'] != null && log['rest_time'] != null)
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -291,8 +280,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                                   const SizedBox(
                                     width: 10,
                                   ),
-                                  Text(formatTime(
-                                      log['activity_duration'] as int)),
+                                  Text(formatTime(log['activity_duration'] - log['rest_time'] as int)),
                                   const SizedBox(
                                     width: 30,
                                   ),
@@ -340,21 +328,14 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                 _scrollToDate(selectedDay);
               },
               style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10.0, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 12),
                 minimumSize: const Size(0, 0),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Container(
                 padding: const EdgeInsets.all(8),
-                decoration: isSelected
-                    ? const BoxDecoration(
-                        shape: BoxShape.circle, color: Colors.redAccent)
-                    : null,
-                child: Text(daysOfWeek[index],
-                    style: TextStyle(
-                        fontSize: 16,
-                        color: isSelected ? Colors.white : Colors.grey)),
+                decoration: isSelected ? const BoxDecoration(shape: BoxShape.circle, color: Colors.redAccent) : null,
+                child: Text(daysOfWeek[index], style: TextStyle(fontSize: 16, color: isSelected ? Colors.white : Colors.grey)),
               ),
             ),
           );
@@ -439,10 +420,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                 TextButton(
                   child: const Text(
                     '취소',
-                    style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900),
+                    style: TextStyle(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.w900),
                   ),
                   onPressed: () {
                     Navigator.of(context).pop(false);
@@ -451,10 +429,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                 TextButton(
                   child: const Text(
                     '삭제',
-                    style: TextStyle(
-                        color: Colors.redAccent,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900),
+                    style: TextStyle(color: Colors.redAccent, fontSize: 18, fontWeight: FontWeight.w900),
                   ),
                   onPressed: () {
                     Navigator.of(context).pop(true);

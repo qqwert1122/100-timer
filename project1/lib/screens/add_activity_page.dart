@@ -12,13 +12,13 @@ class AddActivityPage extends StatefulWidget {
   final String userId; // 사용자 ID
 
   const AddActivityPage({
-    Key? key,
+    super.key,
     required this.userId,
     this.isEdit = false,
     this.activityListId,
     this.activityName,
     this.activityIcon,
-  }) : super(key: key);
+  });
 
   @override
   _AddActivityPageState createState() => _AddActivityPageState();
@@ -46,9 +46,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
     super.dispose();
   }
 
-  bool get isActivityNameValid =>
-      _activityNameController.text.trim().isNotEmpty &&
-      _nameErrorMessage == null;
+  bool get isActivityNameValid => _activityNameController.text.trim().isNotEmpty && _nameErrorMessage == null;
 
   bool get isIconSelected => _selectedIconName != null;
 
@@ -79,8 +77,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
 
     // 중복 이름 확인
-    bool isDuplicate =
-        await dbService.isActivityNameDuplicate(widget.userId, activityName);
+    bool isDuplicate = await dbService.isActivityNameDuplicate(widget.userId, activityName);
 
     if (isDuplicate && !widget.isEdit) {
       setState(() {
@@ -95,12 +92,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
     try {
       if (widget.isEdit) {
-        await dbService.updateActivityList(
-            widget.activityListId!, activityName, iconName);
+        await dbService.updateActivityList(widget.activityListId!, activityName, iconName);
         Navigator.pop(context, {'name': activityName, 'icon': iconName});
       } else {
-        await dbService.addActivityList(
-            widget.userId, activityName, iconName); // 수정된 부분
+        await dbService.addActivityList(widget.userId, activityName, iconName); // 수정된 부분
         Fluttertoast.showToast(
           msg: "활동이 성공적으로 추가되었습니다",
           toastLength: Toast.LENGTH_SHORT,
@@ -133,8 +128,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
     bool isDuplicate = false;
 
     Widget buildActivityName() {
@@ -173,9 +167,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                   },
                   onChanged: (value) async {
                     // 입력된 이름 변경 시 중복 확인
-                    isDuplicate = await Provider.of<DatabaseService>(context,
-                            listen: false)
-                        .isActivityNameDuplicate(widget.userId, value);
+                    isDuplicate = await Provider.of<DatabaseService>(context, listen: false).isActivityNameDuplicate(widget.userId, value);
                     _formKey.currentState?.validate(); // 입력 변경 시마다 validate 호출
                   },
                 ),
@@ -196,10 +188,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
           {'icon': getIconData('art'), 'name': 'art'},
           {'icon': getIconData('library_books'), 'name': 'library_books'},
           {'icon': getIconData('language'), 'name': 'language'},
-          {
-            'icon': getIconData('fitness_center_rounded'),
-            'name': 'fitness_center_rounded'
-          },
+          {'icon': getIconData('fitness_center_rounded'), 'name': 'fitness_center_rounded'},
         ],
         '자기계발': [
           {'icon': getIconData('school_rounded'), 'name': 'school_rounded'},
@@ -239,10 +228,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
           {'icon': getIconData('art'), 'name': 'art'},
         ],
         '운동': [
-          {
-            'icon': getIconData('fitness_center_rounded'),
-            'name': 'fitness_center_rounded'
-          },
+          {'icon': getIconData('fitness_center_rounded'), 'name': 'fitness_center_rounded'},
           {'icon': getIconData('running'), 'name': 'running'},
           {'icon': getIconData('bike'), 'name': 'bike'},
           {'icon': getIconData('soccer'), 'name': 'soccer'},
@@ -310,8 +296,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
               children: [
                 Text(
                   categoryName,
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 GridView.builder(
@@ -335,9 +320,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: _selectedIconName == iconName
-                              ? Colors.blue.withOpacity(0.3)
-                              : Colors.transparent,
+                          color: _selectedIconName == iconName ? Colors.blue.withOpacity(0.3) : Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -375,10 +358,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 ),
                 child: Text(
                   '뒤로',
-                  style: TextStyle(
-                      color: _currentStep > 0
-                          ? Colors.white
-                          : (isDarkMode ? Colors.white12 : Colors.black12)),
+                  style: TextStyle(color: _currentStep > 0 ? Colors.white : (isDarkMode ? Colors.white12 : Colors.black12)),
                 ),
               ),
             ),
@@ -386,14 +366,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
             // '다음' 또는 '저장' 버튼
             Expanded(
               child: ElevatedButton(
-                onPressed: _currentStep == 0 && isDuplicate == false
-                    ? _nextStep
-                    : (isIconSelected ? _submit : null),
+                onPressed: _currentStep == 0 && isDuplicate == false ? _nextStep : (isIconSelected ? _submit : null),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: (isActivityNameValid || isIconSelected)
-                      ? Colors.blueAccent
-                      : Colors.grey,
+                  backgroundColor: (isActivityNameValid || isIconSelected) ? Colors.blueAccent : Colors.grey,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -401,8 +377,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 child: Text(
                   _currentStep == 0 ? '다음' : '저장',
                   style: TextStyle(
-                    color: ((_currentStep == 0 && isActivityNameValid) ||
-                            (_currentStep > 0 && isIconSelected))
+                    color: ((_currentStep == 0 && isActivityNameValid) || (_currentStep > 0 && isIconSelected))
                         ? Colors.white
                         : (isDarkMode ? Colors.white12 : Colors.black12),
                   ),
@@ -449,14 +424,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                   child: Stepper(
                     physics: const ClampingScrollPhysics(),
                     currentStep: _currentStep,
-                    onStepContinue: _currentStep < 1
-                        ? () => setState(() => _currentStep += 1)
-                        : null,
-                    onStepCancel: _currentStep > 0
-                        ? () => setState(() => _currentStep -= 1)
-                        : null,
-                    controlsBuilder:
-                        (BuildContext context, ControlsDetails details) {
+                    onStepContinue: _currentStep < 1 ? () => setState(() => _currentStep += 1) : null,
+                    onStepCancel: _currentStep > 0 ? () => setState(() => _currentStep -= 1) : null,
+                    controlsBuilder: (BuildContext context, ControlsDetails details) {
                       return const SizedBox();
                     },
                     steps: [
@@ -487,9 +457,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                                 ),
                               )
                             : Container(),
-                        content: _currentStep == 0
-                            ? buildActivityName()
-                            : Container(),
+                        content: _currentStep == 0 ? buildActivityName() : Container(),
                         isActive: _currentStep == 0,
                       ),
                       Step(
@@ -519,9 +487,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                                 ),
                               )
                             : Container(),
-                        content: _currentStep == 1
-                            ? buildIconSelection()
-                            : Container(),
+                        content: _currentStep == 1 ? buildIconSelection() : Container(),
                         isActive: _currentStep == 1,
                       ),
                     ],
