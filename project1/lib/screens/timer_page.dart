@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/models/achievement.dart';
 import 'package:project1/screens/activity_log_page.dart';
@@ -8,16 +8,16 @@ import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/notice_page.dart';
 import 'package:project1/screens/setting_page.dart';
 import 'package:project1/utils/icon_utils.dart';
-import 'package:project1/widgets/Pomodoro.dart';
 import 'package:project1/widgets/activity_heat_map.dart';
-import 'package:project1/widgets/options.dart';
+import 'package:project1/widgets/menu.dart';
 import 'package:project1/widgets/progress_circle.dart';
 import 'package:project1/widgets/text_indicator.dart';
+import 'package:project1/widgets/toggle_total_view_swtich.dart';
 import 'package:project1/widgets/weekly_activity_chart.dart';
+import 'package:project1/widgets/weekly_heatmap.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/widgets/footer.dart';
-import 'package:project1/widgets/achievement_card.dart';
 import 'package:project1/data/sample_image_data.dart';
 import 'package:project1/data/achievement_data.dart';
 
@@ -30,11 +30,10 @@ class TimerPage extends StatefulWidget {
   _TimerPageState createState() => _TimerPageState();
 }
 
-class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
-  double _sheetSize = 0.1; // 초기 크기
+class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, WidgetsBindingObserver {
+  double _sheetSize = 0.13; // 초기 크기
   final DraggableScrollableController _controller = DraggableScrollableController();
   bool isTimeClicked = false;
-  int _currentIndex = 0;
   String userId = 'v3_4';
   String activityTimeText = '00:00:00'; // 초기 활동 시간 표시 값
   int _currentPageIndex = 1; // 현재 페이지 인덱스
@@ -43,26 +42,42 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
   late Animation<Offset> _slipAnimation;
   late AnimationController _waveAnimationController;
   late Animation<double> _waveAnimation;
+  late Animation<double> _circularWaveAnimation;
   late AnimationController _breathingAnimationController;
   late Animation<double> _breathingAnimation;
   late AnimationController _timeAnimationController;
   late Animation<double> _totalTimeAnimation;
   late Animation<double> _activityTimeAnimation;
   final PageController _pageController = PageController(initialPage: 1);
+  OverlayEntry? _overlayEntry;
+  final GlobalKey _playButtonKey = GlobalKey();
+  List<Wave> waves = [];
 
   final List<String> imgList = getSampleImages();
   final List<Achievement> achievements = getAchievements();
 
+  double minSheetHeight = 0.13;
+  double maxSheetHeight = 1.0;
+
+  bool _isDarkMode = false;
+
   @override
   void initState() {
     super.initState();
+    final timerProvider = Provider.of<TimerProvider>(context, listen: false);
     Future.delayed(Duration.zero, () {
-      final timerProvider = Provider.of<TimerProvider>(context, listen: false);
       timerProvider.setTimerData(widget.timerData);
       timerProvider.initializeWeeklyActivityData();
       timerProvider.initializeHeatMapData(); // HeatMap 데이터 초기화
     });
     _initAnimations();
+    WidgetsBinding.instance.addObserver(this);
+    final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    _isDarkMode = brightness == Brightness.dark;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      timerProvider.onWaveAnimationRequested = _insertWaveAnimation;
+    });
   }
 
   @override
@@ -72,6 +87,13 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
     _waveAnimationController.dispose();
     _breathingAnimationController.dispose();
     _timeAnimationController.dispose();
+    for (var wave in waves) {
+      wave.controller.dispose();
+    }
+    _removeOverlay();
+    WidgetsBinding.instance.removeObserver(this);
+    TimerProvider timerProvider = Provider.of<TimerProvider>(context, listen: false);
+    timerProvider.onWaveAnimationRequested = null;
     super.dispose();
   }
 
@@ -104,6 +126,29 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
       ),
     );
 
+    for (int i = 0; i < 3; i++) {
+      AnimationController controller = AnimationController(
+        duration: Duration(seconds: 1 + i),
+        vsync: this,
+      )..repeat();
+
+      _circularWaveAnimation = Tween<double>(begin: 0, end: 1).animate(
+        CurvedAnimation(parent: controller, curve: Curves.easeOut),
+      );
+
+      double minRadius = 40.0 + i * 20; // 웨이브마다 다른 시작 반지름 설정
+      double maxRadius = 50.0 + i * 30;
+
+      waves.add(Wave(
+        color: _isDarkMode ? Colors.white.withOpacity(0.3 - i * 0.1) : Colors.redAccent.withOpacity(0.3 - i * 0.1),
+        strokeWidth: 4.0 + i * 2,
+        maxRadius: maxRadius,
+        minRadius: minRadius,
+        animation: _circularWaveAnimation,
+        controller: controller, // 컨트롤러 할당
+      ));
+    }
+
     _breathingAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -135,6 +180,90 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
         curve: Curves.easeInOut,
       ),
     );
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    super.didChangePlatformBrightness();
+
+    final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    final isDarkMode = brightness == Brightness.dark;
+
+    if (_isDarkMode != isDarkMode) {
+      setState(() {
+        _isDarkMode = isDarkMode;
+        _updateWaveColors();
+      });
+    }
+  }
+
+  void _updateWaveColors() {
+    setState(() {
+      for (int i = 0; i < waves.length; i++) {
+        Color waveColor = _isDarkMode ? Colors.white.withOpacity(0.5 - i * 0.1) : Colors.redAccent.withOpacity(0.5 - i * 0.1);
+        waves[i].color = waveColor; // 이제 오류 없이 동작합니다.
+      }
+    });
+  }
+
+  void _insertWaveAnimation() {
+    final playButtonContext = _playButtonKey.currentContext;
+    if (playButtonContext == null) {
+      // 플레이 버튼이 아직 렌더링되지 않은 경우
+      return;
+    }
+    RenderBox box = playButtonContext.findRenderObject() as RenderBox;
+    Offset buttonPosition = box.localToGlobal(Offset(box.size.width / 2, box.size.height / 2));
+    _showOverlay(context, buttonPosition);
+
+    for (var wave in waves) {
+      wave.controller.repeat(); // 애니메이션 반복 시작
+    }
+  }
+
+  void _showOverlay(BuildContext context, Offset position) {
+    if (_overlayEntry != null) return; // 이미 표시된 경우
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => AnimatedBuilder(
+        animation: _controller, // DraggableScrollableController 사용
+        builder: (context, child) {
+          // 시트의 높이에 따라 opacity 계산
+          double opacity = 1.0 - (_sheetSize - minSheetHeight) / (maxSheetHeight - minSheetHeight);
+          opacity = opacity.clamp(0.0, 1.0);
+
+          return Positioned(
+            left: position.dx - 150,
+            top: position.dy - 150,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: opacity,
+                child: RepaintBoundary(
+                  child: CustomPaint(
+                    painter: MultiWavePainter(waves: waves),
+                    child: SizedBox(
+                      width: 300,
+                      height: 300,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+
+    for (var wave in waves) {
+      wave.controller.stop(); // 애니메이션 중지
+    }
   }
 
   void _toggleTimeView() {
@@ -170,7 +299,11 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
               child: Text(
                 timerProvider.formattedTime,
                 style: TextStyle(
-                    color: isDarkMode ? Colors.white : Colors.redAccent, fontSize: 60, fontWeight: FontWeight.w500, fontFamily: 'chab'),
+                  color: isDarkMode ? Colors.white : Colors.redAccent,
+                  fontSize: 60,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'chab',
+                ),
               ),
             ),
           ),
@@ -232,6 +365,22 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
     }
   }
 
+  // 전체 시간대 표시 여부
+  bool showAllHours = true;
+
+  void _toggleShowAllHours(bool value) {
+    setState(() {
+      showAllHours = value;
+    });
+  }
+
+  bool refreshKey = false;
+  void rerenderingHeatmap() {
+    setState(() {
+      refreshKey = !refreshKey;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final timerProvider = Provider.of<TimerProvider>(context);
@@ -244,19 +393,24 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
         child: Stack(
           children: [
             Positioned(
-                top: 60,
-                right: 10,
+              top: 60,
+              right: 10,
+              child: AnimatedOpacity(
+                opacity: timerProvider.isRunning ? 0.0 : 1.0,
+                duration: Duration(milliseconds: 300),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     IconButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const NoticePage(),
-                          ),
-                        );
+                        if (!timerProvider.isRunning) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NoticePage(),
+                            ),
+                          );
+                        }
                       },
                       icon: const Icon(
                         Icons.notifications_outlined,
@@ -265,12 +419,14 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                     ),
                     IconButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SettingPage(),
-                          ),
-                        );
+                        if (!timerProvider.isRunning) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SettingPage(),
+                            ),
+                          );
+                        }
                       },
                       icon: const Icon(
                         Icons.settings_outlined,
@@ -278,15 +434,21 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                       ),
                     ),
                   ],
-                )),
+                ),
+              ),
+            ),
             Center(
               child: SizedBox(
                 height: MediaQuery.of(context).size.height - 200, // 페이지뷰의 높이를 제한
                 child: PageView(
                   controller: _pageController,
+                  physics: timerProvider.isRunning ? NeverScrollableScrollPhysics() : AlwaysScrollableScrollPhysics(),
                   onPageChanged: _onPageChanged,
                   children: [
-                    const Pomodoro(),
+                    ProgressCircle(
+                      totalSeconds: timerProvider.totalSeconds,
+                      remainingSeconds: timerProvider.remainingSeconds,
+                    ),
                     Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: <Widget>[
@@ -373,38 +535,44 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                             ? AnimatedBuilder(
                                 animation: _breathingAnimation,
                                 builder: (context, child) {
-                                  return Transform.scale(
-                                    scale: _breathingAnimation.value, // 크기 애니메이션 적용
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                          color: isDarkMode ? Colors.grey.shade800 : Colors.redAccent.shade400,
-                                          shape: BoxShape.circle,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.3), // 그림자 색상
-                                              spreadRadius: 2, // 그림자가 퍼지는 정도
-                                              blurRadius: 10, // 그림자 흐림 정도
-                                              offset: const Offset(0, 5), // 그림자 위치 (x, y)
-                                            ),
-                                          ]),
-                                      child: IconButton(
-                                        key: ValueKey<bool>(timerProvider.isRunning),
-                                        icon: Icon(timerProvider.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded),
-                                        iconSize: 80,
-                                        color: Colors.white,
-                                        onPressed: () {
-                                          if (timerProvider.isRunning) {
-                                            timerProvider.stopTimer();
-                                          } else {
-                                            timerProvider.startTimer(activityId: timerProvider.currentActivityId ?? '${userId}1');
-                                          }
-                                        },
+                                  return Stack(
+                                    clipBehavior: Clip.none,
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Transform.scale(
+                                        scale: _breathingAnimation.value, // 크기 애니메이션 적용
+                                        child: Container(
+                                          key: _playButtonKey,
+                                          decoration: BoxDecoration(
+                                              color: isDarkMode ? Colors.grey.shade800 : Colors.redAccent.shade400,
+                                              shape: BoxShape.circle,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withOpacity(0.3), // 그림자 색상
+                                                  spreadRadius: 2, // 그림자가 퍼지는 정도
+                                                  blurRadius: 10, // 그림자 흐림 정도
+                                                  offset: const Offset(0, 5), // 그림자 위치 (x, y)
+                                                ),
+                                              ]),
+                                          child: IconButton(
+                                            key: ValueKey<bool>(timerProvider.isRunning),
+                                            icon: Icon(timerProvider.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                                            iconSize: 80,
+                                            color: Colors.white,
+                                            onPressed: () {
+                                              HapticFeedback.lightImpact();
+                                              timerProvider.stopTimer();
+                                              _removeOverlay();
+                                            },
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   );
                                 },
                               )
                             : Container(
+                                key: _playButtonKey,
                                 decoration: BoxDecoration(
                                     color: isDarkMode ? Colors.grey.shade800 : Colors.redAccent.shade400,
                                     shape: BoxShape.circle,
@@ -422,11 +590,9 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                                   iconSize: 80,
                                   color: Colors.white,
                                   onPressed: () {
-                                    if (timerProvider.isRunning) {
-                                      timerProvider.stopTimer();
-                                    } else {
-                                      timerProvider.startTimer(activityId: timerProvider.currentActivityId ?? '${userId}1');
-                                    }
+                                    HapticFeedback.lightImpact();
+                                    timerProvider.startTimer(activityId: timerProvider.currentActivityId ?? '${userId}1');
+                                    _insertWaveAnimation();
                                   },
                                 ),
                               ),
@@ -441,7 +607,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    const ProgressCircle(),
+                    const Menu()
                   ],
                 ),
               ),
@@ -450,21 +616,25 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
               bottom: 150,
               left: 0,
               right: 0,
-              child: Align(
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List<Widget>.generate(3, (index) {
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 5),
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _currentPageIndex == index ? Colors.redAccent : Colors.grey, // 현재 페이지에 따라 색상 변경
-                      ),
-                    );
-                  }),
+              child: AnimatedOpacity(
+                opacity: timerProvider.isRunning ? 0.0 : 1.0,
+                duration: Duration(milliseconds: 300),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List<Widget>.generate(3, (index) {
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 5),
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _currentPageIndex == index ? Colors.redAccent : Colors.grey, // 현재 페이지에 따라 색상 변경
+                        ),
+                      );
+                    }),
+                  ),
                 ),
               ),
             ),
@@ -484,8 +654,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                     });
                     return true;
                   },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 100),
+                  child: Container(
                     decoration: BoxDecoration(
                       color: _sheetSize >= 0.2
                           ? (isDarkMode ? const Color(0xff181C14) : Colors.white)
@@ -531,13 +700,16 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                           children: [
                             Padding(
                               padding: const EdgeInsets.all(16),
-                              child: Text(
-                                '내 기록',
+                              child: AnimatedDefaultTextStyle(
+                                child: Text(
+                                  '내 기록',
+                                ),
                                 style: TextStyle(
                                   fontWeight: FontWeight.w900,
                                   fontSize: _sheetSize >= 0.2 ? 24 : 16,
                                   color: _sheetSize >= 0.2 ? (isDarkMode ? Colors.white : Colors.black) : Colors.white,
                                 ),
+                                duration: Duration(milliseconds: 200),
                               ),
                             ),
                             Padding(
@@ -550,26 +722,64 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                           ],
                         ),
                         const SizedBox(height: 30),
-                        // GridView의 스크롤 비활성화
-                        const Padding(
-                          padding: EdgeInsets.only(
+                        Padding(
+                          padding: const EdgeInsets.only(
                             left: 16,
                             right: 16,
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                '이번주의 기록 ⏱️',
+                              const Text(
+                                '이번주 히트맵 🔥',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
+                              Row(
+                                children: [
+                                  ToggleTotalViewSwtich(value: showAllHours, onChanged: _toggleShowAllHours),
+                                  IconButton(
+                                    icon: const Icon(Icons.refresh),
+                                    onPressed: () {
+                                      timerProvider.initializeHeatMapData();
+                                      rerenderingHeatmap();
+                                    },
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
-                        WeeklyActivityChart(),
+                        WeeklyHeatmap(key: ValueKey(refreshKey), userId: userId, showAllHours: showAllHours),
+                        const SizedBox(height: 60),
+                        // GridView의 스크롤 비활성화
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: 16,
+                            right: 16,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                '이번주의 활동 시간 ⏱️',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.refresh),
+                                onPressed: () {
+                                  timerProvider.initializeWeeklyActivityData();
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const WeeklyActivityChart(),
 
                         Padding(
                           padding: const EdgeInsets.only(left: 16, right: 16),
@@ -599,7 +809,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                           ),
                         ),
                         const SizedBox(
-                          height: 50,
+                          height: 60,
                         ),
                         const Padding(
                           padding: EdgeInsets.only(
@@ -619,90 +829,75 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
                             ],
                           ),
                         ),
-                        SingleChildScrollView(
+                        const SingleChildScrollView(
                           child: Column(
                             children: [
                               // ... 기존 코드 ...
                               Padding(
-                                padding: const EdgeInsets.all(16.0),
+                                padding: EdgeInsets.all(16.0),
                                 child: ActivityHeatMap(),
                               ),
                               // ... 기존 코드 ...
                             ],
                           ),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '나의 달성',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        CarouselSlider.builder(
-                          itemCount: imgList.length,
-                          itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) {
-                            double angle = 0.0;
+                        // const Padding(
+                        //   padding: EdgeInsets.all(16),
+                        //   child: Row(
+                        //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        //     children: [
+                        //       Text(
+                        //         '나의 달성',
+                        //         style: TextStyle(
+                        //           fontSize: 16,
+                        //           fontWeight: FontWeight.w900,
+                        //         ),
+                        //       ),
+                        //     ],
+                        //   ),
+                        // ),
+                        // CarouselSlider.builder(
+                        //   itemCount: imgList.length,
+                        //   itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) {
+                        //     double angle = 0.0;
 
-                            // 현재 인덱스에 따라 기울기 각도 설정
-                            if (itemIndex == _currentIndex - 1) {
-                              angle = -0.1; // 왼쪽으로 기울기
-                            } else if (itemIndex == _currentIndex) {
-                              angle = 0.0; // 똑바로
-                            } else if (itemIndex == _currentIndex + 1) {
-                              angle = 0.1; // 오른쪽으로 기울기
-                            }
+                        //     // 현재 인덱스에 따라 기울기 각도 설정
+                        //     if (itemIndex == _currentIndex - 1) {
+                        //       angle = -0.1; // 왼쪽으로 기울기
+                        //     } else if (itemIndex == _currentIndex) {
+                        //       angle = 0.0; // 똑바로
+                        //     } else if (itemIndex == _currentIndex + 1) {
+                        //       angle = 0.1; // 오른쪽으로 기울기
+                        //     }
 
-                            return Transform.rotate(
-                              angle: angle,
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                  child: AchievementCard(
-                                    achievement: achievements[itemIndex],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                          options: CarouselOptions(
-                            height: 300,
-                            autoPlay: false,
-                            enlargeCenterPage: true,
-                            onPageChanged: (index, reason) {
-                              setState(() {
-                                _currentIndex = index; // 현재 인덱스 업데이트
-                              });
-                            },
-                          ),
-                        ),
+                        //     return Transform.rotate(
+                        //       angle: angle,
+                        //       child: Container(
+                        //         margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                        //         child: ClipRRect(
+                        //           borderRadius: BorderRadius.circular(8.0),
+                        //           child: AchievementCard(
+                        //             achievement: achievements[itemIndex],
+                        //           ),
+                        //         ),
+                        //       ),
+                        //     );
+                        //   },
+                        //   options: CarouselOptions(
+                        //     height: 300,
+                        //     autoPlay: false,
+                        //     enlargeCenterPage: true,
+                        //     onPageChanged: (index, reason) {
+                        //       setState(() {
+                        //         _currentIndex = index; // 현재 인덱스 업데이트
+                        //       });
+                        //     },
+                        //   ),
+                        // ),
                         const SizedBox(
                           height: 30,
                         ),
-                        const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '옵션',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Options(),
+
                         const SizedBox(
                           height: 30,
                         ),
@@ -718,4 +913,60 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
       ),
     );
   }
+}
+
+class MultiWavePainter extends CustomPainter {
+  final List<Wave> waves;
+
+  MultiWavePainter({required this.waves}) : super(repaint: Listenable.merge(waves.map((w) => w.animation)));
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (var wave in waves) {
+      final paint = Paint()
+        ..color = wave.color.withOpacity(1 - wave.animation.value)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = wave.strokeWidth;
+
+      final radius = wave.minRadius + (wave.maxRadius - wave.minRadius) * wave.animation.value;
+
+      canvas.drawCircle(
+        Offset(size.width / 2, size.height / 2),
+        radius,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant MultiWavePainter oldDelegate) {
+    // 모든 파동의 애니메이션 값이 변경되면 다시 그리도록 설정
+    for (int i = 0; i < waves.length; i++) {
+      if (waves[i].animation.value != oldDelegate.waves[i].animation.value ||
+          waves[i].color != oldDelegate.waves[i].color ||
+          waves[i].strokeWidth != oldDelegate.waves[i].strokeWidth ||
+          waves[i].maxRadius != oldDelegate.waves[i].maxRadius) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+class Wave {
+  Color color;
+  final double strokeWidth;
+  final double maxRadius;
+  final double minRadius;
+  final Animation<double> animation;
+  final AnimationController controller; // AnimationController 추가
+
+  Wave({
+    required this.color,
+    required this.strokeWidth,
+    required this.maxRadius,
+    required this.minRadius,
+    required this.animation,
+    required this.controller, // 컨트롤러 초기화
+  });
 }

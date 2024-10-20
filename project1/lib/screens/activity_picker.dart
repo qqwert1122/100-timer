@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/screens/add_activity_page.dart';
+import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart'; // 아이콘 유틸리티
-import 'package:provider/provider.dart';
 
 class ActivityPicker extends StatefulWidget {
   final String selectedActivity;
@@ -25,6 +25,7 @@ class ActivityPicker extends StatefulWidget {
 class _ActivityPickerState extends State<ActivityPicker> {
   late Future<List<Map<String, dynamic>>> _activityListFuture;
   final DatabaseService dbService = DatabaseService();
+  final ColorService colorService = ColorService();
 
   @override
   void initState() {
@@ -51,7 +52,8 @@ class _ActivityPickerState extends State<ActivityPicker> {
     }
   }
 
-  Future<void> _navigateToEditActivityPage(BuildContext context, String activityListId, String activityName, String activityIcon) async {
+  Future<void> _navigateToEditActivityPage(
+      BuildContext context, String activityListId, String activityName, String activityIcon, String activityColor) async {
     final updatedActivity = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -61,6 +63,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
           activityListId: activityListId,
           activityName: activityName,
           activityIcon: activityIcon,
+          activityColor: activityColor,
         ),
       ),
     );
@@ -204,12 +207,29 @@ class _ActivityPickerState extends State<ActivityPicker> {
                           iconData,
                           color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null,
                         ),
-                        title: Text(
-                          activity['activity_name'],
-                          style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(
+                              activity['activity_name'],
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
+                            ),
+                            SizedBox(
+                              width: 10,
+                            ),
+                            Container(
+                              width: 12,
+                              height: 12,
+                              margin: const EdgeInsets.symmetric(vertical: 2.0),
+                              decoration: BoxDecoration(
+                                color: ColorService.hexToColor(activity['activity_color']),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            )
+                          ],
                         ),
                         onTap: () {
                           widget.onSelectActivity(
@@ -234,6 +254,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
                                 activity['activity_list_id'],
                                 activity['activity_name'],
                                 activity['activity_icon'],
+                                activity['activity_color'],
                               );
                             },
                             backgroundColor: Colors.blueAccent,
@@ -258,12 +279,29 @@ class _ActivityPickerState extends State<ActivityPicker> {
                         child: ListTile(
                           leading: Icon(iconData,
                               color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
-                          title: Text(
-                            activity['activity_name'],
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text(
+                                activity['activity_name'],
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
+                              ),
+                              SizedBox(
+                                width: 10,
+                              ),
+                              Container(
+                                width: 12,
+                                height: 12,
+                                margin: const EdgeInsets.symmetric(vertical: 2.0),
+                                decoration: BoxDecoration(
+                                  color: ColorService.hexToColor(activity['activity_color']),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ],
                           ),
                           onTap: () {
                             widget.onSelectActivity(

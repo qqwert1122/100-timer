@@ -88,7 +88,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       'is_running': 0,
       'created_at': now.toIso8601String(),
       'last_started_at': null,
-      'last_updated_at': null,
+      'last_updated_at': now.toIso8601String(),
     };
   }
 

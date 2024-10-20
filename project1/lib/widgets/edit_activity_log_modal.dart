@@ -1,10 +1,14 @@
-import 'dart:ffi';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:project1/utils/database_service.dart';
 
 class EditActivityLogModal extends StatefulWidget {
-  const EditActivityLogModal({super.key});
+  final String activityLogId;
+
+  const EditActivityLogModal({
+    super.key,
+    required this.activityLogId,
+  });
 
   @override
   State<EditActivityLogModal> createState() => _EditActivityLogModalState();
@@ -18,6 +22,29 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
   ];
   int selectedValue = 0; // 선택된 숫자 초기값
   final List<int> values = List.generate(25, (index) => index * 5); // 0부터 120까지의 숫자 목록 생성
+  late Future<Map<String, dynamic>?> _activityLog;
+  final DatabaseService dbService = DatabaseService();
+
+  @override
+  void initState() {
+    super.initState();
+    _activityLog = dbService.getActivityLog(widget.activityLogId);
+  }
+
+  String formatTime(int? seconds) {
+    if (seconds == null || seconds == 0) return '-';
+
+    final int hours = seconds ~/ 3600;
+    final int minutes = (seconds % 3600) ~/ 60;
+    final int remainingSeconds = seconds % 60;
+
+    String formattedTime = '';
+    if (hours > 0) formattedTime += '$hours시간';
+    if (minutes > 0) formattedTime += ' $minutes분';
+    if (remainingSeconds > 0) formattedTime += ' $remainingSeconds초';
+
+    return formattedTime.trim();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,67 +67,121 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                   ),
                 ),
               ),
-              Flexible(
-                child: ListView.builder(
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      leading: Icon(
-                        items[index]['icon'],
-                        size: 38,
-                        color: Colors.grey,
-                      ),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${items[index]['text']}',
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.grey),
-                          ),
-                          const SizedBox(width: 30),
-                          Text(
-                            '${items[index]['time']}',
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                      onTap: () {
-                        // 항목 클릭 시 동작
-                      },
-                    );
+              Expanded(
+                child: FutureBuilder(
+                  future: _activityLog,
+                  builder: (BuildContext context, AsyncSnapshot<Map<String, dynamic>?> snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      // 데이터 로딩 중 표시
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      // 에러 발생 시 표시
+                      return Center(child: Text('에러: ${snapshot.error}'));
+                    } else if (!snapshot.hasData || snapshot.data == null) {
+                      // 데이터가 없을 때 표시
+                      return const Center(child: Text('활동 기록을 찾을 수 없습니다.'));
+                    } else {
+                      // 데이터 로드 완료 시 UI 표시
+                      final activityLog = snapshot.data!;
+                      final activityDuration = activityLog['activity_duration'] ?? 0; // 단위: 분
+                      final restTime = activityLog['rest_time'] ?? 0; // 단위: 분
+
+                      // selectedValue를 activityDuration으로 초기 설정
+                      // 단, selectedValue가 0이면 표시할 밑줄을 적용할 수 있음
+                      // 만약 초기값 설정이 필요하다면, setState를 사용하여 설정할 수 있습니다.
+
+                      return Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.play_circle_fill_rounded,
+                                  size: 32,
+                                  color: Colors.grey,
+                                ),
+                                SizedBox(
+                                  width: 5,
+                                ),
+                                Text(
+                                  "활동시간",
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
+                                ),
+                                SizedBox(
+                                  width: 10,
+                                ),
+                                Text(
+                                  formatTime(activityDuration),
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                            SizedBox(
+                              height: 10,
+                            ),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.pause_circle_filled_rounded,
+                                  size: 32,
+                                  color: Colors.grey,
+                                ),
+                                SizedBox(
+                                  width: 5,
+                                ),
+                                Text(
+                                  "휴식시간",
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
+                                ),
+                                SizedBox(
+                                  width: 10,
+                                ),
+                                Text(
+                                  formatTime(restTime),
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 30),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                '기록보다',
+                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            // 위아래 버튼
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                GestureDetector(
+                                  onTap: () => _showPicker(context), // 숫자 선택 피커 표시
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        '$selectedValue 분', // 현재 선택된 값 표시
+                                        style: const TextStyle(
+                                          fontSize: 48,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.keyboard_arrow_down_rounded,
+                                        size: 36,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                   },
                 ),
               ),
-              const SizedBox(height: 10),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 10),
-                child: Text(
-                  '기록보다',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              // 위아래 버튼
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                      onTap: () => _showPicker(context), // 숫자 선택 피커 표시
-                      child: Row(
-                        children: [
-                          Text(
-                            '$selectedValue 분', // 현재 선택된 값 표시
-                            style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
-                          ),
-                          const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 36,
-                          ),
-                        ],
-                      )),
-                ],
-              ),
-              const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -119,7 +200,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                       ),
                       child: const Text(
                         '더 휴식했어요',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -138,8 +219,8 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                         ),
                       ),
                       child: const Text(
-                        '활동했어요',
-                        style: TextStyle(color: Colors.white),
+                        '더 활동했어요',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),

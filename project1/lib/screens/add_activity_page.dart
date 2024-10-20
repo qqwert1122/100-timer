@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:provider/provider.dart';
@@ -9,16 +11,18 @@ class AddActivityPage extends StatefulWidget {
   final String? activityListId; // 수정할 때의 activity_list_id
   final String? activityName; // 수정할 때 기존 활동 이름
   final String? activityIcon; // 수정할 때 기존 활동 아이콘
+  final String? activityColor;
   final String userId; // 사용자 ID
 
   const AddActivityPage({
-    super.key,
+    Key? key,
     required this.userId,
     this.isEdit = false,
     this.activityListId,
     this.activityName,
     this.activityIcon,
-  });
+    this.activityColor,
+  }) : super(key: key);
 
   @override
   _AddActivityPageState createState() => _AddActivityPageState();
@@ -27,9 +31,45 @@ class AddActivityPage extends StatefulWidget {
 class _AddActivityPageState extends State<AddActivityPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _activityNameController = TextEditingController();
+
   String? _selectedIconName;
   int _currentStep = 0;
-  String? _nameErrorMessage;
+
+  // HEX 색상 문자열 리스트로 변경
+  final List<String> baseColors = [
+    // 빨강 계열
+    '#E4003A', '#FF0000', '#FF4500', '#FF3EA5', '#FF4C4C', '#FF1493', '#FF69B4', '#FFAAAA',
+
+    // 주황 계열 (추천 추가 포함)
+    '#EB5B00', '#FF4500', '#FF8C00', '#FF7F50', '#FFD700',
+
+    // 노랑 계열
+    '#F4CE14', '#FFFF00', '#FAFFAF',
+
+    // 초록 계열
+    '#A1DD70', '#73EC8B', '#32CD32', '#008000',
+
+    // 파랑 계열
+    '#00CED1', '#1E90FF', '#7695FF', '#0000FF', '#1C1678',
+
+    // 남색 계열 (추천 추가 포함)
+    '#6A5ACD', '#050C9C', '#240750',
+
+    // 보라 계열
+    '#E59BE9', '#8B00FF', '#6A5ACD', '#4B0082',
+
+    // 회색 및 검정
+    '#B7B7B7', '#000000',
+  ];
+
+  // 불투명도 리스트
+  final List<double> opacities = [1.0, 0.8, 0.6, 0.4, 0.2];
+
+  // 선택된 베이스 컬러 저장 (HEX 문자열)
+  String? selectedBaseColor;
+
+  bool isDuplicate = false;
+  bool isDarkMode = false;
 
   @override
   void initState() {
@@ -37,6 +77,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
     if (widget.isEdit) {
       _activityNameController.text = widget.activityName ?? '';
       _selectedIconName = widget.activityIcon;
+      selectedBaseColor = widget.activityColor;
     }
   }
 
@@ -46,15 +87,47 @@ class _AddActivityPageState extends State<AddActivityPage> {
     super.dispose();
   }
 
-  bool get isActivityNameValid => _activityNameController.text.trim().isNotEmpty && _nameErrorMessage == null;
+  bool get isActivityNameValid => _activityNameController.text.trim().isNotEmpty && !isDuplicate;
 
   bool get isIconSelected => _selectedIconName != null;
 
+  bool get isColorSelected => selectedBaseColor != null;
+
+  // HEX 문자열을 Color 객체로 변환하는 함수
+
   void _nextStep() {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _currentStep++;
-      });
+    if (_currentStep == 0) {
+      if (_formKey.currentState?.validate() ?? false) {
+        setState(() {
+          _currentStep++;
+        });
+      } else {
+        Fluttertoast.showToast(
+          msg: "활동 이름을 입력해주세요",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.redAccent.shade200,
+          textColor: Colors.white,
+          fontSize: 14.0,
+        );
+        HapticFeedback.lightImpact();
+      }
+    } else if (_currentStep == 1) {
+      if (isIconSelected) {
+        setState(() {
+          _currentStep++;
+        });
+      } else {
+        Fluttertoast.showToast(
+          msg: "아이콘을 선택해주세요",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.redAccent.shade200,
+          textColor: Colors.white,
+          fontSize: 14.0,
+        );
+        HapticFeedback.lightImpact();
+      }
     }
   }
 
@@ -62,9 +135,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
     final String activityName = _activityNameController.text.trim();
     final String? iconName = _selectedIconName;
 
-    if (activityName.isEmpty || iconName == null) {
+    if (activityName.isEmpty || iconName == null || selectedBaseColor == null) {
       Fluttertoast.showToast(
-        msg: "활동 이름과 아이콘을 입력해주세요",
+        msg: "활동 이름을 입력하고 아이콘, 색상을 선택해주세요",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.TOP,
         backgroundColor: Colors.redAccent.shade200,
@@ -77,25 +150,28 @@ class _AddActivityPageState extends State<AddActivityPage> {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
 
     // 중복 이름 확인
-    bool isDuplicate = await dbService.isActivityNameDuplicate(widget.userId, activityName);
+    bool duplicate = await dbService.isActivityNameDuplicate(widget.userId, activityName);
 
-    if (isDuplicate && !widget.isEdit) {
+    if (duplicate && !widget.isEdit) {
       setState(() {
-        _nameErrorMessage = '중복된 이름이 있습니다'; // 에러 메시지 설정
+        isDuplicate = true;
       });
+      _formKey.currentState?.validate(); // 유효성 검사 업데이트
       return;
     } else {
       setState(() {
-        _nameErrorMessage = null; // 에러 메시지 초기화
+        isDuplicate = false;
       });
     }
 
     try {
+      String colorValue = selectedBaseColor!; // 이미 HEX 문자열이므로 그대로 사용
+
       if (widget.isEdit) {
-        await dbService.updateActivityList(widget.activityListId!, activityName, iconName);
-        Navigator.pop(context, {'name': activityName, 'icon': iconName});
+        await dbService.updateActivityList(widget.activityListId!, activityName, iconName, colorValue);
+        Navigator.pop(context, {'name': activityName, 'icon': iconName, 'color': colorValue});
       } else {
-        await dbService.addActivityList(widget.userId, activityName, iconName); // 수정된 부분
+        await dbService.addActivityList(widget.userId, activityName, iconName, colorValue);
         Fluttertoast.showToast(
           msg: "활동이 성공적으로 추가되었습니다",
           toastLength: Toast.LENGTH_SHORT,
@@ -104,7 +180,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
           textColor: Colors.white,
           fontSize: 14.0,
         );
-        Navigator.pop(context, {'name': activityName, 'icon': iconName});
+        Navigator.pop(context, {'name': activityName, 'icon': iconName, 'color': colorValue});
       }
     } catch (e) {
       Fluttertoast.showToast(
@@ -126,53 +202,115 @@ class _AddActivityPageState extends State<AddActivityPage> {
     });
   }
 
+  Widget buildNextAndBackButtons() {
+    bool isNextButtonEnabled = false;
+    String nextButtonText = '';
+
+    if (_currentStep == 0) {
+      isNextButtonEnabled = isActivityNameValid;
+      nextButtonText = '다음';
+    } else if (_currentStep == 1) {
+      isNextButtonEnabled = isIconSelected;
+      nextButtonText = '다음';
+    } else if (_currentStep == 2) {
+      isNextButtonEnabled = isColorSelected;
+      nextButtonText = '저장';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        children: [
+          // '뒤로' 버튼
+          Expanded(
+            child: ElevatedButton(
+              onPressed: _currentStep > 0 ? _prevStep : HapticFeedback.lightImpact,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: _currentStep > 0 ? Colors.red : Colors.grey.shade400,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                '뒤로',
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // '다음' 또는 '저장' 버튼
+          Expanded(
+            child: ElevatedButton(
+              onPressed: isNextButtonEnabled ? (_currentStep < 2 ? _nextStep : _submit) : HapticFeedback.lightImpact,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: isNextButtonEnabled ? Colors.blueAccent : Colors.grey.shade400,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                nextButtonText,
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    bool isDuplicate = false;
+    isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     Widget buildActivityName() {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextFormField(
-                  controller: _activityNameController,
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white : Colors.black,
-                  ),
-                  maxLength: 15,
-                  decoration: InputDecoration(
-                    border: const UnderlineInputBorder(),
-                    enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(
-                      color: isDarkMode ? Colors.white : Colors.black,
-                    )),
-                    focusedBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blueAccent),
-                    ),
-                    hintText: '예시. 타이머 어플 코딩',
-                    hintStyle: TextStyle(color: Colors.grey.shade400),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return '활동 이름을 입력해주세요';
-                    } else if (isDuplicate) {
-                      return '중복된 이름이 있습니다';
-                    }
-                    return null;
-                  },
-                  onChanged: (value) async {
-                    // 입력된 이름 변경 시 중복 확인
-                    isDuplicate = await Provider.of<DatabaseService>(context, listen: false).isActivityNameDuplicate(widget.userId, value);
-                    _formKey.currentState?.validate(); // 입력 변경 시마다 validate 호출
-                  },
+          key: _formKey,
+          child: TextFormField(
+            controller: _activityNameController,
+            style: TextStyle(
+              color: isDarkMode ? Colors.white : Colors.black,
+            ),
+            maxLength: 15,
+            decoration: InputDecoration(
+              border: const UnderlineInputBorder(),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: isDarkMode ? Colors.white : Colors.black,
                 ),
-              ],
-            )),
+              ),
+              focusedBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.blueAccent),
+              ),
+              hintText: '예시. 영단어 암기',
+              hintStyle: TextStyle(color: Colors.grey.shade400),
+            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return '활동 이름을 입력해주세요';
+              } else if (isDuplicate) {
+                return '중복된 이름이 있습니다';
+              }
+              return null;
+            },
+            onChanged: (value) async {
+              // 입력된 이름 변경 시 중복 확인
+              bool duplicate = await Provider.of<DatabaseService>(context, listen: false).isActivityNameDuplicate(widget.userId, value);
+              setState(() {
+                isDuplicate = duplicate;
+              });
+              _formKey.currentState?.validate(); // 입력 변경 시마다 validate 호출
+            },
+          ),
+        ),
       );
     }
 
@@ -340,52 +478,114 @@ class _AddActivityPageState extends State<AddActivityPage> {
       );
     }
 
-    Widget buildNextAndBackButtons() {
-      return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            // '뒤로' 버튼
-            Expanded(
-              child: ElevatedButton(
-                onPressed: _currentStep > 0 ? _prevStep : null,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+    Widget buildColorSelection() {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                "선택된 색상",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+              ),
+              SizedBox(
+                width: 10,
+              ),
+              AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: 30,
+                height: 30,
+                margin: const EdgeInsets.symmetric(vertical: 2.0),
+                child: Container(),
+                decoration: BoxDecoration(
+                  color: ColorService.hexToColor(selectedBaseColor.toString()),
+                  borderRadius: BorderRadius.circular(8.0),
                 ),
-                child: Text(
-                  '뒤로',
-                  style: TextStyle(color: _currentStep > 0 ? Colors.white : (isDarkMode ? Colors.white12 : Colors.black12)),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: baseColors.map((baseColor) {
+                bool isSelected = selectedBaseColor == baseColor;
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      selectedBaseColor = baseColor;
+                    });
+                    HapticFeedback.lightImpact();
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: Column(
+                      children: opacities.map((opacity) {
+                        Color colorWithOpacity = ColorService.hexToColor(baseColor).withOpacity(opacity);
+
+                        return Container(
+                          width: 30,
+                          height: 30,
+                          margin: const EdgeInsets.symmetric(vertical: 2.0),
+                          decoration: BoxDecoration(
+                            color: colorWithOpacity,
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          SizedBox(
+            height: 30,
+          ),
+          InkWell(
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: ListTile(
+                  leading: Icon(
+                    Icons.info_outlined,
+                    color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+                  ),
+                  title: Text(
+                    '베이스컬러를 선택해주세요',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+                    ),
+                  ),
+                  subtitle: Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      '활동을 오래할수록 색상이 점점 진해집니다.\n위에서 색상의 변화를 미리보고 마음에 드는 베이스 컬러를 선택해주세요.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(width: 16),
-            // '다음' 또는 '저장' 버튼
-            Expanded(
-              child: ElevatedButton(
-                onPressed: _currentStep == 0 && isDuplicate == false ? _nextStep : (isIconSelected ? _submit : null),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: (isActivityNameValid || isIconSelected) ? Colors.blueAccent : Colors.grey,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  _currentStep == 0 ? '다음' : '저장',
-                  style: TextStyle(
-                    color: ((_currentStep == 0 && isActivityNameValid) || (_currentStep > 0 && isIconSelected))
-                        ? Colors.white
-                        : (isDarkMode ? Colors.white12 : Colors.black12),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
@@ -424,8 +624,6 @@ class _AddActivityPageState extends State<AddActivityPage> {
                   child: Stepper(
                     physics: const ClampingScrollPhysics(),
                     currentStep: _currentStep,
-                    onStepContinue: _currentStep < 1 ? () => setState(() => _currentStep += 1) : null,
-                    onStepCancel: _currentStep > 0 ? () => setState(() => _currentStep -= 1) : null,
                     controlsBuilder: (BuildContext context, ControlsDetails details) {
                       return const SizedBox();
                     },
@@ -489,6 +687,36 @@ class _AddActivityPageState extends State<AddActivityPage> {
                             : Container(),
                         content: _currentStep == 1 ? buildIconSelection() : Container(),
                         isActive: _currentStep == 1,
+                      ),
+                      Step(
+                        title: _currentStep == 2
+                            ? const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '색상을',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blueAccent,
+                                      ),
+                                    ),
+                                    Text(
+                                      '선택해주세요',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blueAccent,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Container(),
+                        content: _currentStep == 2 ? buildColorSelection() : Container(),
+                        isActive: _currentStep == 2,
                       ),
                     ],
                   ),

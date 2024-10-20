@@ -23,7 +23,6 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
   }
 
   void _loadActivityData() {
-    // 예시 데이터: 실제로는 데이터베이스나 상태 관리에서 가져와야 합니다.
     setState(() {
       activityData = {
         DateTime.now().subtract(const Duration(days: 3)): 18000, // 5시간
@@ -67,7 +66,7 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
     return Padding(
       padding: const EdgeInsets.all(0.0),
       child: HeatMapCalendar(
-        initDate: DateTime.now().subtract(const Duration(days: 30)),
+        initDate: DateTime(DateTime.now().year, DateTime.now().month, 1),
         datasets: timerProvider.heatMapDataSet.map((date, value) {
           // 활동 시간에 따라 1부터 4까지의 값을 할당
           int level = ((value / 36000) * 4).ceil();
@@ -76,9 +75,9 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
         }),
         colorMode: ColorMode.opacity,
         colorsets: {
-          1: Colors.greenAccent.shade200,
-          2: Colors.greenAccent.shade400,
-          3: Colors.greenAccent.shade700,
+          1: Colors.green.shade300,
+          2: Colors.green.shade500,
+          3: Colors.green.shade700,
           4: Colors.green.shade900,
         },
         defaultColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,

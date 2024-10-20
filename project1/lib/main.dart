@@ -9,11 +9,13 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ko_KR', null);
   String userId = 'v3_4';
+  final DatabaseService databaseService = DatabaseService();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (context) => TimerProvider(userId: userId),
+          create: (context) => TimerProvider(userId: userId, databaseService: databaseService),
         ),
         Provider(create: (context) => DatabaseService()), // DatabaseService 제공
       ],
@@ -32,7 +34,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '타이머 앱',
+      title: '100-Timer',
       // 라이트 모드 테마
       theme: ThemeData(
         brightness: Brightness.light,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
+import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart'; // 아이콘 유틸리티
 import 'package:project1/widgets/edit_activity_log_modal.dart';
@@ -206,7 +207,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                               builder: (BuildContext context) {
                                 // 초기값 설정
 
-                                return const EditActivityLogModal();
+                                return EditActivityLogModal(activityLogId: log['activity_log_id']);
                               });
                         },
                         backgroundColor: Colors.blueAccent,
@@ -225,11 +226,28 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                   ),
                   child: ListTile(
                     leading: Icon(getIconData(log['activity_icon'])),
-                    title: Text(log['activity_name'] ?? '',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        )),
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Text(log['activity_name'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            )),
+                        SizedBox(
+                          width: 8,
+                        ),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.symmetric(vertical: 2.0),
+                          decoration: BoxDecoration(
+                            color: ColorService.hexToColor(log['activity_color']),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ],
+                    ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -276,22 +294,34 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                                   const Icon(
                                     Icons.play_circle_fill_rounded,
                                     color: Colors.grey,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(
+                                    width: 3,
+                                  ),
+                                  Text(
+                                    formatTime(log['activity_duration'] - log['rest_time'] as int),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                    ),
                                   ),
                                   const SizedBox(
                                     width: 10,
-                                  ),
-                                  Text(formatTime(log['activity_duration'] - log['rest_time'] as int)),
-                                  const SizedBox(
-                                    width: 30,
                                   ),
                                   const Icon(
                                     Icons.pause_circle_filled_rounded,
                                     color: Colors.grey,
+                                    size: 18,
                                   ),
                                   const SizedBox(
-                                    width: 10,
+                                    width: 3,
                                   ),
-                                  Text(formatTime(log['rest_time'] as int)),
+                                  Text(
+                                    formatTime(log['rest_time'] as int),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                    ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(

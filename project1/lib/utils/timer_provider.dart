@@ -7,6 +7,7 @@ import 'package:project1/utils/database_service.dart';
 class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   Timer? _timer;
   bool _isRunning = false;
+  int _totalSeconds = 360000;
   int _remainingSeconds = 360000; // 기본값 100시간 (초 단위)
   int _currentActivityDuration = 0; // **현재 활동 시간 추가**
   Map<String, dynamic>? _timerData;
@@ -21,7 +22,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     '일': 0.0,
   };
 
-  final DatabaseService _dbService = DatabaseService();
+  final DatabaseService _dbService;
   final String userId;
   String? _currentActivityId;
   String? _currentActivityName;
@@ -32,7 +33,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   String? get currentActivityName => _currentActivityName;
   String? get currentActivityIcon => _currentActivityIcon;
 
-  TimerProvider({required this.userId}) {
+  TimerProvider({required this.userId, required DatabaseService databaseService}) : _dbService = databaseService {
     // WidgetsBindingObserver 등록
     WidgetsBinding.instance.addObserver(this);
   }
@@ -43,6 +44,24 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
+  }
+
+  @visibleForTesting
+  Map<String, dynamic>? get timerData => _timerData;
+
+  @visibleForTesting
+  set timerData(Map<String, dynamic>? data) {
+    _timerData = data;
+  }
+
+  @visibleForTesting
+  set isRunning(bool isRunning) {
+    isRunning = _isRunning;
+  }
+
+  @visibleForTesting
+  void setCurrentActivityLogIdForTest(String? activityLogId) {
+    _currentActivityLogId = activityLogId;
   }
 
   // WidgetsBindingObserver의 콜백 메서드 오버라이드
@@ -57,6 +76,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       _onAppResumed();
     }
   }
+
+  VoidCallback? onWaveAnimationRequested;
 
   void _onAppPaused() async {
     // 앱이 백그라운드로 이동할 때 현재 시간을 저장
@@ -99,6 +120,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
           textColor: Colors.white,
           fontSize: 14.0,
         );
+        onWaveAnimationRequested?.call();
       } else {
         print('현재 활동 ID를 찾을 수 없습니다.');
         Fluttertoast.showToast(
@@ -137,11 +159,13 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     DateTime now = DateTime.now().toUtc();
     DateTime lastUpdated = DateTime.parse(_timerData!['last_updated_at']).toUtc();
 
-    DateTime activityStarted = DateTime.parse(activityLog!['start_time']).toUtc();
-    int activtyDuration = now.difference(activityStarted).inSeconds;
-    activtyDuration = activtyDuration >= 0 ? activtyDuration : 0;
-    int activityRestTime = activityLog['rest_time'];
-    _currentActivityDuration = activtyDuration - activityRestTime;
+    if (lastActivityLogId != '') {
+      DateTime activityStarted = activityLog!['start_time'] != null ? DateTime.parse(activityLog['start_time']).toUtc() : now;
+      int activtyDuration = now.difference(activityStarted).inSeconds;
+      activtyDuration = activtyDuration >= 0 ? activtyDuration : 0;
+      int activityRestTime = activityLog['rest_time'];
+      _currentActivityDuration = activtyDuration - activityRestTime;
+    }
 
     await _updateCurrentActivityDetails();
 
@@ -159,6 +183,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
       if (_currentActivityId != null) {
         await startTimer(activityId: _currentActivityId!);
+        onWaveAnimationRequested?.call();
       } else {
         print('현재 활동 ID를 찾을 수 없습니다.');
       }
@@ -183,6 +208,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     _timerData = timerData;
 
     final isRunning = timerData['is_running'] == 1; // 재생중인지 ?
+
+    _timer?.cancel();
 
     if (isRunning == false) {
       _isRunning = true;
@@ -273,10 +300,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       _remainingSeconds--;
       _currentActivityDuration++; // **현재 활동 시간 증가**
       notifyListeners();
-
-      if (_remainingSeconds % 60 == 0) {
-        await _updateTimerInDatabase();
-      }
+      await _updateTimerInDatabase();
     } else {
       await stopTimer();
     }
@@ -322,6 +346,9 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       await _dbService.updateTimer(timerId, userId, updatedData);
     }
   }
+
+  int get totalSeconds => _totalSeconds;
+  int get remainingSeconds => _remainingSeconds;
 
   String get formattedTime {
     final hours = (_remainingSeconds ~/ 3600).toString().padLeft(2, '0');
@@ -369,7 +396,24 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   // activityLogs 메서드 추가 - 활동 로그 가져오기
   Future<List<Map<String, dynamic>>> get activityLogs async {
-    return await _dbService.getAllActivityLogs(); // DB의 모든 활동 로그 가져오기
+    DateTime now = DateTime.now();
+    DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
+    DateTime weekEnd = weekStart.add(Duration(days: 7));
+
+    // 모든 활동 로그 가져오기
+    List<Map<String, dynamic>> allLogs = await _dbService.getAllActivityLogs();
+
+    // 이번 주의 활동 로그만 필터링
+    List<Map<String, dynamic>> weeklyLogs = allLogs.where((log) {
+      String? startTimeString = log['start_time'];
+      if (startTimeString != null && startTimeString.isNotEmpty) {
+        DateTime startTime = DateTime.parse(startTimeString).toLocal();
+        return startTime.isAfter(weekStart) && startTime.isBefore(weekEnd);
+      }
+      return false;
+    }).toList();
+
+    return weeklyLogs;
   }
 
   // 활동 데이터를 저장할 맵

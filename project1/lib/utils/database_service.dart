@@ -24,9 +24,9 @@ class DatabaseService {
     // 데이터베이스 열기 또는 생성
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _createDb,
-      // onUpgrade: _onUpgrade, // 마이그레이션 처리
+      onUpgrade: _onUpgrade, // 마이그레이션 처리
     );
   }
 
@@ -70,18 +70,27 @@ class DatabaseService {
       user_id TEXT,
       activity_name TEXT,
       activity_icon TEXT,
+      activity_color TEXT,
       created_at TEXT
     )
     ''');
   }
 
-  // // 마이그레이션 코드 추가
-  // Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-  //   if (oldVersion < 4) {
-  //     await db.execute('ALTER TABLE activity_logs ADD COLUMN rest_time INTEGER');
-  //     // 필요한 추가 마이그레이션 처리
-  //   }
-  // }
+  // 마이그레이션 코드 추가
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    try {
+      if (oldVersion < 4) {
+        await db.execute('ALTER TABLE activity_logs ADD COLUMN rest_time INTEGER');
+      }
+      if (oldVersion < 5) {
+        await db.execute('''
+      ALTER TABLE activity_list ADD COLUMN activity_color TEXT
+      ''');
+      }
+    } catch (e) {
+      print('데이터베이스 업그레이드 중 오류 발생: $e');
+    }
+  }
 
   // 타이머 생성
   Future<void> createTimer(String userId, Map<String, dynamic> timerData) async {
@@ -145,6 +154,7 @@ class DatabaseService {
         'user_id': userId,
         'activity_name': '전체',
         'activity_icon': 'category_rounded',
+        'activity_color': '#B7B7B7',
         'created_at': now.toIso8601String(),
       },
       // ... 추가 활동
@@ -162,7 +172,7 @@ class DatabaseService {
     }
   }
 
-  Future<void> addActivityList(String userId, String activityName, String activityIcon) async {
+  Future<void> addActivityList(String userId, String activityName, String activityIcon, String activityColor) async {
     final db = await database;
     final uuid = const Uuid().v4();
     String createdAt = DateTime.now().toUtc().toIso8601String();
@@ -173,6 +183,7 @@ class DatabaseService {
         'user_id': userId,
         'activity_name': activityName,
         'activity_icon': activityIcon,
+        'activity_color': activityColor,
         'created_at': createdAt,
       });
     } catch (e) {
@@ -180,7 +191,7 @@ class DatabaseService {
     }
   }
 
-  Future<void> updateActivityList(String activityListId, String newActivityName, String newActivityIcon) async {
+  Future<void> updateActivityList(String activityListId, String newActivityName, String newActivityIcon, String newActivityColor) async {
     final db = await database;
     try {
       await db.update(
@@ -188,6 +199,7 @@ class DatabaseService {
         {
           'activity_name': newActivityName,
           'activity_icon': newActivityIcon,
+          'activity_color': newActivityColor,
         },
         where: 'activity_list_id = ?',
         whereArgs: [activityListId],
@@ -368,10 +380,25 @@ class DatabaseService {
     return logs.isNotEmpty ? logs.first : null;
   }
 
+  Future<List<Map<String, dynamic>>> getActivityLogsForToday(String userId) async {
+    final db = await database;
+    DateTime now = DateTime.now();
+    String todayStart = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
+    String tomorrowStart = DateTime(now.year, now.month, now.day + 1).toUtc().toIso8601String();
+
+    final result = await db.query(
+      'activity_logs',
+      where: 'start_time >= ? AND start_time < ?',
+      whereArgs: [todayStart, tomorrowStart],
+    );
+
+    return result;
+  }
+
   Future<List<Map<String, dynamic>>> getAllActivityLogs() async {
     final db = await database;
     return await db.rawQuery('''
-      SELECT activity_logs.*, activity_list.activity_name, activity_list.activity_icon
+      SELECT activity_logs.*, activity_list.activity_name, activity_list.activity_icon, activity_list.activity_color
       FROM activity_logs
       JOIN activity_list
       ON activity_logs.activity_id = activity_list.activity_list_id
@@ -425,5 +452,28 @@ class DatabaseService {
   ''', [timerId]);
 
     return logs;
+  }
+
+  Future<List<Map<String, dynamic>>> getActivityLogsForWeek(
+    String userId,
+    DateTime startOfWeek,
+    DateTime endOfWeek,
+  ) async {
+    final db = await database;
+    List<Map<String, dynamic>> results = await db.query(
+      'activity_logs',
+      where:
+          'user_id = ? AND ((start_time >= ? AND start_time < ?) OR (end_time >= ? AND end_time < ?) OR (start_time <= ? AND (end_time > ? OR end_time IS NULL)))',
+      whereArgs: [
+        userId,
+        startOfWeek.toIso8601String(),
+        endOfWeek.toIso8601String(),
+        startOfWeek.toIso8601String(),
+        endOfWeek.toIso8601String(),
+        startOfWeek.toIso8601String(),
+        startOfWeek.toIso8601String(),
+      ],
+    );
+    return results;
   }
 }

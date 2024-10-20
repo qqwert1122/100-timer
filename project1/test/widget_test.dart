@@ -14,7 +14,7 @@ void main() {
   const String userId = 'v3_4';
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp(
+    await tester.pumpWidget(const MyApp(
       userId: userId,
     ));
 
