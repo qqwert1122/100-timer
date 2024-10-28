@@ -36,7 +36,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     final db = await dbService.database;
 
-    DateTime now = DateTime.now();
+    DateTime now = DateTime.now().toUtc();
     String weekStart = getWeekStart(now); // 예시 2024-09-23 00:00:00.000
 
     // 타이머가 있는지 확인

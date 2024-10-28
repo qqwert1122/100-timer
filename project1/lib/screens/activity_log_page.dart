@@ -28,7 +28,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
   @override
   void initState() {
     super.initState();
-    final today = DateTime.now();
+    final today = DateTime.now().toUtc();
     final todayWeekdayIndex = (today.weekday + 6) % 7;
     selectedDay = daysOfWeek[todayWeekdayIndex];
     _initializeLogs();
@@ -229,21 +229,23 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                     title: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        Text(log['activity_name'] ?? '',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            )),
+                        Text(
+                          log['activity_name'] ?? '',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         SizedBox(
                           width: 8,
                         ),
                         Container(
-                          width: 8,
-                          height: 8,
+                          width: 12,
+                          height: 12,
                           margin: const EdgeInsets.symmetric(vertical: 2.0),
                           decoration: BoxDecoration(
                             color: ColorService.hexToColor(log['activity_color']),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                       ],
