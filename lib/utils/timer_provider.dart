@@ -97,7 +97,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
     Map<String, dynamic>? timer = await _dbService.getTimer('v3_4', weekStart);
     DateTime appPausedTime = DateTime.parse(timer!['last_updated_at']);
-    _isRunning = timer['is_running'] == 1;
+    _isRunning = timer!['is_running'] == 1;
 
     if (_isRunning) {
       int elapsedSeconds = now.difference(appPausedTime).inSeconds;

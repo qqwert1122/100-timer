@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 import 'timer_page.dart'; // 메인 화면 파일
 
@@ -43,27 +42,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     // 타이머가 있는지 확인
     Map<String, dynamic>? timer = await dbService.getTimer(userId, weekStart);
 
-    // 타이머가 없으면 생성
     if (timer == null) {
-      try {
-        timer = _createDefaultTimer(userId);
-        await dbService.createTimer(userId, timer);
-        print('새로운 타이머가 생성되었습니다.');
-      } on DatabaseException catch (e) {
-        if (e.isUniqueConstraintError()) {
-          // UNIQUE 제약 조건 위반 시 기존 타이머를 다시 가져옴
-          timer = await dbService.getTimer(userId, weekStart);
-          print('타이머가 이미 존재하여 기존 타이머를 불러왔습니다.');
-        } else {
-          // 기타 데이터베이스 예외 처리
-          print('데이터베이스 오류 발생: $e');
-          // 필요 시 에러 처리 로직 추가
-        }
-      }
+      timer = _createDefaultTimer(widget.userId);
+      dbService.createTimer(userId, timer);
     }
-    print('타이머가 데이터베이스에서 불러와졌습니다: $timer');
 
-    // activity
     await dbService.initializeActivityList(db, userId);
 
     // 1초 후에 메인 화면으로 전환

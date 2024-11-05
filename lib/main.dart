@@ -1,15 +1,18 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:project1/firebase_options.dart';
 import 'package:project1/screens/splash_page.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/date_symbol_data_local.dart'; // 로컬 데이터 초기화 패키지
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ko_KR', null);
   String userId = 'v3_4';
   final DatabaseService databaseService = DatabaseService();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.android);
 
   runApp(
     MultiProvider(

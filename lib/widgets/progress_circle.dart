@@ -121,6 +121,26 @@ class _ProgressCircleState extends State<ProgressCircle> {
           progressColor: Colors.redAccent,
           backgroundColor: Colors.grey.shade200,
         ),
+        SizedBox(
+          height: 30,
+        ),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16.0),
+          margin: const EdgeInsets.only(top: 10.0, left: 32.0, right: 32.0),
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 6,
+                offset: const Offset(2, 4),
+              ),
+            ],
+          ),
+          child: Text('광고 영역'),
+        ),
       ],
     );
   }

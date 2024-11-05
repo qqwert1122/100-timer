@@ -101,7 +101,7 @@ class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateM
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        fontFamily: 'NanumSquare',
+                        fontFamily: 'NanumHuman',
                         color: isDarkMode ? Colors.white : Colors.black,
                       ),
                     ),
@@ -112,7 +112,7 @@ class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateM
                               fontSize: 20,
                               fontWeight: FontWeight.w900,
                               color: Colors.blueAccent.shade200,
-                              fontFamily: 'NanumSquare',
+                              fontFamily: 'NanumHuman',
                             ),
                           )
                         : TextSpan(
@@ -121,7 +121,7 @@ class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateM
                               fontSize: 20,
                               fontWeight: FontWeight.w900,
                               color: Colors.redAccent.shade200,
-                              fontFamily: 'NanumSquare',
+                              fontFamily: 'NanumHuman',
                             ),
                           ),
                     TextSpan(
@@ -129,7 +129,7 @@ class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateM
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        fontFamily: 'NanumSquare',
+                        fontFamily: 'NanumHuman',
                         color: isDarkMode ? Colors.white : Colors.black,
                       ),
                     ),
@@ -143,7 +143,7 @@ class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateM
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
-                  fontFamily: 'NanumSquare',
+                  fontFamily: 'NanumHuman',
                   color: isDarkMode ? Colors.white : Colors.black,
                 ),
               ),

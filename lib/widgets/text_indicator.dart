@@ -69,7 +69,6 @@ class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateM
       setState(() {
         _showText1 = !_showText1; // 텍스트 상태 전환
       });
-
       _textAnimationController.forward(from: 0); // 애니메이션 시작
     });
   }

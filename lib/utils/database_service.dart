@@ -44,7 +44,7 @@ class DatabaseService {
         is_running INTEGER,
         created_at TEXT,
         last_started_at TEXT,
-        last_updated_at TEXT
+        last_updated_at TEXT,
         UNIQUE (user_id, week_start)
       )
     ''');

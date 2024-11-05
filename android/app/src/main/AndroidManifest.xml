@@ -4,7 +4,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
-            android:name=".MainActivity"
+            android:name="com.burning.timer100.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""
@@ -20,6 +20,7 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -30,6 +31,16 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- 네이버 클라이언트 ID 메타데이터 추가 -->
+        <meta-data
+            android:name="com.naver.sdk.clientId"
+            android:value="ri5jBRaLyQtkI35rXrHJ" />
+    
+        <!-- 네이버 로그인 액티비티 추가 -->
+        <activity
+            android:name="com.nhn.android.naverlogin.ui.view.NaverLoginOAuthActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

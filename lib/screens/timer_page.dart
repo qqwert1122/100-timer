@@ -387,15 +387,15 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
     final timerProvider = Provider.of<TimerProvider>(context);
     final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
     final List<String> avatarUrls = [
+      '양조현',
+      '조서은',
+      'Alice',
+      'Bob',
+      'Diana',
+      'Ian',
       '모아',
       '보니',
       '리치',
-      '조현',
-      '서은',
-      '엄마',
-      '아빠',
-      '큰누나',
-      '작은누나',
     ];
 
     int totalCount = avatarUrls.length;
@@ -462,218 +462,226 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                       totalSeconds: timerProvider.totalSeconds,
                       remainingSeconds: timerProvider.remainingSeconds,
                     ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: <Widget>[
-                        Expanded(
-                          flex: 2,
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: EdgeInsets.all(16),
-                              child: SizedBox(
-                                width: 60 + (displayCount - 1) * 30,
-                                height: 35,
-                                child: Stack(
-                                  children: List.generate(displayCount, (index) {
-                                    if (index < 3 || totalCount <= 4) {
-                                      return Positioned(
-                                        left: index * 20.0,
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            '선택된 활동',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          GestureDetector(
+                            onTap: () => _showActivityModal(timerProvider), // 버튼을 클릭하면 모달 실행
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  getIconData(timerProvider.currentActivityIcon ?? 'category_rounded'),
+                                  color: Colors.redAccent.shade200,
+                                ),
+                                const SizedBox(
+                                  width: 5,
+                                ),
+                                Text(
+                                  timerProvider.currentActivityName ?? '전체',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.redAccent.shade200,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                const Icon(Icons.keyboard_arrow_down_rounded, size: 30, color: Colors.red),
+                              ],
+                            ),
+                          ),
+                          // timer
+                          Container(
+                            width: double.infinity,
+                            height: 100,
+                            alignment: Alignment.center,
+                            child: timerProvider.isRunning
+                                ? AnimatedBuilder(
+                                    animation: _waveAnimationController,
+                                    builder: (context, child) {
+                                      // 색상이 파도치는 효과를 주기 위해 그라데이션 사용
+                                      return ShaderMask(
+                                          shaderCallback: (bounds) {
+                                            return LinearGradient(
+                                              colors: [
+                                                Colors.white,
+                                                Colors.yellow,
+                                                Colors.orange,
+                                                isDarkMode ? Colors.redAccent.shade200 : Colors.redAccent.shade700
+                                              ],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                              stops: [
+                                                _waveAnimation.value,
+                                                _waveAnimation.value + 0.2,
+                                                _waveAnimation.value + 0.4,
+                                                _waveAnimation.value + 0.6,
+                                              ],
+                                            ).createShader(bounds);
+                                          },
+                                          child: _buildTimeDisplay(timerProvider, isDarkMode));
+                                    },
+                                  )
+                                : Text(
+                                    timerProvider.formattedTime,
+                                    style: TextStyle(
+                                        color: isDarkMode ? Colors.white : Colors.redAccent.shade200,
+                                        fontSize: 60,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'chab'),
+                                  ),
+                          ),
+                          const SizedBox(height: 20),
+                          // play button
+                          timerProvider.isRunning
+                              ? AnimatedBuilder(
+                                  animation: _breathingAnimation,
+                                  builder: (context, child) {
+                                    return Stack(
+                                      clipBehavior: Clip.none,
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Transform.scale(
+                                          scale: _breathingAnimation.value, // 크기 애니메이션 적용
+                                          child: Container(
+                                            key: _playButtonKey,
+                                            decoration: BoxDecoration(
+                                                color: isDarkMode ? Colors.grey.shade800 : Colors.redAccent.shade400,
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withOpacity(0.3), // 그림자 색상
+                                                    spreadRadius: 2, // 그림자가 퍼지는 정도
+                                                    blurRadius: 10, // 그림자 흐림 정도
+                                                    offset: const Offset(0, 5), // 그림자 위치 (x, y)
+                                                  ),
+                                                ]),
+                                            child: IconButton(
+                                              key: ValueKey<bool>(timerProvider.isRunning),
+                                              icon: Icon(timerProvider.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                                              iconSize: 80,
+                                              color: Colors.white,
+                                              onPressed: () {
+                                                HapticFeedback.lightImpact();
+                                                timerProvider.stopTimer();
+                                                _removeOverlay();
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                )
+                              : Container(
+                                  key: _playButtonKey,
+                                  decoration: BoxDecoration(
+                                      color: isDarkMode ? Colors.grey.shade800 : Colors.redAccent.shade400,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.3), // 그림자 색상
+                                          spreadRadius: 2, // 그림자가 퍼지는 정도
+                                          blurRadius: 10, // 그림자 흐림 정도
+                                          offset: const Offset(0, 5), // 그림자 위치 (x, y)
+                                        ),
+                                      ]),
+                                  child: IconButton(
+                                    key: ValueKey<bool>(timerProvider.isRunning),
+                                    icon: Icon(timerProvider.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                                    iconSize: 80,
+                                    color: Colors.white,
+                                    onPressed: () {
+                                      HapticFeedback.lightImpact();
+                                      timerProvider.startTimer(activityId: timerProvider.currentActivityId ?? '${userId}1');
+                                      _insertWaveAnimation();
+                                    },
+                                  ),
+                                ),
+                          const SizedBox(
+                            height: 50,
+                          ),
+                          TextIndicator(
+                            timerProvider: timerProvider,
+                          ),
+                          Padding(
+                            padding: EdgeInsets.all(16),
+                            child: SizedBox(
+                              width: 60 + (displayCount - 1) * 30,
+                              height: 35,
+                              child: Stack(
+                                children: List.generate(displayCount, (index) {
+                                  if (index < 3 || totalCount <= 4) {
+                                    return Positioned(
+                                      left: index * 20.0,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.2), // 그림자 색상
+                                              blurRadius: 6, // 그림자의 흐림 정도
+                                              offset: Offset(0, 2), // 그림자 위치 (x, y)
+                                            ),
+                                          ],
+                                        ),
                                         child: SvgPicture.network(
                                           'https://api.dicebear.com/9.x/thumbs/svg?seed=${avatarUrls[index]}&radius=50',
                                           width: 30,
                                           height: 30,
                                         ),
-                                      );
-                                    } else {
-                                      return Positioned(
-                                        left: index * 20.0,
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              width: 30,
-                                              height: 30,
-                                              decoration: BoxDecoration(borderRadius: BorderRadius.circular(50), color: Colors.grey[300]),
-                                              child: Align(
-                                                alignment: Alignment.center,
-                                                child: Text(
-                                                  '+${totalCount - 3}',
-                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                      ),
+                                    );
+                                  } else {
+                                    return Positioned(
+                                      left: index * 20.0,
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 30,
+                                            height: 30,
+                                            decoration: BoxDecoration(
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withOpacity(0.3),
+                                                  blurRadius: 6,
+                                                  offset: Offset(2, 2),
                                                 ),
+                                              ],
+                                              borderRadius: BorderRadius.circular(50),
+                                              color: Colors.grey[300],
+                                            ),
+                                            child: Align(
+                                              alignment: Alignment.center,
+                                              child: Text(
+                                                '+${totalCount - 3}',
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                                               ),
                                             ),
-                                            Text(
-                                              ' 활동중',
-                                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }
-                                  }),
-                                ),
+                                          ),
+                                          SizedBox(width: 10),
+                                          Text(
+                                            '활동중',
+                                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                }),
                               ),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          flex: 8,
-                          child: Column(
-                            children: [
-                              const Text(
-                                '선택된 활동',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              GestureDetector(
-                                onTap: () => _showActivityModal(timerProvider), // 버튼을 클릭하면 모달 실행
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      getIconData(timerProvider.currentActivityIcon ?? 'category_rounded'),
-                                      color: Colors.redAccent.shade200,
-                                    ),
-                                    const SizedBox(
-                                      width: 5,
-                                    ),
-                                    Text(
-                                      timerProvider.currentActivityName ?? '전체',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.redAccent.shade200,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    const Icon(Icons.keyboard_arrow_down_rounded, size: 30, color: Colors.red),
-                                  ],
-                                ),
-                              ),
-                              // timer
-                              Container(
-                                width: double.infinity,
-                                height: 100,
-                                alignment: Alignment.center,
-                                child: timerProvider.isRunning
-                                    ? AnimatedBuilder(
-                                        animation: _waveAnimationController,
-                                        builder: (context, child) {
-                                          // 색상이 파도치는 효과를 주기 위해 그라데이션 사용
-                                          return ShaderMask(
-                                              shaderCallback: (bounds) {
-                                                return LinearGradient(
-                                                  colors: [
-                                                    Colors.white,
-                                                    Colors.yellow,
-                                                    Colors.orange,
-                                                    isDarkMode ? Colors.redAccent.shade200 : Colors.redAccent.shade700
-                                                  ],
-                                                  begin: Alignment.topLeft,
-                                                  end: Alignment.bottomRight,
-                                                  stops: [
-                                                    _waveAnimation.value,
-                                                    _waveAnimation.value + 0.2,
-                                                    _waveAnimation.value + 0.4,
-                                                    _waveAnimation.value + 0.6,
-                                                  ],
-                                                ).createShader(bounds);
-                                              },
-                                              child: _buildTimeDisplay(timerProvider, isDarkMode));
-                                        },
-                                      )
-                                    : Text(
-                                        timerProvider.formattedTime,
-                                        style: TextStyle(
-                                            color: isDarkMode ? Colors.white : Colors.redAccent.shade200,
-                                            fontSize: 60,
-                                            fontWeight: FontWeight.w500,
-                                            fontFamily: 'chab'),
-                                      ),
-                              ),
-                              const SizedBox(height: 20),
-                              // play button
-                              timerProvider.isRunning
-                                  ? AnimatedBuilder(
-                                      animation: _breathingAnimation,
-                                      builder: (context, child) {
-                                        return Stack(
-                                          clipBehavior: Clip.none,
-                                          alignment: Alignment.center,
-                                          children: [
-                                            Transform.scale(
-                                              scale: _breathingAnimation.value, // 크기 애니메이션 적용
-                                              child: Container(
-                                                key: _playButtonKey,
-                                                decoration: BoxDecoration(
-                                                    color: isDarkMode ? Colors.grey.shade800 : Colors.redAccent.shade400,
-                                                    shape: BoxShape.circle,
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                        color: Colors.black.withOpacity(0.3), // 그림자 색상
-                                                        spreadRadius: 2, // 그림자가 퍼지는 정도
-                                                        blurRadius: 10, // 그림자 흐림 정도
-                                                        offset: const Offset(0, 5), // 그림자 위치 (x, y)
-                                                      ),
-                                                    ]),
-                                                child: IconButton(
-                                                  key: ValueKey<bool>(timerProvider.isRunning),
-                                                  icon: Icon(timerProvider.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded),
-                                                  iconSize: 80,
-                                                  color: Colors.white,
-                                                  onPressed: () {
-                                                    HapticFeedback.lightImpact();
-                                                    timerProvider.stopTimer();
-                                                    _removeOverlay();
-                                                  },
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    )
-                                  : Container(
-                                      key: _playButtonKey,
-                                      decoration: BoxDecoration(
-                                          color: isDarkMode ? Colors.grey.shade800 : Colors.redAccent.shade400,
-                                          shape: BoxShape.circle,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.3), // 그림자 색상
-                                              spreadRadius: 2, // 그림자가 퍼지는 정도
-                                              blurRadius: 10, // 그림자 흐림 정도
-                                              offset: const Offset(0, 5), // 그림자 위치 (x, y)
-                                            ),
-                                          ]),
-                                      child: IconButton(
-                                        key: ValueKey<bool>(timerProvider.isRunning),
-                                        icon: Icon(timerProvider.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded),
-                                        iconSize: 80,
-                                        color: Colors.white,
-                                        onPressed: () {
-                                          HapticFeedback.lightImpact();
-                                          timerProvider.startTimer(activityId: timerProvider.currentActivityId ?? '${userId}1');
-                                          _insertWaveAnimation();
-                                        },
-                                      ),
-                                    ),
-                              const SizedBox(
-                                height: 50,
-                              ),
-                              TextIndicator(
-                                timerProvider: timerProvider,
-                              ),
-                              const SizedBox(
-                                height: 30,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     const Menu()
                   ],

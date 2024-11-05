@@ -19,6 +19,8 @@ class _MemberPageState extends State<MemberPage> with SingleTickerProviderStateM
   late Animation<double> _animation;
 
   List<Map<String, dynamic>> userList = [
+    {"name": "조서은", "total_seconds": 360000, "remaining_seconds": 1100, "is_running": true},
+    {"name": "양조현", "total_seconds": 360000, "remaining_seconds": 28035, "is_running": true},
     {"name": "Alice", "total_seconds": 360000, "remaining_seconds": 288440, "is_running": true},
     {"name": "Bob", "total_seconds": 360000, "remaining_seconds": 84159, "is_running": true},
     {"name": "Charlie", "total_seconds": 360000, "remaining_seconds": 187662, "is_running": false},
