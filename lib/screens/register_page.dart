@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Firestore 패키지 추가
 import 'package:flutter/material.dart';
+import 'package:project1/screens/splash_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -13,6 +15,7 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore 인스턴스 생성
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   // 스텝을 관리하기 위한 변수
   int _currentStep = 0;
@@ -20,36 +23,53 @@ class _RegisterPageState extends State<RegisterPage> {
   // 폼 키와 컨트롤러들
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _verificationCodeController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
   // 버튼 활성화 여부
   bool _isButtonEnabled = false;
 
+  // 이메일 중복 체크 중인지 여부
+  bool _isCheckingEmail = false;
+
   // 이메일 중복 여부 체크 결과 저장
   String? _emailErrorMessage;
+
+  // 디바운스 타이머
+  Timer? _debounceTimer;
 
   // 이메일 유효성 검사
   void _validateEmail(String value) async {
     _emailErrorMessage = null; // 에러 메시지 초기화
 
+    // 기존의 디바운스 타이머 취소
+    if (_debounceTimer?.isActive ?? false) {
+      _debounceTimer?.cancel();
+    }
+
     // 이메일이 비어 있거나 유효하지 않으면 버튼 비활성화
     if (value.isEmpty) {
       setState(() {
         _isButtonEnabled = false;
+        _isCheckingEmail = false;
       });
       return;
     } else if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(value)) {
       setState(() {
         _isButtonEnabled = false;
+        _isCheckingEmail = false;
       });
       return;
     } else {
       // 이메일이 유효한 경우에만 중복 체크
       setState(() {
+        _isCheckingEmail = true; // 중복 체크 시작
         _isButtonEnabled = false; // 중복 체크 중에는 버튼 비활성화
       });
-      await _checkEmailExists(value.trim());
+      _debounceTimer = Timer(const Duration(milliseconds: 1000), () async {
+        await _checkEmailExists(value.trim());
+      });
     }
   }
 
@@ -60,24 +80,25 @@ class _RegisterPageState extends State<RegisterPage> {
       final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('checkEmailExists');
       final response = await callable.call({'email': email});
 
-      print('response: $response');
       final exists = response.data['exists'] as bool;
-      print('exists: $exists');
       if (exists) {
         setState(() {
           _emailErrorMessage = '이미 사용 중인 이메일입니다';
           _isButtonEnabled = false;
+          _isCheckingEmail = false;
         });
       } else {
         setState(() {
           _emailErrorMessage = null;
           _isButtonEnabled = true;
+          _isCheckingEmail = false;
         });
       }
     } catch (e) {
       setState(() {
         _emailErrorMessage = '이메일 중복 확인 중 오류가 발생했습니다';
         _isButtonEnabled = false;
+        _isCheckingEmail = false;
       });
       print('Error checking email existence: $e');
     }
@@ -160,6 +181,11 @@ class _RegisterPageState extends State<RegisterPage> {
           ],
         ),
       );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => SplashScreen(userId: userCredential.user!.uid),
+        ),
+      );
     } catch (e) {
       // 오류 처리
       print('Error during registration: $e');
@@ -207,11 +233,39 @@ class _RegisterPageState extends State<RegisterPage> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
+                contentPadding: EdgeInsets.symmetric(vertical: 16.0), // 위아래 패딩 설정
                 border: underlineInputBorder,
-                enabledBorder: underlineInputBorder,
-                focusedBorder: focusedUnderlineInputBorder,
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey), // 활성화 상태의 밑줄 색상
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.blueAccent), // 포커스된 상태의 밑줄 색상
+                ),
+                errorBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.redAccent), // 에러 상태의 밑줄 색상
+                ),
+                focusedErrorBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.redAccent), // 포커스된 에러 상태의 밑줄 색상
+                ),
                 hintText: 'example@example.com',
                 hintStyle: TextStyle(color: Colors.grey[400]),
+                errorStyle: TextStyle(
+                  color: Colors.redAccent, // 원하는 색상으로 변경
+                  fontSize: 14.0, // 원하는 크기로 변경
+                ),
+                suffixIcon: _isCheckingEmail
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.redAccent,
+                          ),
+                        ),
+                      )
+                    : null,
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -246,8 +300,18 @@ class _RegisterPageState extends State<RegisterPage> {
               obscureText: true,
               decoration: InputDecoration(
                 border: underlineInputBorder,
-                enabledBorder: underlineInputBorder,
-                focusedBorder: focusedUnderlineInputBorder,
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey), // 활성화 상태의 밑줄 색상
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.blueAccent), // 포커스된 상태의 밑줄 색상
+                ),
+                errorBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.redAccent), // 에러 상태의 밑줄 색상
+                ),
+                focusedErrorBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.redAccent), // 포커스된 에러 상태의 밑줄 색상
+                ),
                 hintText: '비밀번호',
               ),
               validator: (value) {
@@ -327,19 +391,26 @@ class _RegisterPageState extends State<RegisterPage> {
         },
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey, // 폼 유효성 검사를 위해 사용
+              padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 50),
-                  _buildStepContent(),
-                  const SizedBox(height: 32),
+                  Form(
+                    key: _formKey, // 폼 유효성 검사를 위해 사용
+                    autovalidateMode: AutovalidateMode.onUserInteraction, // 자동 검증 모드 설정
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 50),
+                        _buildStepContent(),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    height: 300,
+                  )
                 ],
-              ),
-            ),
-          ),
+              )),
         ),
       ),
       floatingActionButton: Padding(
@@ -352,7 +423,7 @@ class _RegisterPageState extends State<RegisterPage> {
           child: ElevatedButton(
             onPressed: _isButtonEnabled ? _onNextPressed : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: _isButtonEnabled ? Colors.redAccent : Colors.grey.shade400,
+              backgroundColor: _isButtonEnabled ? Colors.blueAccent : Colors.grey.shade400,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
