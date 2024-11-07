@@ -32,15 +32,20 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- 네이버 클라이언트 ID 메타데이터 추가 -->
-        <meta-data
-            android:name="com.naver.sdk.clientId"
-            android:value="ri5jBRaLyQtkI35rXrHJ" />
-    
-        <!-- 네이버 로그인 액티비티 추가 -->
+        <!-- 카카오 로그인 Activity 설정 -->
         <activity
-            android:name="com.nhn.android.naverlogin.ui.view.NaverLoginOAuthActivity"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+            android:launchMode="singleTask"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="kakaoe61da8880887bcab5a697b74091d0b84"/> <!-- 네이티브 앱 키 입력 -->
+            </intent-filter>
+        </activity>
+
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

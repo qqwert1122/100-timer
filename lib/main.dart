@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:project1/firebase_options.dart';
 import 'package:project1/screens/splash_page.dart';
 import 'package:project1/utils/database_service.dart';
@@ -13,7 +14,7 @@ void main() async {
   String userId = 'v3_4';
   final DatabaseService databaseService = DatabaseService();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.android);
-
+  KakaoSdk.init(nativeAppKey: 'e61da8880887bcab5a697b74091d0b84'); // 네이티브 앱 키 입력
   runApp(
     MultiProvider(
       providers: [

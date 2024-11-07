@@ -222,7 +222,7 @@ class _RegisterPageState extends State<RegisterPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '이메일을 입력하세요',
+              '닉네임을 입력하세요',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
@@ -279,7 +279,6 @@ class _RegisterPageState extends State<RegisterPage> {
               },
               onChanged: _validateEmail,
             ),
-            const SizedBox(height: 8),
           ],
         );
       case 1:
