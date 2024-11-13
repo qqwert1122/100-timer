@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project1/screens/login_page.dart';
+import 'package:project1/utils/auth_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingPage extends StatefulWidget {
@@ -83,10 +85,8 @@ class _SettingPageState extends State<SettingPage> {
         'title': '로그아웃',
         'icon': Icons.logout_rounded,
         'description': '로그아웃해요',
-        'onTap': () {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => LoginPage()),
-          );
+        'onTap': () async {
+          await Provider.of<AuthProvider>(context, listen: false).signOut();
         },
       },
       {

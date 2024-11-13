@@ -89,7 +89,7 @@ class DatabaseService {
       ''');
       }
     } catch (e) {
-      print('데이터베이스 업그레이드 중 오류 발생: $e');
+      print('Error : Can not upgrade DB, $e');
     }
   }
 
@@ -146,17 +146,18 @@ class DatabaseService {
 
   // 기본 활동 리스트 초기화
   Future<void> initializeActivityList(Database db, String userId) async {
-    final now = DateTime.now().toUtc();
+    final now = DateTime.now().toUtc().toIso8601String;
+    final uuid = Uuid().v4();
 
     // 기본 액티비티 리스트
     List<Map<String, dynamic>> defaultActivityList = [
       {
-        'activity_list_id': '${userId}1',
+        'activity_list_id': uuid,
         'user_id': userId,
         'activity_name': '전체',
         'activity_icon': 'category_rounded',
         'activity_color': '#B7B7B7',
-        'created_at': now.toIso8601String(),
+        'created_at': now,
       },
       // ... 추가 활동
     ];
@@ -186,6 +187,7 @@ class DatabaseService {
         'activity_icon': activityIcon,
         'activity_color': activityColor,
         'created_at': createdAt,
+        'isDeleted': false,
       });
     } catch (e) {
       print('활동 추가 중 오류 발생: $e');

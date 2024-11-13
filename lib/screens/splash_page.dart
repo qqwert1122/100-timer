@@ -16,7 +16,6 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  final String userId = 'v3_4';
 
   @override
   void initState() {
@@ -40,14 +39,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     String weekStart = getWeekStart(now); // 예시 2024-09-23
 
     // 타이머가 있는지 확인
-    Map<String, dynamic>? timer = await dbService.getTimer(userId, weekStart);
+    Map<String, dynamic>? timer = await dbService.getTimer(widget.userId, weekStart);
 
     if (timer == null) {
       timer = _createDefaultTimer(widget.userId);
-      dbService.createTimer(userId, timer);
+      dbService.createTimer(widget.userId, timer);
     }
 
-    await dbService.initializeActivityList(db, userId);
+    await dbService.initializeActivityList(db, widget.userId);
 
     // 1초 후에 메인 화면으로 전환
     Future.delayed(const Duration(milliseconds: 1000), () {

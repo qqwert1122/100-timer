@@ -52,7 +52,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
     // 파랑 계열
     '#00CED1', '#1E90FF', '#7695FF', '#0000FF', '#1C1678',
 
-    // 남색 계열 (추천 추가 포함)
+    // 남색 계열
     '#6A5ACD', '#050C9C', '#240750',
 
     // 보라 계열
