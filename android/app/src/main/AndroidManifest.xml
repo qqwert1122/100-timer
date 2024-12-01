@@ -2,7 +2,7 @@
     <application
         android:label="100-Timer"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name="com.burning.timer100.MainActivity"
             android:exported="true"

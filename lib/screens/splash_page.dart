@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import 'timer_page.dart'; // 메인 화면 파일
+import 'timer_page.dart';
 
 class SplashScreen extends StatefulWidget {
   final String userId;
@@ -13,59 +13,70 @@ class SplashScreen extends StatefulWidget {
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
+class _SplashScreenState extends State<SplashScreen> {
+  late DatabaseService _dbService;
+  Map<String, dynamic>? _timerData;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 500), // 1초간 서서히 사라짐
-      vsync: this,
-    );
-
-    // 투명도 애니메이션 (1 -> 0으로 서서히 사라짐)
-    _animation = Tween<double>(begin: 1.0, end: 0.0).animate(_controller);
-
+    _dbService = Provider.of<DatabaseService>(context, listen: false);
     _initializeApp(); // 비동기 작업을 호출
   }
 
   Future<void> _initializeApp() async {
-    final dbService = Provider.of<DatabaseService>(context, listen: false);
-    final db = await dbService.database;
+    DateTime startTime = DateTime.now(); // 로딩 시작 시간 기록
 
     DateTime now = DateTime.now();
     String weekStart = getWeekStart(now); // 예시 2024-09-23
 
+    // 사용자 데이터 가져오기
+    await _dbService.fetchOrDownloadUser(widget.userId);
+
+    // **사용자 데이터가 완전히 로드된 후에 활동 데이터를 가져옵니다.**
+    List<Map<String, dynamic>> activities = await _dbService.getActivities(widget.userId);
+
+    if (activities.isEmpty) {
+      // 활동 데이터가 없으면 서버에서 다운로드
+      await _dbService.downloadDataFromServer(widget.userId);
+
+      // 활동 데이터를 다시 로드
+      activities = await _dbService.getActivities(widget.userId);
+
+      // 여전히 activities가 비어있다면 기본 활동을 생성하거나 오류 처리
+      if (activities.isEmpty) {
+        print('활동 데이터를 가져올 수 없습니다.');
+        // 기본 활동 생성 로직 또는 오류 처리 로직 추가
+      }
+    }
+
     // 타이머가 있는지 확인
-    Map<String, dynamic>? timer = await dbService.getTimer(widget.userId, weekStart);
+    Map<String, dynamic>? timer = await _dbService.getTimer(widget.userId, weekStart);
 
     if (timer == null) {
       timer = _createDefaultTimer(widget.userId);
-      dbService.createTimer(widget.userId, timer);
+      await _dbService.createTimer(widget.userId, timer);
     }
 
-    await dbService.initializeActivityList(db, widget.userId);
+    _timerData = timer;
 
-    // 1초 후에 메인 화면으로 전환
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      _controller.forward();
-      Future.delayed(const Duration(milliseconds: 500), () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TimerPage(timerData: timer!), // null이 아님을 보장
-          ),
-        );
-      });
-    });
-  }
+    // 최소 로딩 시간 설정 (1초)
+    Duration minimumLoadingTime = Duration(seconds: 1);
+    Duration elapsedTime = DateTime.now().difference(startTime);
+    Duration remainingTime = minimumLoadingTime - elapsedTime;
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+    if (remainingTime > Duration.zero) {
+      // 로딩이 너무 빨리 끝났으므로, 남은 시간만큼 대기
+      await Future.delayed(remainingTime);
+    }
+
+    // 메인 화면으로 전환
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TimerPage(userId: widget.userId, timerData: _timerData!), // null이 아님을 보장
+      ),
+    );
   }
 
   // 기본 타이머 생성 메서드
@@ -74,16 +85,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     final timerId = const Uuid().v4();
 
     return {
+      'uid': userId,
       'timer_id': timerId,
-      'user_id': userId,
       'week_start': getWeekStart(now),
       'total_seconds': 100 * 3600,
       'remaining_seconds': 100 * 3600,
-      'last_activity_log_id': null,
+      'last_session_id': null,
       'is_running': 0,
-      'created_at': now.toIso8601String(),
+      'created_at': now.toUtc().toIso8601String(), // toUtc로 변경
+      'deleted_at': null,
       'last_started_at': null,
-      'last_updated_at': now.toIso8601String(),
+      'last_ended_at': null,
+      'last_updated_at': null,
+      'is_deleted': 0,
     };
   }
 
@@ -96,16 +110,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    // 로딩 중에도 항상 로고 이미지를 표시
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
-        child: FadeTransition(
-          opacity: _animation,
-          child: Image.asset(
-            'assets/images/logo_1.png',
-            width: 150,
-            height: 150,
-          ),
+        child: Image.asset(
+          'assets/images/logo.png',
+          width: 150,
+          height: 150,
         ),
       ),
     );

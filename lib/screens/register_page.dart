@@ -1,14 +1,13 @@
 import 'dart:async';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Firestore 패키지 추가
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:project1/main.dart';
-import 'package:project1/screens/splash_page.dart';
 import 'package:project1/utils/auth_provider.dart';
 import 'package:project1/utils/color_service.dart';
+import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -33,7 +32,7 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore 인스턴스 생성
-  final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  final DatabaseService _dbService = DatabaseService();
 
   String initNickname = "";
   List<String> avatarList = [];
@@ -61,16 +60,19 @@ class _RegisterPageState extends State<RegisterPage> {
   late TextEditingController _nicknameController;
 
   // 버튼 활성화 여부
-  bool _isButtonEnabled = true;
+  bool _isButtonEnabled = false; // 초기값을 false로 설정
 
   @override
   void initState() {
     super.initState();
     _nicknameController = TextEditingController(text: widget.userName);
     _nicknameController.addListener(_onTextChanged);
-    avatarList = [
-      widget.profileImage,
-    ];
+    if (widget.profileImage != '') {
+      print('profile : ${widget.profileImage}');
+      avatarList.add(widget.profileImage);
+    }
+    // 닉네임이 비어있지 않은지 확인하여 버튼 활성화 여부 설정
+    _isButtonEnabled = _nicknameController.text.trim().isNotEmpty;
   }
 
   @override
@@ -81,8 +83,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
   void _onTextChanged() {
     setState(() {
-      // 텍스트가 비어 있지 않으면 버튼을 활성화
-      _isButtonEnabled = _nicknameController.text.isNotEmpty;
+      // 닉네임이 비어있지 않으면 버튼 활성화
+      _isButtonEnabled = _nicknameController.text.trim().isNotEmpty;
     });
   }
 
@@ -112,37 +114,32 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // 회원가입 함수
   void _register() async {
-    String now = DateTime.now().toUtc().toIso8601String();
+    String now = DateTime.now().toUtc().toIso8601String(); // toUtc로 변경
 
     try {
-      // Firestore에 사용자 정보 저장
-      await _firestore.collection('users').doc(widget.uid).set({
+      final newUser = {
         'uid': widget.uid,
-        'userName': _nicknameController.text.trim(),
-        'profileImage': selectedAvatar,
-        'createdAt': now,
-        'lastLogIn': now,
-        'verifiedMethod': widget.method,
+        'user_name': _nicknameController.text.trim(),
+        'profile_image': selectedAvatar,
+        'created_at': now,
+        'last_logged_in': now,
+        'verified_method': Provider.of<AuthProvider>(context, listen: false).loginMethod,
         'role': 'user',
-        'preference': '',
-      });
+        'total_seconds': 360000,
+        'preference': null,
+      };
+
+      await _dbService.createUser(widget.uid, newUser);
+      await _firestore.collection('users').doc(widget.uid).set(newUser);
 
       // Firestore에 사용자의 activities 정보 저장
+      _dbService.addActivity(widget.uid, '전체', 'category_rounded', '#B7B7B7', true);
 
       if (selectedActivities.isNotEmpty) {
         for (int index in selectedActivities) {
-          String activityId = Uuid().v4();
           Map<String, dynamic> activity = activities[index];
 
-          await _firestore.collection('activities').doc(activityId).set({
-            'uid': widget.uid,
-            'activityId': activityId,
-            'activityName': activity['name'],
-            'activityIcon': activity['iconName'],
-            'activityColor': activity['color'],
-            'createdAt': now,
-            'isDeleted': false,
-          });
+          _dbService.addActivity(widget.uid, activity['name'], activity['iconName'], activity['color'], false);
         }
       }
 
@@ -197,7 +194,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     switch (_currentStep) {
       case 0:
-        // 이메일 입력 단계
+        // 닉네임 입력 단계
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -213,33 +210,38 @@ class _RegisterPageState extends State<RegisterPage> {
               controller: _nicknameController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                contentPadding: EdgeInsets.symmetric(vertical: 16.0), // 위아래 패딩 설정
+                contentPadding: const EdgeInsets.symmetric(vertical: 16.0), // 위아래 패딩 설정
                 border: underlineInputBorder,
-                enabledBorder: UnderlineInputBorder(
+                enabledBorder: const UnderlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey), // 활성화 상태의 밑줄 색상
                 ),
-                focusedBorder: UnderlineInputBorder(
+                focusedBorder: const UnderlineInputBorder(
                   borderSide: BorderSide(color: Colors.blueAccent), // 포커스된 상태의 밑줄 색상
                 ),
-                errorBorder: UnderlineInputBorder(
+                errorBorder: const UnderlineInputBorder(
                   borderSide: BorderSide(color: Colors.redAccent), // 에러 상태의 밑줄 색상
                 ),
-                focusedErrorBorder: UnderlineInputBorder(
+                focusedErrorBorder: const UnderlineInputBorder(
                   borderSide: BorderSide(color: Colors.redAccent), // 포커스된 에러 상태의 밑줄 색상
                 ),
                 hintText: "닉네임",
                 hintStyle: TextStyle(color: Colors.grey[400]),
-                errorStyle: TextStyle(
+                errorStyle: const TextStyle(
                   color: Colors.redAccent, // 원하는 색상으로 변경
                   fontSize: 14.0, // 원하는 크기로 변경
                 ),
               ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return '닉네임을 입력해주세요';
+                }
+                return null;
+              },
             ),
-            // widget.profileImage.isNotEmpty ? Image.network(widget.profileImage) : const SizedBox.shrink(),
           ],
         );
       case 1:
-        // 비밀번호 입력 단계
+        // 아바타 선택 단계
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -250,17 +252,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              '처음에는 6개 중에서 고를 수 있어요',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-            ),
-            SizedBox(
-              height: 50,
-            ),
+            const SizedBox(height: 50),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -285,7 +277,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8.0),
                           ),
-                          child: isFirst
+                          child: isFirst && widget.profileImage != ''
                               ? Container(
                                   width: 100,
                                   height: 100,
@@ -294,19 +286,29 @@ class _RegisterPageState extends State<RegisterPage> {
                                       BoxShadow(
                                         color: Colors.black.withOpacity(0.3),
                                         blurRadius: 6,
-                                        offset: Offset(2, 2),
+                                        offset: const Offset(2, 2),
                                       ),
                                     ],
                                     borderRadius: BorderRadius.circular(50),
                                     color: Colors.grey[300],
                                   ),
                                   child: ClipOval(
-                                    // 이미지가 동그라미 모양 안에 클리핑됨
-                                    child: Image.network(
-                                      avatar,
-                                      fit: BoxFit.cover, // 이미지가 컨테이너에 잘 맞도록 설정
-                                    ),
-                                  ))
+                                    child: avatar != ''
+                                        ? Image.network(avatar, fit: BoxFit.cover,
+                                            loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                                            if (loadingProgress == null) {
+                                              return child; // 로드가 완료되면 이미지를 반환합니다.
+                                            } else {
+                                              // 로딩 중일 때는 빈 컨테이너를 반환합니다.
+                                              return Container();
+                                            }
+                                          }, errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
+                                            // 에러 발생 시 빈 컨테이너를 반환합니다.
+                                            return Container();
+                                          })
+                                        : Container(),
+                                  ),
+                                )
                               : Container(
                                   decoration: BoxDecoration(),
                                   child: SvgPicture.network(
@@ -329,7 +331,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 print('애니메이션 로드 완료');
                               },
                               errorBuilder: (context, error, stackTrace) {
-                                return Icon(
+                                return const Icon(
                                   Icons.error,
                                   color: Colors.red,
                                   size: 30,
@@ -346,7 +348,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ],
         );
       case 2:
-        // 비밀번호 확인 단계
+        // 활동 선택 단계
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -365,18 +367,16 @@ class _RegisterPageState extends State<RegisterPage> {
                 color: Colors.grey,
               ),
             ),
-            SizedBox(
-              height: 50,
-            ),
+            const SizedBox(height: 50),
             GridView.builder(
               shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // 한 줄에 5개의 사각형
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, // 한 줄에 2개의 사각형
                 crossAxisSpacing: 8.0, // 가로 간격
                 mainAxisSpacing: 8.0, // 세로 간격
               ),
-              itemCount: activities.length, // 총 10개의 아이템
+              itemCount: activities.length, // 총 9개의 아이템
               itemBuilder: (context, index) {
                 return GestureDetector(
                   onTap: () {
@@ -390,96 +390,97 @@ class _RegisterPageState extends State<RegisterPage> {
                     HapticFeedback.lightImpact();
                   },
                   child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            ColorService.hexToColor(activities[index]['color']),
-                            ColorService.hexToColor(activities[(index + 1) % activities.length]['color']),
-                          ],
-                          stops: const [0.0, 1.0],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 6,
-                            offset: const Offset(2, 4),
-                          ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          ColorService.hexToColor(activities[index]['color']),
+                          ColorService.hexToColor(activities[(index + 1) % activities.length]['color']),
                         ],
+                        stops: const [0.0, 1.0],
                       ),
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            left: 20,
-                            top: 20,
-                            child: Text(
-                              activities[index]['name'],
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                              ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 6,
+                          offset: const Offset(2, 4),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          left: 20,
+                          top: 20,
+                          child: Text(
+                            activities[index]['name'],
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
                             ),
                           ),
-                          selectedActivities.contains(index)
-                              ? Positioned(
-                                  right: 10, // 우측 위치 조정
-                                  top: 10, // 상단 위치 조정
-                                  child: Lottie.asset(
-                                    'assets/images/check_3.json', // Lottie 파일 경로
-                                    width: 30,
-                                    height: 30,
-                                    repeat: false,
-                                    onLoaded: (composition) {
-                                      print('애니메이션 로드 완료');
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Icon(
-                                        Icons.error,
-                                        color: Colors.red,
-                                        size: 30,
-                                      );
-                                    },
-                                  ),
-                                )
-                              : Positioned(
-                                  right: 13,
-                                  top: 13,
-                                  child: Container(
-                                    width: 25,
-                                    height: 25,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle, // 원형으로 설정
-                                      border: Border.all(
-                                        color: Colors.white, // 회색 테두리 색상
-                                        width: 2, // 테두리 두께
-                                      ),
+                        ),
+                        selectedActivities.contains(index)
+                            ? Positioned(
+                                right: 10, // 우측 위치 조정
+                                top: 10, // 상단 위치 조정
+                                child: Lottie.asset(
+                                  'assets/images/check_3.json', // Lottie 파일 경로
+                                  width: 30,
+                                  height: 30,
+                                  repeat: false,
+                                  onLoaded: (composition) {
+                                    print('애니메이션 로드 완료');
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(
+                                      Icons.error,
+                                      color: Colors.red,
+                                      size: 30,
+                                    );
+                                  },
+                                ),
+                              )
+                            : Positioned(
+                                right: 13,
+                                top: 13,
+                                child: Container(
+                                  width: 25,
+                                  height: 25,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle, // 원형으로 설정
+                                    border: Border.all(
+                                      color: Colors.white, // 회색 테두리 색상
+                                      width: 2, // 테두리 두께
                                     ),
                                   ),
                                 ),
-                          Positioned(
-                            right: 10,
-                            bottom: 10,
-                            child: ShaderMask(
-                              shaderCallback: (bounds) => LinearGradient(
-                                colors: [
-                                  ColorService.hexToColor(activities[index]['color']).withOpacity(0.2),
-                                  ColorService.hexToColor(activities[index]['color']).withOpacity(0.5),
-                                ], // 그라데이션 색상
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ).createShader(bounds),
-                              child: Icon(
-                                activities[index]['icon'],
-                                color: Colors.white,
-                                size: 76,
                               ),
+                        Positioned(
+                          right: 10,
+                          bottom: 10,
+                          child: ShaderMask(
+                            shaderCallback: (bounds) => LinearGradient(
+                              colors: [
+                                ColorService.hexToColor(activities[index]['color']).withOpacity(0.2),
+                                ColorService.hexToColor(activities[index]['color']).withOpacity(0.5),
+                              ], // 그라데이션 색상
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ).createShader(bounds),
+                            child: Icon(
+                              activities[index]['icon'],
+                              color: Colors.white,
+                              size: 76,
                             ),
                           ),
-                        ],
-                      )),
+                        ),
+                      ],
+                    ),
+                  ),
                 );
               },
             ),
@@ -519,9 +520,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       ],
                     ),
                   ),
-                  SizedBox(
-                    height: 300,
-                  )
+                  SizedBox(height: 300),
                 ],
               )),
         ),

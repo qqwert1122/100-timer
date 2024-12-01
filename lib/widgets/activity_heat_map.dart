@@ -13,29 +13,11 @@ class ActivityHeatMap extends StatefulWidget {
 }
 
 class _ActivityHeatMapState extends State<ActivityHeatMap> {
-  Map<DateTime, int> activityData = {};
   DateTime startDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime endDate = DateTime.now();
 
-  @override
-  void initState() {
-    super.initState();
-    _loadActivityData();
-  }
-
-  void _loadActivityData() {
-    setState(() {
-      activityData = {
-        DateTime.now().subtract(const Duration(days: 3)): 18000, // 5시간
-        DateTime.now().subtract(const Duration(days: 2)): 36000, // 10시간
-        DateTime.now().subtract(const Duration(days: 1)): 9000, // 2.5시간
-        DateTime.now(): 27000, // 7.5시간
-      };
-    });
-  }
-
   // 최대 활동 시간 설정 (예: 10시간)
-  final int maxActivityTime = 36000;
+  final int maxActivityTime = 36000; // 10시간을 초 단위로 표현
 
   @override
   Widget build(BuildContext context) {
@@ -55,14 +37,17 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
       child: HeatMapCalendar(
         initDate: DateTime(DateTime.now().year, DateTime.now().month, 1),
         datasets: timerProvider.heatMapDataSet.map((date, value) {
-          // 활동 시간에 따라 1부터 4까지의 값을 할당
-          int level = ((value / 36000) * 4).ceil();
-          if (level > 4) level = 4;
+          int level = ((value / maxActivityTime) * 4).ceil();
+          level = level.clamp(1, 4); // 레벨 값을 1~4로 제한
+          print("Date: $date, Value: $value, Level: $level"); // 디버깅 로그
           return MapEntry(date, level);
         }),
         colorMode: ColorMode.opacity,
         colorsets: {
-          1: ColorService.hexToColor("#32CD32"),
+          1: ColorService.hexToColor("#32CD32").withOpacity(0.25),
+          2: ColorService.hexToColor("#32CD32").withOpacity(0.5),
+          3: ColorService.hexToColor("#32CD32").withOpacity(0.75),
+          4: ColorService.hexToColor("#32CD32").withOpacity(1.0),
         },
         defaultColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
         textColor: Colors.black87,

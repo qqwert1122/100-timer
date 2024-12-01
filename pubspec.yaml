@@ -30,9 +30,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  carousel_slider: ^5.0.0  # 최신 버전 확인 후 추가하세요
-  provider: ^6.0.0  # 최신 버전 확인 후 추가하세요
-  shared_preferences: ^2.3.2
+  flutter_launcher_icons: ^0.14.1
+  carousel_slider: ^5.0.0  
+  provider: ^6.0.0  
+  shared_preferences: ^2.3.3
   introduction_screen: ^3.1.14
   flutter_slidable: ^3.1.1
   uuid: ^4.5.0
@@ -54,6 +55,7 @@ dependencies:
   cloud_functions: ^5.1.3
   flutter_naver_login: ^2.0.0
   kakao_flutter_sdk: ^1.9.6
+  wakelock_plus: ^1.2.8
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.6
@@ -63,7 +65,7 @@ flutter:
   uses-material-design: true
   assets:
       - assets/images/
-      - assets/icon/logo_1.png
+      - assets/images/logo.png
 
   fonts:
   - family: NanumHuman
@@ -78,18 +80,15 @@ flutter:
       - asset : assets/fonts/chab.ttf
         weight : 400
 
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   mockito: ^5.4.4
   build_runner: ^2.4.13
   meta: ^1.15.0 
-  flutter_launcher_icons: "^0.14.1"
-
-flutter_icons:
-  android: true
-  ios: true
-  image_path: "assets/icon/logo_1.png"
+  flutter_lints: ^3.0.0
 
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -97,7 +96,14 @@ flutter_icons:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^3.0.0
+  
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/ic_launcher.png" # 아이콘 이미지 경로
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/images/logo.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

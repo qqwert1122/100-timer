@@ -10,11 +10,13 @@ import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/widgets/auth_wrapper.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  WakelockPlus.enable();
+
   await initializeDateFormatting('ko_KR', null);
-  String userId = 'v3_4';
   await Firebase.initializeApp(options: DefaultFirebaseOptions.android);
   KakaoSdk.init(nativeAppKey: 'e61da8880887bcab5a697b74091d0b84'); // 네이티브 앱 키 입력
   runApp(
@@ -33,7 +35,6 @@ void main() async {
             databaseService: DatabaseService(),
           ),
         ),
-
         Provider(create: (context) => DatabaseService()), // DatabaseService 제공
       ],
       child: MyApp(),

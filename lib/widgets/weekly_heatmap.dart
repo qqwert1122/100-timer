@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:project1/utils/color_service.dart';
-// 햅틱 피드백을 위해 추가
 import 'package:project1/utils/database_service.dart';
 
 class WeeklyHeatmap extends StatefulWidget {
@@ -14,21 +13,17 @@ class WeeklyHeatmap extends StatefulWidget {
 }
 
 class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
-  final DatabaseService _dbService = DatabaseService(); // DatabaseService 초기화
+  final DatabaseService _dbService = DatabaseService();
 
-  // 히트맵 데이터
   Map<String, Map<String, Map<String, int>>> heatmapData = {};
 
-  // 요일 및 시간대 키
   final List<String> dayKeys = ['월', '화', '수', '목', '금', '토', '일'];
   List<String> allHourKeys = List.generate(24, (index) => '${index.toString().padLeft(2, '0')}:00');
   List<String> activeHourKeys = [];
 
-  // 활동별 색상 및 이름 매핑
   final Map<String, Color> activityColorMap = {};
   final Map<String, String> activityNames = {};
 
-  // 로딩 및 에러 상태 관리
   bool isLoading = true;
   String? errorMessage;
 
@@ -38,47 +33,32 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
     generateWeeklyHeatmap();
   }
 
-  // 활동별 색상 초기화
+  // 활동 색상 초기화
   Future<void> initializeActivityColors() async {
-    List<Map<String, dynamic>> activities = await _dbService.getActivityList(widget.userId);
-    for (int i = 0; i < activities.length; i++) {
-      String activityId = activities[i]['activity_list_id'];
-      Color color = ColorService.hexToColor(activities[i]['activity_color']); // 색상 반복 사용
-      activityColorMap[activityId] = color;
-    }
-  }
-
-  // 활동 이름 초기화
-  Future<void> initializeActivityNames() async {
-    List<Map<String, dynamic>> activities = await _dbService.getActivityList(widget.userId);
+    List<Map<String, dynamic>> activities = await _dbService.getActivities(widget.userId);
     for (var activity in activities) {
-      String activityId = activity['activity_list_id'];
-      String activityName = activity['activity_name'];
-      activityNames[activityId] = activityName;
+      String activityId = activity['activity_id'];
+      Color color = ColorService.hexToColor(activity['activity_color']);
+      activityColorMap[activityId] = color;
+      activityNames[activityId] = activity['activity_name'];
     }
   }
 
   // 주간 히트맵 데이터 생성
   Future<void> generateWeeklyHeatmap() async {
     try {
-      // 활동별 색상 및 이름 초기화
       await initializeActivityColors();
-      await initializeActivityNames();
 
-      // 이번 주의 활동 로그 가져오기
-      List<Map<String, dynamic>> activityLogs = await _dbService.getActivityLogsForCurrentWeek(widget.userId);
+      List<Map<String, dynamic>> sessions = await _dbService.getSessionsForCurrentWeek(widget.userId);
 
-      // 활동이 있는 시간대를 추출하기 위한 집합(Set)
       Set<String> activeHourSet = {};
 
-      // 임시 히트맵 데이터 초기화
       Map<String, Map<String, Map<String, int>>> tempHeatmapData = {};
 
-      for (var log in activityLogs) {
-        String activityId = log['activity_id'];
-
-        DateTime startTime = DateTime.parse(log['start_time']).toLocal();
-        DateTime endTime = log['end_time'] != null ? DateTime.parse(log['end_time']).toLocal() : DateTime.now();
+      for (var session in sessions) {
+        String activityId = session['activity_id'];
+        DateTime startTime = DateTime.parse(session['start_time']).toLocal();
+        DateTime endTime = session['end_time'] != null ? DateTime.parse(session['end_time']).toLocal() : DateTime.now();
 
         DateTime current = startTime;
         while (current.isBefore(endTime)) {
@@ -90,10 +70,8 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
           String hourKey = '${current.hour.toString().padLeft(2, '0')}:00';
           String dayKey = dayKeys[current.weekday - 1];
 
-          // 활동이 있는 시간대를 저장
           activeHourSet.add(hourKey);
 
-          // 히트맵 데이터에 시간대와 요일에 해당하는 활동 시간을 누적
           tempHeatmapData.putIfAbsent(hourKey, () => {});
           tempHeatmapData[hourKey]!.putIfAbsent(dayKey, () => {});
           tempHeatmapData[hourKey]![dayKey]!.update(
@@ -105,18 +83,18 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
         }
       }
 
-      // 활동이 있는 시간대를 리스트로 변환하고 정렬
       activeHourKeys = tempHeatmapData.keys.toList();
       activeHourKeys.sort();
 
-      // 상태 업데이트
+      if (!mounted) return; // 위젯이 활성화된 상태인지 확인
       setState(() {
         heatmapData = tempHeatmapData;
         isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return; // 위젯이 활성화된 상태인지 확인
       setState(() {
-        errorMessage = e.toString();
+        errorMessage = '데이터를 불러오는 중 오류가 발생했습니다.';
         isLoading = false;
       });
     }
@@ -126,7 +104,6 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
   Widget buildWeeklyHeatmapWidget() {
     List<String> displayHourKeys = widget.showAllHours ? allHourKeys : activeHourKeys;
 
-    // 만약 토글이 활성화된 상태에서 모든 시간대를 표시하고, 표시할 시간대가 없을 때는 메시지 표시
     if (!isLoading && displayHourKeys.isEmpty) {
       return const Center(
           child: Padding(
@@ -140,7 +117,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 상단 요일 표시
+          // 요일 헤더
           Row(
             children: [
               Container(
@@ -199,19 +176,19 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
                     // 해당 활동의 색상 가져오기
                     Color baseColor = activityColorMap[dominantActivityId] ?? Colors.blue;
 
-                    // 활동 강도에 따라 색상의 명도 조절 (0.2 ~ 1.0)
+                    // 활동 강도에 따라 색상의 명도 조절
                     double intensity = (dominantMinutes / 60.0).clamp(0.2, 1.0);
 
                     // 색상의 밝기를 조절
                     Color color = baseColor.withOpacity(intensity);
 
                     // Tooltip에 활동 이름과 시간 표시
-                    String activityName = activityNames[dominantActivityId] ?? 'Unknown Activity';
+                    String activityName = activityNames[dominantActivityId] ?? '알 수 없는 활동';
 
                     return Container(
                       width: 40,
                       height: 20,
-                      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.all(Radius.circular(6))),
+                      decoration: BoxDecoration(color: color, borderRadius: const BorderRadius.all(Radius.circular(6))),
                       margin: const EdgeInsets.all(1),
                       child: Tooltip(
                         message: '$dayKey $hourKey\n$activityName\n$dominantMinutes분',
@@ -233,7 +210,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
     );
   }
 
-  // 범례 위젯 생성
+  // 활동 범례 위젯 생성
   Widget buildLegend() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -243,7 +220,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
         children: activityColorMap.entries.map((entry) {
           String activityId = entry.key;
           Color color = entry.value;
-          String activityName = activityNames[activityId] ?? 'Unknown';
+          String activityName = activityNames[activityId] ?? '알 수 없는 활동';
 
           return Row(
             mainAxisSize: MainAxisSize.min,
@@ -252,8 +229,8 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
                 width: 10,
                 height: 10,
                 decoration: BoxDecoration(
-                  color: color, // 배경 색상 설정
-                  shape: BoxShape.circle, // 원형으로 설정
+                  color: color,
+                  shape: BoxShape.circle,
                 ),
               ),
               const SizedBox(width: 4),
@@ -273,15 +250,13 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     } else if (errorMessage != null) {
-      return Center(child: Text('에러: $errorMessage'));
+      return Center(child: Text(errorMessage!));
     } else {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 히트맵 위젯
           buildWeeklyHeatmapWidget(),
           const SizedBox(height: 16),
-          // 범례 추가
           buildLegend(),
         ],
       );

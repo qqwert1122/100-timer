@@ -4,7 +4,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/screens/add_activity_page.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
-import 'package:project1/utils/icon_utils.dart'; // 아이콘 유틸리티
+import 'package:project1/utils/icon_utils.dart';
 
 class ActivityPicker extends StatefulWidget {
   final String selectedActivity;
@@ -25,17 +25,16 @@ class ActivityPicker extends StatefulWidget {
 class _ActivityPickerState extends State<ActivityPicker> {
   late Future<List<Map<String, dynamic>>> _activityListFuture;
   final DatabaseService dbService = DatabaseService();
-  final ColorService colorService = ColorService();
 
   @override
   void initState() {
     super.initState();
-    _activityListFuture = dbService.getActivityList(widget.userId);
+    _refreshActivityList();
   }
 
   void _refreshActivityList() {
     setState(() {
-      _activityListFuture = dbService.getActivityList(widget.userId);
+      _activityListFuture = dbService.getActivities(widget.userId);
     });
   }
 
@@ -53,14 +52,14 @@ class _ActivityPickerState extends State<ActivityPicker> {
   }
 
   Future<void> _navigateToEditActivityPage(
-      BuildContext context, String activityListId, String activityName, String activityIcon, String activityColor) async {
+      BuildContext context, String activityId, String activityName, String activityIcon, String activityColor) async {
     final updatedActivity = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddActivityPage(
           userId: widget.userId,
           isEdit: true,
-          activityListId: activityListId,
+          activityId: activityId,
           activityName: activityName,
           activityIcon: activityIcon,
           activityColor: activityColor,
@@ -73,10 +72,10 @@ class _ActivityPickerState extends State<ActivityPicker> {
     }
   }
 
-  Future<void> _deleteActivity(BuildContext context, String activityListId, String activityName) async {
+  Future<void> _deleteActivity(BuildContext context, String activityId, String activityName) async {
     final shouldDelete = await _showDeleteConfirmationDialog(context, activityName);
     if (shouldDelete) {
-      await dbService.deleteActivity(activityListId);
+      await dbService.deleteActivity(widget.userId, activityId);
       _refreshActivityList();
       if (widget.selectedActivity == activityName) {
         widget.onSelectActivity('전체', 'category_rounded', '${widget.userId}1');
@@ -171,9 +170,9 @@ class _ActivityPickerState extends State<ActivityPicker> {
                   return const Center(child: Text('오류가 발생했습니다.'));
                 }
 
-                final activities = snapshot.data as List<Map<String, dynamic>>;
+                final activities = snapshot.data as List<Map<String, dynamic>>?;
 
-                if (activities.isEmpty) {
+                if (activities == null || activities.isEmpty) {
                   return const Center(child: Text('활동이 없습니다.'));
                 }
 
@@ -201,79 +200,43 @@ class _ActivityPickerState extends State<ActivityPicker> {
                     final iconName = activity['activity_icon'];
                     final iconData = getIconData(iconName);
 
-                    if (activity['activity_name'] == '전체') {
-                      return ListTile(
-                        leading: Icon(
-                          iconData,
-                          color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null,
-                        ),
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Text(
-                              activity['activity_name'],
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
-                            ),
-                            SizedBox(
-                              width: 10,
-                            ),
-                            Container(
-                              width: 12,
-                              height: 12,
-                              margin: const EdgeInsets.symmetric(vertical: 2.0),
-                              decoration: BoxDecoration(
-                                color: ColorService.hexToColor(activity['activity_color']),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            )
-                          ],
-                        ),
-                        onTap: () {
-                          widget.onSelectActivity(
-                            activity['activity_name'],
-                            activity['activity_icon'],
-                            activity['activity_list_id'],
-                          );
-                        },
-                      );
-                    }
-
                     return Slidable(
-                      key: Key(activity['activity_list_id']),
+                      key: Key(activity['activity_id']),
                       closeOnScroll: true,
-                      endActionPane: ActionPane(
-                        motion: const DrawerMotion(),
-                        children: [
-                          SlidableAction(
-                            onPressed: (context) {
-                              _navigateToEditActivityPage(
-                                context,
-                                activity['activity_list_id'],
-                                activity['activity_name'],
-                                activity['activity_icon'],
-                                activity['activity_color'],
-                              );
-                            },
-                            backgroundColor: Colors.blueAccent,
-                            foregroundColor: Colors.white,
-                            icon: Icons.edit,
-                            flex: 1,
-                            autoClose: true,
-                          ),
-                          SlidableAction(
-                            onPressed: (context) {
-                              _deleteActivity(context, activity['activity_list_id'], activity['activity_name']);
-                            },
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            icon: Icons.delete,
-                            flex: 1,
-                          ),
-                        ],
-                      ),
+                      enabled: activity['is_default'] != 1, // 기본 활동이면 슬라이드 비활성화
+
+                      endActionPane: activity['is_default'] != 1
+                          ? ActionPane(
+                              motion: const DrawerMotion(),
+                              children: [
+                                SlidableAction(
+                                  onPressed: (context) {
+                                    _navigateToEditActivityPage(
+                                      context,
+                                      activity['activity_id'],
+                                      activity['activity_name'],
+                                      activity['activity_icon'],
+                                      activity['activity_color'],
+                                    );
+                                  },
+                                  backgroundColor: Colors.blueAccent,
+                                  foregroundColor: Colors.white,
+                                  icon: Icons.edit,
+                                  flex: 1,
+                                  autoClose: true,
+                                ),
+                                SlidableAction(
+                                  onPressed: (context) {
+                                    _deleteActivity(context, activity['activity_id'], activity['activity_name']);
+                                  },
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                  icon: Icons.delete,
+                                  flex: 1,
+                                ),
+                              ],
+                            )
+                          : null,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 0),
                         child: ListTile(
@@ -289,7 +252,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
                                     fontWeight: FontWeight.bold,
                                     color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
                               ),
-                              SizedBox(
+                              const SizedBox(
                                 width: 10,
                               ),
                               Container(
@@ -307,7 +270,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
                             widget.onSelectActivity(
                               activity['activity_name'],
                               activity['activity_icon'],
-                              activity['activity_list_id'],
+                              activity['activity_id'],
                             );
                           },
                         ),

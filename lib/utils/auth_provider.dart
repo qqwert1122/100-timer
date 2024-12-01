@@ -1,10 +1,7 @@
-// auth_provider.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-// import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthProvider extends ChangeNotifier {
   User? _user;
@@ -60,48 +57,19 @@ class AuthProvider extends ChangeNotifier {
       _loginMethod = 'kakao';
 
       // Firestore에서 사용자 등록 여부 확인
-      final userDoc = await _firestore.collection('users').doc(kakaoUserId).get();
+      final userId = userCredential.user?.uid;
+      if (userId != null) {
+        final userDoc = await _firestore.collection('users').doc(userId).get();
+        _isUserDataAvailable = userDoc.exists;
+      } else {
+        _isUserDataAvailable = false;
+      }
 
-      _isUserDataAvailable = userDoc.exists;
       notifyListeners();
     } catch (e) {
       print('Firebase Auth 로그인 실패: $e');
     }
   }
-
-  // Future<void> signInWithGoogle() async {
-  //   try {
-  //     final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-  //     if (googleUser == null) {
-  //       // 사용자가 로그인 취소
-  //       return;
-  //     }
-
-  //     final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-  //     final credential = GoogleAuthProvider.credential(
-  //       accessToken: googleAuth.accessToken,
-  //       idToken: googleAuth.idToken,
-  //     );
-
-  //     // FirebaseAuth에 로그인
-  //     UserCredential userCredential = await _auth.signInWithCredential(credential);
-
-  //     // 사용자 정보 업데이트
-  //     await userCredential.user?.updateDisplayName(userCredential.user?.displayName);
-  //     await userCredential.user?.updatePhotoURL(userCredential.user?.photoURL);
-
-  //     _loginMethod = 'google';
-
-  //     // Firestore에서 사용자 등록 여부 확인
-  //     final userDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
-
-  //     _isUserDataAvailable = userDoc.exists;
-  //     notifyListeners();
-  //   } catch (e) {
-  //     print('Google 로그인 실패: $e');
-  //   }
-  // }
 
   void updateUserDataAvailable(bool isAvailable) {
     _isUserDataAvailable = isAvailable;
@@ -114,5 +82,41 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       print('Firebase Auth 로그아웃 실패: $e');
     }
+  }
+
+  Future<Map<String, dynamic>?> getUserData() async {
+    Map<String, dynamic>? data;
+    String now = DateTime.now().toUtc().toIso8601String();
+
+    if (_user != null) {
+      String userId = _user!.uid;
+
+      try {
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+
+        if (userDoc.exists) {
+          data = userDoc.data() as Map<String, dynamic>?;
+        } else {
+          print("사용자 데이터 없음");
+        }
+      } catch (e) {
+        final error = {
+          'uid': userId,
+          'created_at': now,
+          'error_message': e.toString(),
+          'error_action': '사용자 데이터 가져오기 중',
+        };
+        print('error: 사용자 데이터 가져오기 중 오류 발생, $e');
+        await _firestore.collection('errors').doc(userId).set(error);
+      }
+    } else {
+      print('로그인된 사용자가 없습니다.');
+    }
+
+    return data;
+  }
+
+  void changeLoginMethod(String newMethod) {
+    _loginMethod = newMethod;
   }
 }

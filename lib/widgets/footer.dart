@@ -26,7 +26,7 @@ class Footer extends StatelessWidget {
                 height: 40,
                 child: ClipRRect(
                   child: Image.asset(
-                    'assets/images/logo_1.png',
+                    'assets/images/logo.png',
                   ),
                 ),
               ),

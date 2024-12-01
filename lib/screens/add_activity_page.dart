@@ -7,18 +7,18 @@ import 'package:project1/utils/icon_utils.dart';
 import 'package:provider/provider.dart';
 
 class AddActivityPage extends StatefulWidget {
-  final bool isEdit; // 생성 또는 수정 모드 구분
-  final String? activityListId; // 수정할 때의 activity_list_id
-  final String? activityName; // 수정할 때 기존 활동 이름
-  final String? activityIcon; // 수정할 때 기존 활동 아이콘
-  final String? activityColor;
-  final String userId; // 사용자 ID
+  final bool isEdit; // Indicates whether it's in edit mode
+  final String? activityId; // The activity ID when editing
+  final String? activityName; // The existing activity name when editing
+  final String? activityIcon; // The existing activity icon when editing
+  final String? activityColor; // The existing activity color when editing
+  final String userId; // User ID
 
   const AddActivityPage({
     Key? key,
     required this.userId,
     this.isEdit = false,
-    this.activityListId,
+    this.activityId,
     this.activityName,
     this.activityIcon,
     this.activityColor,
@@ -35,37 +35,30 @@ class _AddActivityPageState extends State<AddActivityPage> {
   String? _selectedIconName;
   int _currentStep = 0;
 
-  // HEX 색상 문자열 리스트로 변경
+  // List of HEX color strings
   final List<String> baseColors = [
-    // 빨강 계열
+    // Red shades
     '#E4003A', '#FF0000', '#FF4500', '#FF3EA5', '#FF4C4C', '#FF1493', '#FF69B4', '#FFAAAA',
-
-    // 주황 계열 (추천 추가 포함)
-    '#EB5B00', '#FF4500', '#FF8C00', '#FF7F50', '#FFD700',
-
-    // 노랑 계열
+    // Orange shades
+    '#EB5B00', '#FF8C00', '#FF7F50', '#FFD700',
+    // Yellow shades
     '#F4CE14', '#FFFF00', '#FAFFAF',
-
-    // 초록 계열
+    // Green shades
     '#A1DD70', '#73EC8B', '#32CD32', '#008000',
-
-    // 파랑 계열
+    // Blue shades
     '#00CED1', '#1E90FF', '#7695FF', '#0000FF', '#1C1678',
-
-    // 남색 계열
+    // Navy shades
     '#6A5ACD', '#050C9C', '#240750',
-
-    // 보라 계열
+    // Purple shades
     '#E59BE9', '#8B00FF', '#6A5ACD', '#4B0082',
-
-    // 회색 및 검정
+    // Gray and Black
     '#B7B7B7', '#000000',
   ];
 
-  // 불투명도 리스트
+  // List of opacities
   final List<double> opacities = [1.0, 0.8, 0.6, 0.4, 0.2];
 
-  // 선택된 베이스 컬러 저장 (HEX 문자열)
+  // Selected base color (as HEX string)
   String? selectedBaseColor;
 
   bool isDuplicate = false;
@@ -92,8 +85,6 @@ class _AddActivityPageState extends State<AddActivityPage> {
   bool get isIconSelected => _selectedIconName != null;
 
   bool get isColorSelected => selectedBaseColor != null;
-
-  // HEX 문자열을 Color 객체로 변환하는 함수
 
   void _nextStep() {
     if (_currentStep == 0) {
@@ -149,14 +140,15 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
     final dbService = Provider.of<DatabaseService>(context, listen: false);
 
-    // 중복 이름 확인
+    // Duplicate name check
     bool duplicate = await dbService.isActivityNameDuplicate(widget.userId, activityName);
 
-    if (duplicate && !widget.isEdit) {
+    // Check for duplicates, but allow the same name if editing the same activity
+    if (duplicate && (!widget.isEdit || activityName != widget.activityName)) {
       setState(() {
         isDuplicate = true;
       });
-      _formKey.currentState?.validate(); // 유효성 검사 업데이트
+      _formKey.currentState?.validate();
       return;
     } else {
       setState(() {
@@ -165,13 +157,13 @@ class _AddActivityPageState extends State<AddActivityPage> {
     }
 
     try {
-      String colorValue = selectedBaseColor!; // 이미 HEX 문자열이므로 그대로 사용
+      String colorValue = selectedBaseColor!;
 
       if (widget.isEdit) {
-        await dbService.updateActivityList(widget.activityListId!, activityName, iconName, colorValue);
+        await dbService.updateActivity(widget.userId, widget.activityId!, activityName, iconName, colorValue);
         Navigator.pop(context, {'name': activityName, 'icon': iconName, 'color': colorValue});
       } else {
-        await dbService.addActivityList(widget.userId, activityName, iconName, colorValue);
+        await dbService.addActivity(widget.userId, activityName, iconName, colorValue, false);
         Fluttertoast.showToast(
           msg: "활동이 성공적으로 추가되었습니다",
           toastLength: Toast.LENGTH_SHORT,
@@ -221,7 +213,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
       padding: const EdgeInsets.all(16.0),
       child: Row(
         children: [
-          // '뒤로' 버튼
+          // 'Back' button
           Expanded(
             child: ElevatedButton(
               onPressed: _currentStep > 0 ? _prevStep : HapticFeedback.lightImpact,
@@ -232,7 +224,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text(
+              child: const Text(
                 '뒤로',
                 style: TextStyle(
                   color: Colors.white,
@@ -241,7 +233,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
             ),
           ),
           const SizedBox(width: 16),
-          // '다음' 또는 '저장' 버튼
+          // 'Next' or 'Save' button
           Expanded(
             child: ElevatedButton(
               onPressed: isNextButtonEnabled ? (_currentStep < 2 ? _nextStep : _submit) : HapticFeedback.lightImpact,
@@ -254,7 +246,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
               ),
               child: Text(
                 nextButtonText,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                 ),
               ),

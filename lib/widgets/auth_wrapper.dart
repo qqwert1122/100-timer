@@ -1,5 +1,3 @@
-// auth_wrapper.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/screens/login_page.dart';
@@ -19,11 +17,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
-        print('AuthWrapper: isAuthenticated = ${authProvider.isAuthenticated}, isUserDataAvailable = ${authProvider.isUserDataAvailable}');
-
         if (authProvider.isAuthenticated) {
           if (authProvider.isUserDataAvailable) {
-            // 사용자 데이터가 존재하면 메인 화면으로 이동
+            // 사용자 데이터가 존재하면 스플래시 화면으로 이동
             return SplashScreen(userId: authProvider.user!.uid);
           } else {
             // 사용자 데이터가 없으면 회원가입 페이지로 이동

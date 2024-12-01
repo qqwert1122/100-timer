@@ -1,15 +1,19 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
-import 'package:project1/utils/icon_utils.dart'; // 아이콘 유틸리티
+import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/widgets/edit_activity_log_modal.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class ActivityLogPage extends StatefulWidget {
-  const ActivityLogPage({super.key});
+  final String userId; // userId를 저장할 변수
+
+  const ActivityLogPage({Key? key, required this.userId}) : super(key: key);
 
   @override
   _ActivityLogPageState createState() => _ActivityLogPageState();
@@ -26,13 +30,17 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
   bool isProgrammaticScroll = false;
 
+  int _currentWeekOffset = 0; // 현재 불러온 주차의 오프셋 (0: 이번 주, 1: 지난주, ...)
+  bool _isLoadingMore = false; // 추가 데이터 로드 중인지 여부
+  bool _hasMoreData = true; // 추가 데이터가 더 있는지 여부
+
   @override
   void initState() {
     super.initState();
-    final today = DateTime.now().toUtc();
+    final today = DateTime.now().toUtc().toLocal();
     final todayWeekdayIndex = (today.weekday + 6) % 7;
     selectedDay = daysOfWeek[todayWeekdayIndex];
-    _initializeLogs();
+    _initializeLogs(isInitialLoad: true);
     _itemPositionsListener.itemPositions.addListener(_onScroll);
   }
 
@@ -42,28 +50,67 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     super.dispose();
   }
 
-  Future<void> _initializeLogs() async {
+  Future<void> _initializeLogs({bool isInitialLoad = false}) async {
     try {
-      final logData = await _dbService.getAllActivityLogs();
-      final grouped = _groupLogsByDate(logData);
+      if (isInitialLoad) {
+        _currentWeekOffset = 0;
+        groupedLogs.clear();
+        dayToIndexMap.clear();
+        _hasMoreData = true;
+      } else {
+        _currentWeekOffset += 1;
+      }
+
+      print('_currentWeekOffset : $_currentWeekOffset');
+
+      // 현재 주차로부터 오프셋만큼 이전의 주차 데이터를 가져옵니다.
+      final logData = await _dbService.getSessionsForWeek(widget.userId, _currentWeekOffset);
+
+      if (logData.isEmpty) {
+        print('logdata is empty');
+        setState(() {
+          _hasMoreData = false;
+        });
+        return;
+      }
+
+      // 삭제되지 않은 세션 필터링
+      final filteredLogs = logData.where((log) => log['is_deleted'] == 0).toList();
+
+      final grouped = _groupLogsByDate(filteredLogs);
+
       setState(() {
-        groupedLogs = grouped;
+        groupedLogs.addAll(grouped);
         dayToIndexMap = _calculateDayToIndexMap();
       });
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final index = dayToIndexMap[selectedDay] ?? 0;
-        setState(() {
-          isProgrammaticScroll = true;
+      // 초기 로드시 현재 날짜로 스크롤
+      if (isInitialLoad) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final index = dayToIndexMap[selectedDay] ?? 0;
+          setState(() {
+            isProgrammaticScroll = true;
+          });
+          _scrollController.jumpTo(index: index);
+          setState(() {
+            isProgrammaticScroll = false;
+          });
         });
-        _scrollController.jumpTo(index: index);
+      }
+
+      // 메모리에서 오래된 데이터 제거 (최대 3주치 데이터 유지)
+      if (groupedLogs.length > 21) {
         setState(() {
-          isProgrammaticScroll = false;
+          groupedLogs.removeRange(0, groupedLogs.length - 21);
+          dayToIndexMap = _calculateDayToIndexMap();
         });
-      });
+      }
     } catch (e) {
       print('로그 데이터를 가져오는 중 오류 발생: $e');
-      // 오류 처리
+    } finally {
+      setState(() {
+        _isLoadingMore = false;
+      });
     }
   }
 
@@ -72,7 +119,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
 
     final positions = _itemPositionsListener.itemPositions.value;
     if (positions.isNotEmpty) {
-      const screenMiddle = 0.5;
+      // 현재 화면에 보이는 아이템의 인덱스 목록
+      final visibleIndices = positions.map((e) => e.index).toList();
+
+      // 화면 중앙에 가장 가까운 아이템의 인덱스 찾기
+      final screenMiddle = 0.5;
 
       final middlePosition = positions.reduce((closest, position) {
         final itemMiddle = (position.itemLeadingEdge + position.itemTrailingEdge) / 2;
@@ -93,11 +144,19 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
           });
         }
       }
+
+      // 스크롤이 끝에 도달했는지 확인
+      final maxIndex = positions.map((e) => e.index).reduce(max);
+      if (maxIndex >= groupedLogs.length - 1 && !_isLoadingMore && _hasMoreData) {
+        _isLoadingMore = true;
+        _initializeLogs();
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -114,17 +173,37 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
             Expanded(
               child: groupedLogs.isEmpty
                   ? const Center(child: Text('활동 로그가 없습니다.'))
-                  : ScrollablePositionedList.builder(
-                      itemScrollController: _scrollController,
-                      itemPositionsListener: _itemPositionsListener,
-                      itemCount: groupedLogs.length,
-                      itemBuilder: (context, index) {
-                        final logGroup = groupedLogs[index];
-                        final date = logGroup['date'] as String;
-                        final logs = logGroup['logs'] as List<Map<String, dynamic>>;
-
-                        return _buildDateGroup(date, logs);
+                  : NotificationListener<ScrollNotification>(
+                      onNotification: (scrollNotification) {
+                        return false; // 추가 이벤트 처리를 막지 않음
                       },
+                      child: ScrollablePositionedList.builder(
+                        itemScrollController: _scrollController,
+                        itemPositionsListener: _itemPositionsListener,
+                        itemCount: groupedLogs.length + 1, // 로딩 인디케이터를 위해 +1
+                        itemBuilder: (context, index) {
+                          if (index == groupedLogs.length) {
+                            // 데이터 로드 중 로딩 인디케이터 표시
+                            return _isLoadingMore
+                                ? const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 16),
+                                    child: Center(child: CircularProgressIndicator()),
+                                  )
+                                : !_hasMoreData
+                                    ? const Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 16),
+                                        child: Center(child: Text('더 이상 데이터가 없습니다.')),
+                                      )
+                                    : const SizedBox.shrink();
+                          }
+
+                          final logGroup = groupedLogs[index];
+                          final date = logGroup['date'] as String;
+                          final logs = logGroup['logs'] as List<Map<String, dynamic>>;
+
+                          return _buildDateGroup(date, logs, isDarkMode);
+                        },
+                      ),
                     ),
             ),
           ],
@@ -170,9 +249,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     return indexMap;
   }
 
-  Widget _buildDateGroup(String date, List<Map<String, dynamic>> logs) {
-    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
-
+  Widget _buildDateGroup(String date, List<Map<String, dynamic>> logs, bool isDarkMode) {
     final DateFormat formatter = DateFormat('yyyy-MM-dd');
     final DateTime dateTime = formatter.parse(date);
     final String dayOfWeek = _getDayOfWeek(date);
@@ -197,7 +274,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
             child: Column(
               children: logs.map((log) {
                 return Slidable(
-                  key: ValueKey(log['activity_log_id']),
+                  key: ValueKey(log['session_id']),
                   endActionPane: ActionPane(
                     motion: const ScrollMotion(),
                     children: [
@@ -207,8 +284,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                               context: context,
                               builder: (BuildContext context) {
                                 // 초기값 설정
-
-                                return EditActivityLogModal(activityLogId: log['activity_log_id']);
+                                return EditActivityLogModal(sessionId: log['session_id']);
                               });
                         },
                         backgroundColor: Colors.blueAccent,
@@ -219,7 +295,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                         onPressed: (context) {
                           HapticFeedback.lightImpact();
 
-                          _deleteLog(log['activity_log_id']);
+                          _deleteLog(log['session_id'], log['uid']);
                         },
                         backgroundColor: Colors.redAccent,
                         foregroundColor: Colors.white,
@@ -239,7 +315,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(
+                        const SizedBox(
                           width: 8,
                         ),
                         Container(
@@ -286,7 +362,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                             ),
                           ],
                         ),
-                        if (log['activity_duration'] != null && log['rest_time'] != null)
+                        if (log['session_duration'] != null && log['rest_time'] != null)
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -305,8 +381,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                                     width: 3,
                                   ),
                                   Text(
-                                    formatTime(log['activity_duration'] - log['rest_time'] as int),
-                                    style: TextStyle(
+                                    formatTime((log['session_duration'] ?? 0) - (log['rest_time'] ?? 0) as int),
+                                    style: const TextStyle(
                                       fontSize: 11,
                                     ),
                                   ),
@@ -323,7 +399,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                                   ),
                                   Text(
                                     formatTime(log['rest_time'] as int),
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 11,
                                     ),
                                   ),
@@ -424,12 +500,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     return formattedTime.trim();
   }
 
-  Future<void> _deleteLog(String logId) async {
+  Future<void> _deleteLog(String sessionId, String userId) async {
     final shouldDelete = await _showDeleteConfirmationDialog();
     if (shouldDelete) {
       try {
-        await _dbService.deleteActivityLog(logId);
-        await _initializeLogs();
+        await _dbService.deleteSession(userId, sessionId);
+        await _initializeLogs(isInitialLoad: true);
       } catch (e) {
         print('로그 삭제 중 오류 발생: $e');
       }
