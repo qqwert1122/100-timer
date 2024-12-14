@@ -32,7 +32,7 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore 인스턴스 생성
-  final DatabaseService _dbService = DatabaseService();
+  late final DatabaseService _dbService; // 주입받을 DatabaseService
 
   String initNickname = "";
   List<String> avatarList = [];
@@ -65,6 +65,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     super.initState();
+    _dbService = Provider.of<DatabaseService>(context, listen: false); // DatabaseService 주입
     _nicknameController = TextEditingController(text: widget.userName);
     _nicknameController.addListener(_onTextChanged);
     if (widget.profileImage != '') {
@@ -94,7 +95,7 @@ class _RegisterPageState extends State<RegisterPage> {
       if (_currentStep == 0) {
         for (int i = 0; i < 5; i++) {
           avatarList.add(
-            'https://api.dicebear.com/9.x/thumbs/svg?seed=${widget.userName}${i}&radius=50',
+            'https://api.dicebear.com/9.x/thumbs/svg?seed=${_nicknameController.text}${i}&radius=50',
           );
         }
         setState(() {
@@ -132,14 +133,16 @@ class _RegisterPageState extends State<RegisterPage> {
       await _dbService.createUser(widget.uid, newUser);
       await _firestore.collection('users').doc(widget.uid).set(newUser);
 
+      _dbService.downloadNewContentsFromFirestore(DateTime(1970).toUtc().toIso8601String());
+
       // Firestore에 사용자의 activities 정보 저장
-      _dbService.addActivity(widget.uid, '전체', 'category_rounded', '#B7B7B7', true);
+      _dbService.addActivity('전체', 'category_rounded', '#B7B7B7', true);
 
       if (selectedActivities.isNotEmpty) {
         for (int index in selectedActivities) {
           Map<String, dynamic> activity = activities[index];
 
-          _dbService.addActivity(widget.uid, activity['name'], activity['iconName'], activity['color'], false);
+          _dbService.addActivity(activity['name'], activity['iconName'], activity['color'], false);
         }
       }
 
@@ -208,7 +211,7 @@ class _RegisterPageState extends State<RegisterPage> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _nicknameController,
-              keyboardType: TextInputType.emailAddress,
+              keyboardType: TextInputType.text,
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(vertical: 16.0), // 위아래 패딩 설정
                 border: underlineInputBorder,

@@ -1,13 +1,14 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/widgets/edit_activity_log_modal.dart';
+import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class ActivityLogPage extends StatefulWidget {
@@ -20,7 +21,7 @@ class ActivityLogPage extends StatefulWidget {
 }
 
 class _ActivityLogPageState extends State<ActivityLogPage> {
-  final DatabaseService _dbService = DatabaseService();
+  late final DatabaseService _dbService; // 주입받을 DatabaseService
   List<Map<String, dynamic>> groupedLogs = [];
   final List<String> daysOfWeek = ['월', '화', '수', '목', '금', '토', '일'];
   String selectedDay = '';
@@ -37,6 +38,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
   @override
   void initState() {
     super.initState();
+    _dbService = Provider.of<DatabaseService>(context, listen: false); // DatabaseService 주입
+
     final today = DateTime.now().toUtc().toLocal();
     final todayWeekdayIndex = (today.weekday + 6) % 7;
     selectedDay = daysOfWeek[todayWeekdayIndex];
@@ -64,7 +67,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
       print('_currentWeekOffset : $_currentWeekOffset');
 
       // 현재 주차로부터 오프셋만큼 이전의 주차 데이터를 가져옵니다.
-      final logData = await _dbService.getSessionsForWeek(widget.userId, _currentWeekOffset);
+      final logData = await _dbService.getSessionsForWeek(_currentWeekOffset);
 
       if (logData.isEmpty) {
         print('logdata is empty');
@@ -154,6 +157,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     }
   }
 
+  void _refreshLogs() {
+    _initializeLogs(isInitialLoad: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
@@ -237,6 +244,23 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     return groupedLogList;
   }
 
+  String formatDate(String dateTimeString) {
+    final dateTime = DateTime.parse(dateTimeString).toLocal();
+    final now = DateTime.now();
+
+    final isSameYear = dateTime.year == now.year;
+
+    // 날짜와 시간 포맷 정의
+    final timeFormatter = DateFormat('a h시 mm분'); // 오전/오후 h시 mm분
+    final dateFormatter = isSameYear ? DateFormat('M월 d일') : DateFormat('yyyy년 M월 d일');
+
+    // 포맷 결합
+
+    String formattedTime = timeFormatter.format(dateTime).replaceAll('AM', '오전').replaceAll('PM', '오후');
+
+    return '${dateFormatter.format(dateTime)} $formattedTime';
+  }
+
   Map<String, int> _calculateDayToIndexMap() {
     final Map<String, int> indexMap = {};
     for (int i = 0; i < groupedLogs.length; i++) {
@@ -284,7 +308,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                               context: context,
                               builder: (BuildContext context) {
                                 // 초기값 설정
-                                return EditActivityLogModal(sessionId: log['session_id']);
+                                return EditActivityLogModal(
+                                  sessionId: log['session_id'],
+                                  onUpdate: _refreshLogs,
+                                  onDelete: _refreshLogs,
+                                );
                               });
                         },
                         backgroundColor: Colors.blueAccent,
@@ -337,12 +365,15 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                           children: [
                             Text(
                               '시작',
-                              style: TextStyle(color: Colors.grey.shade500),
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                             ),
                             const SizedBox(
                               width: 15,
                             ),
-                            Text(DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.parse(log['start_time']).toLocal())),
+                            Text(
+                              formatDate(log['start_time']),
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                            ),
                           ],
                         ),
                         Row(
@@ -350,19 +381,18 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                           children: [
                             Text(
                               '종료',
-                              style: TextStyle(color: Colors.grey.shade500),
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                             ),
                             const SizedBox(
                               width: 15,
                             ),
                             Text(
-                              log['end_time'] != null
-                                  ? DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.parse(log['end_time']).toLocal())
-                                  : "진행 중",
+                              log['end_time'] != null ? formatDate(log['end_time']) : "진행 중",
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                             ),
                           ],
                         ),
-                        if (log['session_duration'] != null && log['rest_time'] != null)
+                        if (log['session_duration'] != null)
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -381,26 +411,9 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                                     width: 3,
                                   ),
                                   Text(
-                                    formatTime((log['session_duration'] ?? 0) - (log['rest_time'] ?? 0) as int),
+                                    formatTime((log['session_duration'] as int)),
                                     style: const TextStyle(
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                  const SizedBox(
-                                    width: 10,
-                                  ),
-                                  const Icon(
-                                    Icons.pause_circle_filled_rounded,
-                                    color: Colors.grey,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(
-                                    width: 3,
-                                  ),
-                                  Text(
-                                    formatTime(log['rest_time'] as int),
-                                    style: const TextStyle(
-                                      fontSize: 11,
+                                      fontSize: 14,
                                     ),
                                   ),
                                 ],
@@ -504,10 +517,24 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     final shouldDelete = await _showDeleteConfirmationDialog();
     if (shouldDelete) {
       try {
-        await _dbService.deleteSession(userId, sessionId);
-        await _initializeLogs(isInitialLoad: true);
+        await _dbService.deleteSession(sessionId); // 데이터베이스에서 로그 삭제
+        await _initializeLogs(isInitialLoad: true); // 화면 갱신
+        Fluttertoast.showToast(
+          msg: "로그가 삭제되었습니다.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.redAccent,
+          textColor: Colors.white,
+        );
       } catch (e) {
         print('로그 삭제 중 오류 발생: $e');
+        Fluttertoast.showToast(
+          msg: "로그 삭제 중 오류가 발생했습니다.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.redAccent,
+          textColor: Colors.white,
+        );
       }
     }
   }

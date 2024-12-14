@@ -1,10 +1,14 @@
 import 'dart:math'; // min 함수를 사용하기 위해 추가
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/member_page.dart'; // MemberPage import 추가
 import 'package:project1/utils/auth_provider.dart';
+import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/timer_provider.dart';
+import 'package:project1/widgets/content_section.dart';
 import 'package:provider/provider.dart';
 
 class Menu extends StatefulWidget {
@@ -21,17 +25,6 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
   // 친구 카드의 그라데이션 애니메이션을 위한 컨트롤러와 애니메이션
   late AnimationController _shimmerAnimationController;
   late Animation<Alignment> _shimmerAnimation;
-
-  // 팁 데이터를 관리하기 위해 상태 변수로 선언
-  List<Map<String, dynamic>> tips = [
-    {'title': '효율적인 시간 관리', 'content': '목표를 세우고 시간을 효율적으로 사용하세요.'},
-    {'title': '꾸준함의 중요성', 'content': '매일 조금씩이라도 활동을 이어가세요.'},
-    {'title': '휴식의 필요성', 'content': '적절한 휴식을 통해 효율을 높이세요.'},
-    {'title': '팁4', 'content': '팁 내용4'},
-    {'title': '팁5', 'content': '팁 내용5'},
-    {'title': '팁6', 'content': '팁 내용6'},
-    // 추가 팁 데이터...
-  ];
 
   @override
   void initState() {
@@ -109,137 +102,12 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
       child: Center(
         child: Column(
           children: [
-            Container(
-              height: 150,
-              padding: const EdgeInsets.all(16.0),
-              margin: const EdgeInsets.symmetric(vertical: 32.0, horizontal: 16.0),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.deepPurple,
-                    Colors.blueAccent,
-                  ],
-                ),
-                color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: const Offset(2, 4),
-                  ),
-                ],
-              ),
-              child: FutureBuilder<Map<String, dynamic>?>(
-                future: authProvider.getUserData(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    // 데이터를 로드하는 동안 로딩 표시를 보여줍니다.
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError) {
-                    // 에러가 발생한 경우 에러 메시지를 보여줍니다.
-                    return const Center(child: Text('데이터를 불러오는 중 오류가 발생했습니다.'));
-                  }
-
-                  if (!snapshot.hasData || snapshot.data == null) {
-                    // 데이터가 없을 경우 메시지를 보여줍니다.
-                    return const Center(child: Text('데이터가 없습니다.'));
-                  }
-
-                  Map<String, dynamic> data = snapshot.data!;
-                  final String userName = data['user_name'] ?? 'userName';
-                  final String profileImageUrl = data['profile_image'] ?? '';
-                  print(profileImageUrl);
-                  final String subscriptionStatus = data['subscription_status'] ?? '무료 회원';
-                  // 남은 시간을 timerProvider에서 가져옴
-                  final int remainingSeconds = timerProvider.remainingSeconds;
-                  final String formattedRemainingTime = timerProvider.formattedTime;
-
-                  return Row(
-                    children: [
-                      // 프로필 사진
-                      if (profileImageUrl.isNotEmpty)
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 6,
-                                offset: const Offset(2, 2),
-                              ),
-                            ],
-                            borderRadius: BorderRadius.circular(50),
-                            color: Colors.grey[300],
-                          ),
-                          child: SvgPicture.network(
-                            profileImageUrl,
-                            width: 80,
-                            height: 80,
-                          ),
-                        )
-                      else
-                        CircleAvatar(
-                          radius: 40,
-                          child: SvgPicture.network(
-                            'https://api.dicebear.com/9.x/thumbs/svg?seed=$userName&radius=50',
-                            width: 80,
-                            height: 80,
-                          ),
-                        ),
-                      const SizedBox(width: 16),
-                      // 사용자 정보
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // 인사말
-                            Text(
-                              '안녕하세요 $userName 님,',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            // 남은 시간
-                            Text(
-                              '남은 시간: $formattedRemainingTime',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            // 구독 상태
-                            Text(
-                              '구독 상태: $subscriptionStatus',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
+            const SizedBox(height: 60),
+            _buildPomodoroMenu(timerProvider), // 뽀모도로 메뉴 추가
+            const SizedBox(height: 40),
             _buildFriendsSection(),
-            const SizedBox(height: 24),
-            _buildAchievementsSection(),
-            const SizedBox(height: 24),
-            _buildTipsSection(),
+            const SizedBox(height: 40),
+            const ContentSection(),
             const SizedBox(height: 100),
           ],
         ),
@@ -260,8 +128,8 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0),
-          child: const Text(
+          padding: EdgeInsets.symmetric(horizontal: 32.0),
+          child: Text(
             '업적',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
@@ -286,7 +154,7 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
                 child: Container(
                   decoration: BoxDecoration(
                     // 이미지 배경 설정
-                    image: DecorationImage(
+                    image: const DecorationImage(
                       image: AssetImage('assets/images/image_afternoon.webp'), // 배경 이미지 경로
                       fit: BoxFit.cover,
                     ),
@@ -317,7 +185,7 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
               // 배경 이미지
               Container(
                 decoration: BoxDecoration(
-                  image: DecorationImage(
+                  image: const DecorationImage(
                     image: AssetImage('assets/images/image_afternoon.webp'), // 큰 배경 이미지 경로
                     fit: BoxFit.cover,
                   ),
@@ -330,13 +198,13 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
                     // 업적 제목
                     Text(
                       achievement['title'],
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     const SizedBox(height: 16),
                     // 업적 설명
                     Text(
                       achievement['description'],
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+                      style: const TextStyle(fontSize: 16, color: Colors.white),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -347,7 +215,7 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
                 right: 8,
                 top: 8,
                 child: IconButton(
-                  icon: Icon(Icons.close, color: Colors.white),
+                  icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
@@ -360,138 +228,193 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildTipsSection() {
-    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
+  void _showActivityModal(TimerProvider timerProvider) {
+    if (timerProvider.isRunning) {
+      // 타이머가 작동 중일 때는 토스트 메시지 띄우기
+      Fluttertoast.showToast(
+        msg: "타이머를 중지하고 활동을 변경해주세요",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.redAccent.shade200,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    } else {
+      showModalBottomSheet(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(25.0),
+          ),
+        ),
+        builder: (BuildContext context) {
+          return ActivityPicker(
+            onSelectActivity:
+                (String selectedActivityListId, String selectedActivity, String selectedActivityIcon, String selectedActivityColor) {
+              timerProvider.setCurrentActivity(selectedActivityListId, selectedActivity, selectedActivityIcon, selectedActivityColor);
+              Navigator.pop(context);
+            },
+            selectedActivity: timerProvider.currentActivityName ?? '전체',
+          );
+        },
+      );
+    }
+  }
+
+  Widget _buildPomodoroMenu(TimerProvider timerProvider) {
+    final List<Map<String, dynamic>> pomodoroItems = [
+      {
+        'title': '30',
+        'value': 30,
+        'gradientColors': [Colors.greenAccent, Colors.yellow], // 30분 그라데이션 색상
+      },
+      {
+        'title': '1',
+        'value': 60,
+        'gradientColors': [Colors.yellowAccent, Colors.pink], // 1시간 그라데이션 색상
+      },
+      {
+        'title': '2',
+        'value': 120,
+        'gradientColors': [Colors.blueAccent, Colors.lime], // 2시간 그라데이션 색상
+      },
+      {
+        'title': '4',
+        'value': 240,
+        'gradientColors': [Colors.amber, Colors.red], // 4시간 그라데이션 색상
+      },
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 제목과 아이콘
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 32.0),
-          child: Text(
-            '팁',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 180,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: min(tips.length, 5) + 2, // 팁 컨테이너 앞뒤로 추가
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                // 맨 앞의 팁 컨테이너
-                return Container(
-                  width: 150,
-                  margin: const EdgeInsets.only(left: 16, right: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.amber,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Stack(
-                    children: [
-                      const Positioned(
-                        left: 16,
-                        top: 16,
-                        child: Text(
-                          '팁',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        right: -15,
-                        bottom: 0,
-                        child: Image.asset(
-                          'assets/images/sticker_tip_4.png',
-                          width: 120,
-                          height: 120,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              } else if (index == min(tips.length, 5) + 1) {
-                // 맨 뒤의 새로고침 컨테이너
-                return GestureDetector(
-                  onTap: () {
-                    // 팁 새로고침 로직 구현
-                    setState(() {
-                      tips.shuffle();
-                    });
-                  },
-                  child: Container(
-                      width: 150,
-                      margin: const EdgeInsets.only(right: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.amber,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Column(
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32.0),
+              child: Text(
+                '뽀모도로',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: GestureDetector(
+                onTap: () => _showActivityModal(timerProvider), // 버튼을 클릭하면 모달 실행
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            '새로고침',
-                            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(
-                            height: 5,
-                          ),
                           Icon(
-                            Icons.replay_rounded,
-                            size: 28,
-                            color: Colors.white,
-                          )
+                            getIconData(timerProvider.currentActivityIcon ?? 'category_rounded'),
+                            color: Colors.redAccent.shade200,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            (timerProvider.currentActivityName ?? '전체').length > 6
+                                ? '${(timerProvider.currentActivityName ?? '전체').substring(0, 6)}...'
+                                : timerProvider.currentActivityName ?? '전체',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.redAccent.shade200,
+                            ),
+                          ),
                         ],
-                      )),
-                );
-              } else {
-                final tip = tips[index - 1]; // 인덱스 보정
-                return _buildTipCard(tip, isDarkMode);
-              }
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Icon(Icons.keyboard_arrow_down_rounded, size: 30, color: Colors.red),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2, // 2x2 그리드
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 1.5, // 카드의 가로 세로 비율
+            ),
+            itemCount: pomodoroItems.length,
+            shrinkWrap: true, // 부모 Column 안에 포함되도록 설정
+            physics: const NeverScrollableScrollPhysics(), // 스크롤 비활성화
+            itemBuilder: (context, index) {
+              final item = pomodoroItems[index];
+
+              return GestureDetector(
+                onTap: () {
+                  // 선택 시 동작 정의
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${item['title']} 선택됨')),
+                  );
+                },
+                child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: item['gradientColors'], // 각 버튼에 정의된 그라데이션 색상 사용
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Stack(
+                      children: [
+                        Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  item['title'],
+                                  style: const TextStyle(
+                                    fontSize: 48,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white,
+                                    fontFamily: 'chab',
+                                  ),
+                                ),
+                                const SizedBox(
+                                  width: 5,
+                                ),
+                                Text(
+                                  index == 0 ? '분' : '시간',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w200,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            )),
+                        index == pomodoroItems.length - 1
+                            ? Positioned(
+                                right: -30,
+                                bottom: -30,
+                                child: Image.asset(
+                                  'assets/images/timer_6.png',
+                                  width: 160,
+                                  height: 160,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : Container()
+                      ],
+                    )),
+              );
             },
           ),
         ),
       ],
-    );
-  }
-
-  // 팁 카드 빌드 함수
-  Widget _buildTipCard(Map<String, dynamic> tip, bool isDarkMode) {
-    return Container(
-      width: 200,
-      margin: const EdgeInsets.only(right: 8),
-      decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              tip['title'],
-              style: const TextStyle(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.start,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              tip['content'],
-              style: const TextStyle(color: Colors.grey, fontSize: 14),
-              textAlign: TextAlign.start,
-            ),
-          ],
-        ),
-      ),
     );
   }
 

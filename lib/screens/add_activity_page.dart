@@ -141,7 +141,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
 
     // Duplicate name check
-    bool duplicate = await dbService.isActivityNameDuplicate(widget.userId, activityName);
+    bool duplicate = await dbService.isActivityNameDuplicate(activityName);
 
     // Check for duplicates, but allow the same name if editing the same activity
     if (duplicate && (!widget.isEdit || activityName != widget.activityName)) {
@@ -160,10 +160,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
       String colorValue = selectedBaseColor!;
 
       if (widget.isEdit) {
-        await dbService.updateActivity(widget.userId, widget.activityId!, activityName, iconName, colorValue);
+        await dbService.updateActivity(widget.activityId!, activityName, iconName, colorValue, false);
         Navigator.pop(context, {'name': activityName, 'icon': iconName, 'color': colorValue});
       } else {
-        await dbService.addActivity(widget.userId, activityName, iconName, colorValue, false);
+        await dbService.addActivity(activityName, iconName, colorValue, false);
         Fluttertoast.showToast(
           msg: "활동이 성공적으로 추가되었습니다",
           toastLength: Toast.LENGTH_SHORT,
@@ -295,7 +295,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
             },
             onChanged: (value) async {
               // 입력된 이름 변경 시 중복 확인
-              bool duplicate = await Provider.of<DatabaseService>(context, listen: false).isActivityNameDuplicate(widget.userId, value);
+              bool duplicate = await Provider.of<DatabaseService>(context, listen: false).isActivityNameDuplicate(value);
               setState(() {
                 isDuplicate = duplicate;
               });

@@ -16,34 +16,45 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
   DateTime startDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime endDate = DateTime.now();
 
-  // 최대 활동 시간 설정 (예: 10시간)
-  final int maxActivityTime = 36000; // 10시간을 초 단위로 표현
+  final int maxActivityTime = 36000;
 
   @override
   Widget build(BuildContext context) {
     final timerProvider = Provider.of<TimerProvider>(context);
     final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
-
     final locale = Localizations.localeOf(context).toString();
-
-    // 디바이스의 가로 길이
     double deviceWidth = MediaQuery.of(context).size.width;
-
-    // 한 주는 7일이므로, 날짜 칸의 크기를 계산
-    double squareSize = (deviceWidth - 32) / 9; // 양쪽 패딩 16씩 제외
+    double squareSize = (deviceWidth - 32) / 9;
 
     return Padding(
       padding: const EdgeInsets.all(0.0),
       child: HeatMapCalendar(
         initDate: DateTime(DateTime.now().year, DateTime.now().month, 1),
-        datasets: timerProvider.heatMapDataSet.map((date, value) {
-          int level = ((value / maxActivityTime) * 4).ceil();
-          level = level.clamp(1, 4); // 레벨 값을 1~4로 제한
-          print("Date: $date, Value: $value, Level: $level"); // 디버깅 로그
-          return MapEntry(date, level);
+        datasets: timerProvider.heatMapDataSet.entries.fold<Map<DateTime, int>>({}, (map, entry) {
+          if (entry.key != null && entry.value != null) {
+            int level = 0;
+
+            if (entry.value! <= 0) {
+              level = 0;
+            } else if (entry.value! < 3600) {
+              level = 1;
+            } else if (entry.value! < 7200) {
+              level = 2;
+            } else if (entry.value! < 10800) {
+              level = 3;
+            } else {
+              level = 4;
+            }
+
+            map[entry.key!] = level;
+          } else {
+            debugPrint('Invalid entry: ${entry.key}, ${entry.value}');
+          }
+          return map;
         }),
         colorMode: ColorMode.opacity,
         colorsets: {
+          0: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
           1: ColorService.hexToColor("#32CD32").withOpacity(0.25),
           2: ColorService.hexToColor("#32CD32").withOpacity(0.5),
           3: ColorService.hexToColor("#32CD32").withOpacity(0.75),
@@ -56,7 +67,6 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
         monthFontSize: 16,
         weekFontSize: 14,
         onClick: (value) {
-          // 날짜 클릭 시 동작
           String formattedDate = DateFormat.yMMMd(locale).format(value);
           int? seconds = timerProvider.heatMapDataSet[value];
           String activityTime = seconds != null ? '${(seconds / 3600).toStringAsFixed(1)}시간' : '데이터 없음';

@@ -2,10 +2,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:project1/firebase_options.dart';
-import 'package:project1/screens/login_page.dart';
-import 'package:project1/screens/splash_page.dart';
 import 'package:project1/utils/auth_provider.dart';
 import 'package:project1/utils/database_service.dart';
+import 'package:project1/utils/device_info_service.dart';
+import 'package:project1/utils/error_service.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/widgets/auth_wrapper.dart';
 import 'package:provider/provider.dart';
@@ -22,22 +22,37 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (context) => AuthProvider(),
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
+        Provider(create: (context) => DeviceInfoService()),
+        Provider(
+            create: (context) => ErrorService(
+                  authProvider: context.read<AuthProvider>(),
+                  deviceInfoService: context.read<DeviceInfoService>(),
+                )),
+        Provider<DatabaseService>(
+          create: (context) => DatabaseService(
+            authProvider: context.read<AuthProvider>(),
+            deviceInfoService: context.read<DeviceInfoService>(),
+            errorService: context.read<ErrorService>(),
+          ),
         ),
-        ChangeNotifierProxyProvider<AuthProvider, TimerProvider>(
+        ChangeNotifierProxyProvider2<DatabaseService, ErrorService, TimerProvider>(
           create: (context) => TimerProvider(
-            userId: '',
-            databaseService: DatabaseService(),
+            authProvider: context.read<AuthProvider>(),
+            databaseService: context.read<DatabaseService>(),
+            errorService: context.read<ErrorService>(),
           ),
-          update: (context, authProvider, timerProvider) => TimerProvider(
-            userId: authProvider.user?.uid ?? '',
-            databaseService: DatabaseService(),
-          ),
+          update: (context, databaseService, errorService, timerProvider) {
+            // 여기서는 별도로 setErrorService 호출 필요 없음
+            return TimerProvider(
+              authProvider: context.read<AuthProvider>(),
+              databaseService: databaseService,
+              errorService: errorService,
+            );
+          },
         ),
-        Provider(create: (context) => DatabaseService()), // DatabaseService 제공
       ],
-      child: MyApp(),
+      child: const MyApp(),
     ),
   );
 }

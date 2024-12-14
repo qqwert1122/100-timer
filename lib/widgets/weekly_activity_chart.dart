@@ -2,8 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 
-class WeeklyActivityChart extends StatelessWidget {
+class WeeklyActivityChart extends StatefulWidget {
   const WeeklyActivityChart({super.key});
+
+  @override
+  State<WeeklyActivityChart> createState() => _WeeklyActivityChartState();
+}
+
+class _WeeklyActivityChartState extends State<WeeklyActivityChart> {
+  @override
+  void initState() {
+    super.initState();
+    final timerProvider = Provider.of<TimerProvider>(context, listen: false);
+    timerProvider.initializeWeeklyActivityData(); // 데이터 초기화 호출
+  }
 
   @override
   Widget build(BuildContext context) {

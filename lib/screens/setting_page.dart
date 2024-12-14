@@ -17,7 +17,7 @@ class SettingPage extends StatefulWidget {
 }
 
 class _SettingPageState extends State<SettingPage> {
-  final DatabaseService _dbService = DatabaseService();
+  late final DatabaseService _dbService; // 주입받을 DatabaseService
 
   bool keepScreenOn = false; // 화면 켜기 상태 변수
 
@@ -27,6 +27,8 @@ class _SettingPageState extends State<SettingPage> {
   @override
   void initState() {
     super.initState();
+    _dbService = Provider.of<DatabaseService>(context, listen: false); // DatabaseService 주입
+    _dbService.uploadInitialContents();
     _loadUserTotalSeconds();
   }
 
@@ -104,7 +106,7 @@ class _SettingPageState extends State<SettingPage> {
         'icon': Icons.sync,
         'description': '디바이스와 서버의 시간을 동기화하세요\n',
         'onTap': () async {
-          await _dbService.syncDataWithServer(authProvider.user?.uid ?? '');
+          await _dbService.syncDataWithServer(false);
         },
         'trailing': null,
       },

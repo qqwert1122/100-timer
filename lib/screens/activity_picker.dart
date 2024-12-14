@@ -5,17 +5,16 @@ import 'package:project1/screens/add_activity_page.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:provider/provider.dart';
 
 class ActivityPicker extends StatefulWidget {
   final String selectedActivity;
-  final Function(String, String, String) onSelectActivity;
-  final String userId;
+  final Function(String, String, String, String) onSelectActivity;
 
   const ActivityPicker({
     super.key,
     required this.selectedActivity,
     required this.onSelectActivity,
-    required this.userId,
   });
 
   @override
@@ -24,25 +23,29 @@ class ActivityPicker extends StatefulWidget {
 
 class _ActivityPickerState extends State<ActivityPicker> {
   late Future<List<Map<String, dynamic>>> _activityListFuture;
-  final DatabaseService dbService = DatabaseService();
+  late final DatabaseService _dbService; // 주입받을 DatabaseService
+  late final defaultAcitivty;
 
   @override
   void initState() {
     super.initState();
+    _dbService = Provider.of<DatabaseService>(context, listen: false); // DatabaseService 주입
     _refreshActivityList();
+    defaultAcitivty = _dbService.getDefaultActivity();
   }
 
   void _refreshActivityList() {
     setState(() {
-      _activityListFuture = dbService.getActivities(widget.userId);
+      _activityListFuture = _dbService.getActivities();
     });
   }
 
   Future<void> _navigateToAddActivityPage(BuildContext context) async {
+    Map<String, dynamic>? userData = await _dbService.getUser();
     final newActivity = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddActivityPage(userId: widget.userId),
+        builder: (context) => AddActivityPage(userId: userData?['uid']),
       ),
     );
 
@@ -53,11 +56,12 @@ class _ActivityPickerState extends State<ActivityPicker> {
 
   Future<void> _navigateToEditActivityPage(
       BuildContext context, String activityId, String activityName, String activityIcon, String activityColor) async {
+    Map<String, dynamic>? userData = await _dbService.getUser();
     final updatedActivity = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddActivityPage(
-          userId: widget.userId,
+          userId: userData?['uid'],
           isEdit: true,
           activityId: activityId,
           activityName: activityName,
@@ -75,10 +79,10 @@ class _ActivityPickerState extends State<ActivityPicker> {
   Future<void> _deleteActivity(BuildContext context, String activityId, String activityName) async {
     final shouldDelete = await _showDeleteConfirmationDialog(context, activityName);
     if (shouldDelete) {
-      await dbService.deleteActivity(widget.userId, activityId);
+      await _dbService.deleteActivity(activityId);
       _refreshActivityList();
       if (widget.selectedActivity == activityName) {
-        widget.onSelectActivity('전체', 'category_rounded', '${widget.userId}1');
+        widget.onSelectActivity(defaultAcitivty['acitivty_id'], '전체', 'category_rounded', '#B7B7B7');
       }
       Fluttertoast.showToast(
         msg: "활동이 삭제되었습니다",
@@ -268,9 +272,10 @@ class _ActivityPickerState extends State<ActivityPicker> {
                           ),
                           onTap: () {
                             widget.onSelectActivity(
+                              activity['activity_id'],
                               activity['activity_name'],
                               activity['activity_icon'],
-                              activity['activity_id'],
+                              activity['activity_color'],
                             );
                           },
                         ),
