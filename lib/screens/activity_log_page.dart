@@ -12,9 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class ActivityLogPage extends StatefulWidget {
-  final String userId; // userId를 저장할 변수
-
-  const ActivityLogPage({Key? key, required this.userId}) : super(key: key);
+  const ActivityLogPage({Key? key}) : super(key: key);
 
   @override
   _ActivityLogPageState createState() => _ActivityLogPageState();
@@ -323,7 +321,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                         onPressed: (context) {
                           HapticFeedback.lightImpact();
 
-                          _deleteLog(log['session_id'], log['uid']);
+                          _deleteLog(log['session_id']);
                         },
                         backgroundColor: Colors.redAccent,
                         foregroundColor: Colors.white,
@@ -513,7 +511,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     return formattedTime.trim();
   }
 
-  Future<void> _deleteLog(String sessionId, String userId) async {
+  Future<void> _deleteLog(String sessionId) async {
     final shouldDelete = await _showDeleteConfirmationDialog();
     if (shouldDelete) {
       try {

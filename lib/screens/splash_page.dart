@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -54,14 +55,22 @@ class _SplashScreenState extends State<SplashScreen> {
     Map<String, dynamic>? timer = await _dbService.getTimer(weekStart);
 
     if (timer == null) {
-      timer = _createDefaultTimer(widget.userId);
+      timer = await _createDefaultTimer(widget.userId);
       await _dbService.createTimer(timer);
     }
 
     _timerData = timer;
 
+    Widget destinationPage;
+
+    if (_timerData!['is_running'] == 1) {
+      destinationPage = const TimerRunningPage();
+    } else {
+      destinationPage = TimerPage(timerData: _timerData!);
+    }
+
     // 최소 로딩 시간 설정 (1초)
-    Duration minimumLoadingTime = Duration(seconds: 1);
+    Duration minimumLoadingTime = const Duration(seconds: 1);
     Duration elapsedTime = DateTime.now().difference(startTime);
     Duration remainingTime = minimumLoadingTime - elapsedTime;
 
@@ -74,31 +83,33 @@ class _SplashScreenState extends State<SplashScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => TimerPage(userId: widget.userId, timerData: _timerData!), // null이 아님을 보장
+        builder: (context) => destinationPage, // null이 아님을 보장
       ),
     );
   }
 
   // 기본 타이머 생성 메서드
-  Map<String, dynamic> _createDefaultTimer(String userId) {
+  Future<Map<String, dynamic>> _createDefaultTimer(String userId) async {
     final now = DateTime.now();
     final timerId = const Uuid().v4();
+    Map<String, dynamic>? userData = await _dbService.getUser();
+    int userTotalSeconds = userData?['total_seconds'] ?? 360000; // 기본값은 100시간
 
     return {
       'uid': userId,
       'timer_id': timerId,
       'week_start': getWeekStart(now),
-      'total_seconds': 100 * 3600,
+      'total_seconds': userTotalSeconds,
       'last_session_id': null,
       'is_running': 0,
       'created_at': now.toUtc().toIso8601String(), // toUtc로 변경
       'deleted_at': null,
       'last_started_at': null,
       'last_ended_at': null,
-      'last_updated_at': null,
+      'last_updated_at': now.toUtc().toIso8601String(),
       'last_notified_at': null,
       'is_deleted': 0,
-      'sessions_over_10min': 0,
+      'sessions_over_1hour': 0,
       'timezone': DateTime.now().timeZoneName,
     };
   }

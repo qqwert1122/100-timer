@@ -5,7 +5,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/member_page.dart'; // MemberPage import 추가
+import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/utils/auth_provider.dart';
+import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/widgets/content_section.dart';
@@ -21,14 +23,48 @@ class Menu extends StatefulWidget {
 class _MenuState extends State<Menu> with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
+  late final DatabaseService _dbService; // 주입받을 DatabaseService
 
   // 친구 카드의 그라데이션 애니메이션을 위한 컨트롤러와 애니메이션
   late AnimationController _shimmerAnimationController;
   late Animation<Alignment> _shimmerAnimation;
+  List<Map<String, dynamic>> pomodoroItems = [
+    {
+      'title': '30',
+      'value': 20,
+      'maxCount': 3,
+      'currentCount': 0,
+      'gradientColors': [Colors.greenAccent, Colors.yellow],
+    },
+    {
+      'title': '1',
+      'value': 3600,
+      'maxCount': 3,
+      'currentCount': 0,
+      'gradientColors': [Colors.yellowAccent, Colors.pink],
+    },
+    {
+      'title': '2',
+      'value': 7200,
+      'maxCount': 3,
+      'currentCount': 0,
+      'gradientColors': [Colors.blueAccent, Colors.lime],
+    },
+    {
+      'title': '4',
+      'value': 14400,
+      'maxCount': 3,
+      'currentCount': 0,
+      'gradientColors': [Colors.amber, Colors.red],
+    },
+  ];
 
   @override
   void initState() {
     super.initState();
+    _dbService = Provider.of<DatabaseService>(context, listen: false); // DatabaseService 주입
+    _initPomodoroCounts();
+
     // 애니메이션 컨트롤러 초기화 등 필요한 초기화 코드
     int durationSeconds = Random().nextInt(5) + 5; // 5 ~ 9초
 
@@ -77,6 +113,24 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
     ]).animate(_shimmerAnimationController);
   }
 
+  Future<void> _initPomodoroCounts() async {
+    final updatedItems = List<Map<String, dynamic>>.from(pomodoroItems);
+
+    for (var item in updatedItems) {
+      final targetDuration = item['value'] as int;
+      // DB에서 "targetDuration"으로 완료된 세션이 몇 개인지 조회
+      final count = await _dbService.getCompletedSessionsByTargetDuration(targetDuration);
+
+      // 조회된 count를 currentCount에 반영
+      item['currentCount'] = count;
+    }
+
+    // State에 반영
+    setState(() {
+      pomodoroItems = updatedItems;
+    });
+  }
+
   @override
   void dispose() {
     // 애니메이션 컨트롤러 dispose 등 필요한 해제 코드
@@ -93,10 +147,7 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
-
     final timerProvider = Provider.of<TimerProvider>(context);
-    final authProvider = Provider.of<AuthProvider>(context);
 
     return SingleChildScrollView(
       child: Center(
@@ -262,28 +313,28 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
   }
 
   Widget _buildPomodoroMenu(TimerProvider timerProvider) {
-    final List<Map<String, dynamic>> pomodoroItems = [
-      {
-        'title': '30',
-        'value': 30,
-        'gradientColors': [Colors.greenAccent, Colors.yellow], // 30분 그라데이션 색상
-      },
-      {
-        'title': '1',
-        'value': 60,
-        'gradientColors': [Colors.yellowAccent, Colors.pink], // 1시간 그라데이션 색상
-      },
-      {
-        'title': '2',
-        'value': 120,
-        'gradientColors': [Colors.blueAccent, Colors.lime], // 2시간 그라데이션 색상
-      },
-      {
-        'title': '4',
-        'value': 240,
-        'gradientColors': [Colors.amber, Colors.red], // 4시간 그라데이션 색상
-      },
-    ];
+    Widget _buildCountIndicator(int maxCount, int currentCount) {
+      return Row(
+        children: List.generate(
+          maxCount,
+          (index) => Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: index < currentCount ? Colors.white : Colors.white.withOpacity(0.3),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.5),
+                  width: 1,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,7 +352,7 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: GestureDetector(
-                onTap: () => _showActivityModal(timerProvider), // 버튼을 클릭하면 모달 실행
+                onTap: () => _showActivityModal(timerProvider),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -336,42 +387,58 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
             ),
           ],
         ),
+        const SizedBox(
+          height: 10,
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 32.0),
+          child: Text(
+            '원하는 시간을 선택해 집중 모드를 시작하세요',
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: GridView.builder(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, // 2x2 그리드
+              crossAxisCount: 2,
               mainAxisSpacing: 8,
               crossAxisSpacing: 8,
-              childAspectRatio: 1.5, // 카드의 가로 세로 비율
+              childAspectRatio: 1.5,
             ),
             itemCount: pomodoroItems.length,
-            shrinkWrap: true, // 부모 Column 안에 포함되도록 설정
-            physics: const NeverScrollableScrollPhysics(), // 스크롤 비활성화
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             itemBuilder: (context, index) {
               final item = pomodoroItems[index];
 
               return GestureDetector(
-                onTap: () {
-                  // 선택 시 동작 정의
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${item['title']} 선택됨')),
+                onTap: () async {
+                  await Future.delayed(const Duration(milliseconds: 100));
+                  timerProvider.setSessionModeAndTargetDuration(mode: 'SESIOPMDR', targetDuration: item['value']);
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => const TimerRunningPage(),
+                    ),
                   );
                 },
                 child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: item['gradientColors'], // 각 버튼에 정의된 그라데이션 색상 사용
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: item['gradientColors'],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    child: Stack(
-                      children: [
-                        Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Text(
@@ -383,9 +450,7 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
                                     fontFamily: 'chab',
                                   ),
                                 ),
-                                const SizedBox(
-                                  width: 5,
-                                ),
+                                const SizedBox(width: 5),
                                 Text(
                                   index == 0 ? '분' : '시간',
                                   style: const TextStyle(
@@ -395,21 +460,30 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
                                   ),
                                 ),
                               ],
-                            )),
-                        index == pomodoroItems.length - 1
-                            ? Positioned(
-                                right: -30,
-                                bottom: -30,
-                                child: Image.asset(
-                                  'assets/images/timer_6.png',
-                                  width: 160,
-                                  height: 160,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : Container()
-                      ],
-                    )),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildCountIndicator(
+                              item['maxCount'],
+                              item['currentCount'],
+                            ),
+                          ],
+                        ),
+                      ),
+                      index == pomodoroItems.length - 1
+                          ? Positioned(
+                              right: -30,
+                              bottom: -30,
+                              child: Image.asset(
+                                'assets/images/cute_timer_1_nobg.png',
+                                width: 140,
+                                height: 140,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Container()
+                    ],
+                  ),
+                ),
               );
             },
           ),
@@ -457,7 +531,14 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 32.0),
+          child: Text(
+            '현재 활동 중인 친구를 확인하세요',
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+        ),
+        const SizedBox(height: 30),
         SizedBox(
           height: 180,
           child: ListView.builder(
@@ -481,7 +562,7 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
                       width: 150,
                       margin: const EdgeInsets.only(right: 16.0, bottom: 8.0),
                       decoration: BoxDecoration(
-                        color: Colors.blue,
+                        color: Colors.lime,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Stack(
@@ -500,10 +581,10 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
                             ),
                           ),
                           Positioned(
-                              right: -20,
-                              bottom: -20,
+                              right: -40,
+                              bottom: -40,
                               child: Image.asset(
-                                'assets/images/sticker_group_7.png',
+                                'assets/images/friend_2.png',
                                 width: 150,
                                 height: 150,
                                 fit: BoxFit.cover,

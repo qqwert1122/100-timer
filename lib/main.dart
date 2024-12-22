@@ -38,32 +38,35 @@ void main() async {
         ),
         ChangeNotifierProxyProvider2<DatabaseService, ErrorService, TimerProvider>(
           create: (context) => TimerProvider(
-            authProvider: context.read<AuthProvider>(),
-            databaseService: context.read<DatabaseService>(),
+            context, // BuildContext 전달
+            dbService: context.read<DatabaseService>(),
             errorService: context.read<ErrorService>(),
+            authProvider: context.read<AuthProvider>(),
           ),
           update: (context, databaseService, errorService, timerProvider) {
-            // 여기서는 별도로 setErrorService 호출 필요 없음
             return TimerProvider(
-              authProvider: context.read<AuthProvider>(),
-              databaseService: databaseService,
+              context, // BuildContext 전달
+              dbService: databaseService,
               errorService: errorService,
+              authProvider: context.read<AuthProvider>(),
             );
           },
         ),
       ],
-      child: const MyApp(),
+      child: MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  MyApp({super.key});
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(builder: (context, authProvider, _) {
       return MaterialApp(
+        navigatorKey: navigatorKey, // 여기에 navigatorKey 추가
         title: '100-Timer',
         // 라이트 모드 테마
         theme: ThemeData(

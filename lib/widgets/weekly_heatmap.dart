@@ -4,10 +4,9 @@ import 'package:project1/utils/database_service.dart';
 import 'package:provider/provider.dart';
 
 class WeeklyHeatmap extends StatefulWidget {
-  final String userId;
   final bool showAllHours;
 
-  const WeeklyHeatmap({super.key, required this.userId, required this.showAllHours});
+  const WeeklyHeatmap({super.key, required this.showAllHours});
 
   @override
   State<WeeklyHeatmap> createState() => _WeeklyHeatmapState();

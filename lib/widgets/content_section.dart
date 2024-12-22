@@ -72,7 +72,17 @@ class _ContentSectionState extends State<ContentSection> with TickerProviderStat
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(
+          height: 10,
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 32.0),
+          child: Text(
+            '새로운 소식과 타이머 활용 팁을 확인하세요',
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+        ),
+        const SizedBox(height: 30),
         SizedBox(
           height: 180,
           child: ListView.builder(

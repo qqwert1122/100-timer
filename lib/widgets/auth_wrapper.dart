@@ -62,7 +62,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                // 에러 발생 시 로그인 화면으로 이동
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => const LoginPage()),

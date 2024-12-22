@@ -17,6 +17,7 @@ import 'package:project1/widgets/text_indicator.dart';
 import 'package:project1/widgets/toggle_total_view_swtich.dart';
 import 'package:project1/widgets/weekly_activity_chart.dart';
 import 'package:project1/widgets/weekly_heatmap.dart';
+import 'package:project1/widgets/weekly_session_status.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/widgets/footer.dart';
@@ -25,9 +26,8 @@ import 'package:project1/data/achievement_data.dart';
 
 class TimerPage extends StatefulWidget {
   final Map<String, dynamic> timerData;
-  final String userId;
 
-  const TimerPage({super.key, required this.userId, required this.timerData});
+  const TimerPage({super.key, required this.timerData});
 
   @override
   _TimerPageState createState() => _TimerPageState();
@@ -61,12 +61,22 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
   void initState() {
     super.initState();
     _timerProvider = Provider.of<TimerProvider>(context, listen: false); // TimerProvider 저장
-    final timerProvider = _timerProvider!;
 
-    Future.delayed(Duration.zero, () {
-      timerProvider.setTimerData(widget.timerData);
+    Future.delayed(Duration.zero, () async {
+      final timerProvider = _timerProvider!;
+
+      if (timerProvider.isRunning) {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const TimerRunningPage(),
+            ),
+          );
+        }
+      }
+
       timerProvider.initializeWeeklyActivityData();
-      timerProvider.initializeHeatMapData(); // HeatMap 데이터 초기화
+      timerProvider.initializeHeatMapData();
     });
 
     _initAnimations();
@@ -138,14 +148,6 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
         weight: 5,
       ),
     ]).animate(_shimmerAnimationcontroller);
-  }
-
-  @override
-  void reassemble() {
-    super.reassemble();
-    if (_timerProvider != null && _timerProvider!.isRunning && !_timerProvider!.isTimerActive) {
-      _timerProvider!.startTimer(activityId: _timerProvider!.currentActivityId!);
-    }
   }
 
   void didChangePlatformBrightness() {
@@ -524,13 +526,11 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                                     onPressed: () {
                                       HapticFeedback.lightImpact();
                                       if (timerProvider.currentActivityId != null) {
-                                        timerProvider.startTimer(activityId: timerProvider.currentActivityId!);
+                                        timerProvider.setSessionModeAndTargetDuration(
+                                            mode: 'SESINORM', targetDuration: timerProvider.remainingSeconds);
                                         Navigator.of(context).push(
                                           PageRouteBuilder(
-                                            pageBuilder: (context, animation, secondaryAnimation) => TimerRunningPage(
-                                              activityName: timerProvider.currentActivityName,
-                                              activityIcon: timerProvider.currentActivityIcon,
-                                            ),
+                                            pageBuilder: (context, animation, secondaryAnimation) => const TimerRunningPage(),
                                             transitionDuration: const Duration(milliseconds: 500),
                                             reverseTransitionDuration: const Duration(milliseconds: 500),
                                           ),
@@ -751,6 +751,35 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                             ],
                           ),
                           const SizedBox(height: 30),
+                          const WeeklySessionStatus(),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16, right: 16),
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const ActivityLogPage()),
+                                );
+                              },
+                              style: ButtonStyle(
+                                foregroundColor: WidgetStateProperty.all(Colors.white), // 텍스트 색상
+                                backgroundColor: WidgetStateProperty.all(Colors.blueAccent.shade400), // 배경색
+                                shape: WidgetStateProperty.all(
+                                  RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12.0), // 둥근 모서리 반경
+                                  ),
+                                ),
+                              ),
+                              child: const Text(
+                                '전체 활동기록 보기',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 50),
                           Padding(
                             padding: const EdgeInsets.only(
                               left: 16,
@@ -781,16 +810,23 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                               ],
                             ),
                           ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              '이번주 시간대별 활동을 색깔로 확인해요',
+                              style: TextStyle(fontSize: 14, color: Colors.grey),
+                            ),
+                          ),
+                          const SizedBox(height: 30),
                           SizedBox(
-                            height: 650,
                             child: WeeklyHeatmap(
                               key: ValueKey(refreshKey),
-                              userId: widget.userId,
                               showAllHours: showAllHours,
                             ),
                           ),
-                          const SizedBox(height: 60),
-                          // GridView의 스크롤 비활성화
+                          const SizedBox(
+                            height: 30,
+                          ),
                           Padding(
                             padding: const EdgeInsets.only(
                               left: 16,
@@ -815,39 +851,15 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                               ],
                             ),
                           ),
-
-                          const WeeklyActivityChart(),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 16, right: 16),
-                            child: TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => ActivityLogPage(
-                                            userId: widget.userId,
-                                          )),
-                                );
-                              },
-                              style: ButtonStyle(
-                                foregroundColor: WidgetStateProperty.all(Colors.white), // 텍스트 색상
-                                backgroundColor: WidgetStateProperty.all(Colors.blueAccent.shade400), // 배경색
-                                shape: WidgetStateProperty.all(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12.0), // 둥근 모서리 반경
-                                  ),
-                                ),
-                              ),
-                              child: const Text(
-                                '전체 활동기록 보기',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              '이번주 활동 시간을 막대그래프로 한눈에 확인해요',
+                              style: TextStyle(fontSize: 14, color: Colors.grey),
                             ),
                           ),
-
+                          const SizedBox(height: 30),
+                          const WeeklyActivityChart(),
                           const SizedBox(
                             height: 60,
                           ),
@@ -869,7 +881,15 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                               ],
                             ),
                           ),
-
+                          const SizedBox(height: 10),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              '활동을 하면 달력에 잔디가 심어져요',
+                              style: TextStyle(fontSize: 14, color: Colors.grey),
+                            ),
+                          ),
+                          const SizedBox(height: 30),
                           const SingleChildScrollView(
                             child: Column(
                               children: [
@@ -885,7 +905,6 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                           const SizedBox(
                             height: 30,
                           ),
-
                           const SizedBox(
                             height: 30,
                           ),

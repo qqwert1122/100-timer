@@ -190,7 +190,6 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                 await _dbService.updateSessionDuration(
                                   sessionId: widget.sessionId,
                                   additionalDurationSeconds: additionalRestSeconds,
-                                  type: "REST", // "휴식" 타입
                                 );
 
                                 if (widget.onUpdate != null) widget.onUpdate!();
@@ -239,7 +238,6 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                 await _dbService.updateSessionDuration(
                                   sessionId: widget.sessionId,
                                   additionalDurationSeconds: additionalDurationSeconds,
-                                  type: "DURATION", // "추가활동" 타입
                                 );
 
                                 if (widget.onDelete != null) widget.onDelete!();

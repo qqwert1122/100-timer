@@ -24,9 +24,15 @@ class AuthProvider extends ChangeNotifier {
     _user = user;
 
     if (_user != null) {
-      // Firestore에서 사용자 문서 확인
-      final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
-      _isUserDataAvailable = userDoc.exists;
+      try {
+        // Firestore에서 사용자 문서 확인
+        final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
+        _isUserDataAvailable = userDoc.exists;
+      } catch (e) {
+        // Firestore 접근 에러 발생 시 사용자 데이터가 없는 것으로 처리
+        print('Firestore 접근 에러: $e');
+        _isUserDataAvailable = false;
+      }
     } else {
       _isUserDataAvailable = false;
       _loginMethod = null;

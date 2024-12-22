@@ -108,7 +108,7 @@ class DatabaseService {
         last_updated_at TEXT,
         last_notified_at TEXT,
         is_deleted INTEGER DEFAULT 0,
-        sessions_over_10min INTEGER,
+        sessions_over_1hour INTEGER,
         timezone TEXT,
         UNIQUE (uid, week_start)
       )
@@ -120,6 +120,7 @@ class DatabaseService {
         uid TEXT,
         session_id TEXT,
         timer_id TEXT,
+        mode TEXT,
         activity_id TEXT,
         activity_name TEXT,
         activity_icon TEXT,
@@ -127,11 +128,11 @@ class DatabaseService {
         start_time TEXT,
         end_time TEXT,
         session_duration INTEGER,
-        last_session_duration INTEGER,
+        target_duration INTEGER,
+        previous_session_duration INTEGER,
         created_at TEXT,
         deleted_at TEXT,
         last_updated_at TEXT,
-        is_updated INTEGER,
         is_modified INTEGER,
         is_deleted INTEGER DEFAULT 0,
         timezone TEXT,
@@ -1488,7 +1489,6 @@ class DatabaseService {
   }
 
   // 활동 삭제 (소프트 딜리션)
-  // 활동 삭제 (소프트 딜리션)
   Future<void> deleteActivity(String activityId) async {
     final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
     final db = await database; // 데이터베이스 객체 가져오기
@@ -1601,7 +1601,12 @@ class DatabaseService {
   */
 
   // 세션 생성
-  Future<void> createSession(String sessionId, String activityId, String timerId) async {
+  Future<void> createSession(
+      {required String sessionId,
+      required String timerId,
+      required String activityId,
+      required String mode,
+      required int targetDuration}) async {
     final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
     final db = await database; // 데이터베이스 객체 가져오기
     final deviceInfo = await _deviceInfoService.getDeviceInfo();
@@ -1647,24 +1652,27 @@ class DatabaseService {
         'session_id': sessionId,
         'timer_id': timerId,
         'activity_id': activityId,
+        'mode': mode,
         'activity_name': activity['activity_name'] ?? '',
         'activity_icon': activity['activity_icon'] ?? '',
         'activity_color': activity['activity_color'] ?? '',
         'start_time': now,
         'end_time': null,
         'session_duration': 0,
-        'last_session_duration': null,
+        'target_duration': targetDuration,
+        'previous_session_duration': null,
         'created_at': now,
         'deleted_at': null,
         'last_updated_at': now,
-        'is_updated': 0,
         'is_modified': 0,
         'is_deleted': 0,
         'timezone': timezone,
         'long_session_flag': 0,
         'user_agent': deviceInfo['deviceInfo'] ?? '',
       };
+
       await db.insert('sessions', _session);
+
       print('Session created successfully for session_id: $sessionId');
     } catch (e) {
       // 에러 발생 시 에러 로그 생성
@@ -1735,6 +1743,53 @@ class DatabaseService {
     }
   }
 
+  Future<int> getTotalSessionDurationForActivityToday(String activityId) async {
+    final db = await database;
+    final uid = _authProvider.user?.uid;
+
+    if (uid == null) {
+      Map<String, dynamic> errorData = await _errorService.createError(
+        errorCode: 'UID_NOT_FOUND',
+        errorMessage: 'UID is null. User might not be logged in.',
+        errorAction: 'Fetching total session duration for today',
+        severityLevel: 'high',
+      );
+      await insertErrorLog(errorData);
+
+      print('Error: UID is null. User might not be logged in.');
+      return 0; // UID가 없으므로 계산 불가
+    }
+
+    try {
+      DateTime now = DateTime.now();
+      String todayStart = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
+      String tomorrowStart = DateTime(now.year, now.month, now.day + 1).toUtc().toIso8601String();
+
+      final result = await db.rawQuery('''
+      SELECT SUM(session_duration) AS total_duration
+      FROM sessions
+      WHERE activity_id = ? 
+        AND uid = ? 
+        AND is_deleted = 0 
+        AND start_time >= ? 
+        AND start_time < ?
+    ''', [activityId, uid, todayStart, tomorrowStart]);
+
+      return result.first['total_duration'] as int? ?? 0; // 합계 반환
+    } catch (e) {
+      Map<String, dynamic> errorData = await _errorService.createError(
+        errorCode: 'FETCH_TOTAL_DURATION_TODAY_FAILED',
+        errorMessage: e.toString(),
+        errorAction: 'Calculating total session duration for today',
+        severityLevel: 'high',
+      );
+      await insertErrorLog(errorData);
+
+      print('Error fetching total session duration for today: $e');
+      return 0; // 에러 발생 시 0 반환
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getSessionsForThisWeek() async {
     final db = await database;
     final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
@@ -1768,6 +1823,180 @@ class DatabaseService {
 
       print('Error fetching sessions for this week: $e');
       return [];
+    }
+  }
+
+  Future<int> getTotalSessionDurationForActivityThisWeek(String activityId) async {
+    final db = await database;
+    final uid = _authProvider.user?.uid;
+
+    if (uid == null) {
+      Map<String, dynamic> errorData = await _errorService.createError(
+        errorCode: 'UID_NOT_FOUND',
+        errorMessage: 'UID is null. User might not be logged in.',
+        errorAction: 'Fetching total session duration for this week',
+        severityLevel: 'high',
+      );
+      await insertErrorLog(errorData);
+
+      print('Error: UID is null. User might not be logged in.');
+      return 0; // UID가 없으므로 계산 불가
+    }
+
+    try {
+      DateTime now = DateTime.now();
+      DateTime weekStart = now.subtract(Duration(days: now.weekday - 1)); // 월요일
+      DateTime weekEnd = weekStart.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59)); // 일요일
+
+      String weekStartStr = DateTime(weekStart.year, weekStart.month, weekStart.day).toUtc().toIso8601String();
+      String weekEndStr = DateTime(weekEnd.year, weekEnd.month, weekEnd.day, 23, 59, 59).toUtc().toIso8601String();
+
+      final result = await db.rawQuery('''
+      SELECT SUM(session_duration) AS total_duration
+      FROM sessions
+      WHERE activity_id = ? 
+        AND uid = ? 
+        AND is_deleted = 0 
+        AND start_time >= ? 
+        AND start_time <= ?
+    ''', [activityId, uid, weekStartStr, weekEndStr]);
+
+      return result.first['total_duration'] as int? ?? 0; // 합계 반환
+    } catch (e) {
+      Map<String, dynamic> errorData = await _errorService.createError(
+        errorCode: 'FETCH_TOTAL_DURATION_THIS_WEEK_FAILED',
+        errorMessage: e.toString(),
+        errorAction: 'Calculating total session duration for this week',
+        severityLevel: 'high',
+      );
+      await insertErrorLog(errorData);
+
+      print('Error fetching total session duration for this week: $e');
+      return 0; // 에러 발생 시 0 반환
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getWeeklySessionFlags() async {
+    try {
+      // 이번주 월요일 구하기
+      DateTime now = DateTime.now();
+      DateTime monday = now.subtract(Duration(days: now.weekday - 1));
+      monday = DateTime(monday.year, monday.month, monday.day); // 시간을 00:00:00으로 설정
+
+      // 다음주 월요일 구하기 (이번주 일요일 23:59:59까지의 데이터를 위해)
+      DateTime nextMonday = monday.add(const Duration(days: 7));
+
+      final db = await database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'sessions',
+        columns: ['start_time', 'long_session_flag'],
+        where: 'start_time >= ? AND start_time < ? AND is_deleted = 0',
+        whereArgs: [monday.toUtc().toIso8601String(), nextMonday.toUtc().toIso8601String()],
+      );
+
+      print('Found ${maps.length} sessions for current week');
+      return maps;
+    } catch (e) {
+      print('Error getting weekly session flags: $e');
+      await _errorService.createError(
+        errorCode: 'GET_WEEKLY_SESSIONS_FAILED',
+        errorMessage: e.toString(),
+        errorAction: 'Getting weekly session flags',
+        severityLevel: 'medium',
+      );
+      return [];
+    }
+  }
+
+  Future<int> getSessionsOver1HourCount(String weekStart) async {
+    final db = await database;
+    final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
+
+    if (uid == null) {
+      // UID가 없는 경우 에러 로그 생성
+      Map<String, dynamic> errorData = await _errorService.createError(
+        errorCode: 'UID_NOT_FOUND',
+        errorMessage: 'UID is null. User might not be logged in.',
+        errorAction: 'Creating session',
+        severityLevel: 'high',
+      );
+      await insertErrorLog(errorData);
+
+      print('Error: UID is null. User might not be logged in.');
+      return 0;
+    }
+
+    try {
+      String weekEnd = DateTime.parse(weekStart).add(const Duration(days: 7)).toIso8601String();
+      final results = await db.rawQuery('''
+      SELECT COUNT(*) as count
+      FROM sessions
+      WHERE uid = ? 
+        AND is_deleted = 0 
+        AND session_duration >= 3600
+        AND start_time BETWEEN ? AND ?
+    ''', [uid, weekStart, weekEnd]);
+
+      return results.first['count'] as int? ?? 0;
+    } catch (e) {
+      Map<String, dynamic> errorData = await _errorService.createError(
+        errorCode: 'SESSION_OVER_1HOURS_COUNT_FAILED',
+        errorMessage: e.toString(),
+        errorAction: 'Calculating Sessions Over 1 hours for Week',
+        severityLevel: 'medium',
+      );
+      await insertErrorLog(errorData);
+
+      print('Error calculating sessions over 1 hours: $e');
+      return 0;
+    }
+  }
+
+  Future<int> getTotalSessionDurationForWeek(String weekStart) async {
+    final db = await database;
+    final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
+
+    if (uid == null) {
+      // UID가 없는 경우 에러 로그 생성
+      Map<String, dynamic> errorData = await _errorService.createError(
+        errorCode: 'UID_NOT_FOUND',
+        errorMessage: 'UID is null. User might not be logged in.',
+        errorAction: 'Creating session',
+        severityLevel: 'high',
+      );
+      await insertErrorLog(errorData);
+
+      print('Error: UID is null. User might not be logged in.');
+      return 0;
+    }
+
+    try {
+      // 주차의 시작일과 종료일 계산
+      String weekEnd = DateTime.parse(weekStart).add(Duration(days: 7)).toIso8601String();
+
+      // 주차 내 모든 세션의 `session_duration` 합계 계산
+      final results = await db.rawQuery('''
+      SELECT SUM(session_duration) as total_duration
+      FROM sessions
+      WHERE uid = ?
+        AND is_deleted = 0
+        AND start_time BETWEEN ? AND ?
+    ''', [uid, weekStart, weekEnd]);
+
+      // 결과 반환, NULL 방지
+      return results.first['total_duration'] as int? ?? 0;
+    } catch (e) {
+      // 에러 로깅
+      Map<String, dynamic> errorData = await _errorService.createError(
+        errorCode: 'SESSION_DURATION_CALCULATION_FAILED',
+        errorMessage: e.toString(),
+        errorAction: 'Calculating Total Session Duration for Week',
+        severityLevel: 'medium',
+      );
+      await insertErrorLog(errorData);
+
+      print('Error calculating total session duration for week $weekStart: $e');
+      return 0;
     }
   }
 
@@ -1838,16 +2067,46 @@ class DatabaseService {
     }
   }
 
+  Future<int> getCompletedSessionsByTargetDuration(int duration) async {
+    final db = await database; // 이미 선언된 getter
+    try {
+      final results = await db.rawQuery('''
+      SELECT COUNT(*) AS count
+      FROM sessions
+      WHERE is_deleted = 0
+        AND target_duration = ?
+        AND session_duration = target_duration
+    ''', [duration]);
+
+      // 결과가 비어 있으면 0, 아니면 count 반환
+      if (results.isNotEmpty) {
+        return (results.first['count'] as int?) ?? 0;
+      } else {
+        return 0;
+      }
+    } catch (e) {
+      // 에러 발생 시 로그 생성 (기존 에러 처리 패턴과 동일하게)
+      Map<String, dynamic> errorData = await _errorService.createError(
+        errorCode: 'FETCH_COMPLETED_SESSIONS_BY_TARGET_DURATION_FAILED',
+        errorMessage: e.toString(),
+        errorAction: 'Fetching completed sessions by target_duration',
+        severityLevel: 'high',
+      );
+      await insertErrorLog(errorData);
+
+      print('Error fetching completed sessions by target_duration: $e');
+      return 0;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getAllSessions() async {
     final db = await database;
 
     try {
       final results = await db.rawQuery('''
-      SELECT sessions.*, activities.activity_name, activities.activity_icon, activities.activity_color
+      SELECT sessions.*
       FROM sessions
-      JOIN activities
-      ON sessions.activity_id = activities.activity_id
-      WHERE sessions.is_deleted = 0 AND activities.is_deleted = 0
+      WHERE sessions.is_deleted = 0
     ''');
 
       return results;
@@ -1866,190 +2125,7 @@ class DatabaseService {
     }
   }
 
-  Future<int> getSessionsOver10MinCount(String weekStart) async {
-    final db = await database;
-    final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
-
-    if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Creating session',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error: UID is null. User might not be logged in.');
-      return 0;
-    }
-
-    try {
-      String weekEnd = DateTime.parse(weekStart).add(const Duration(days: 7)).toIso8601String();
-      final results = await db.rawQuery('''
-      SELECT COUNT(*) as count
-      FROM sessions
-      WHERE uid = ? 
-        AND is_deleted = 0 
-        AND session_duration >= 600
-        AND start_time BETWEEN ? AND ?
-    ''', [uid, weekStart, weekEnd]);
-
-      return results.first['count'] as int? ?? 0;
-    } catch (e) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'SESSION_OVER_10MIN_COUNT_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Calculating Sessions Over 10 Minutes for Week',
-        severityLevel: 'medium',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error calculating sessions over 10 minutes: $e');
-      return 0;
-    }
-  }
-
-  Future<int> getTotalSessionDurationForWeek(String weekStart) async {
-    final db = await database;
-    final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
-
-    if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Creating session',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error: UID is null. User might not be logged in.');
-      return 0;
-    }
-
-    try {
-      // 주차의 시작일과 종료일 계산
-      String weekEnd = DateTime.parse(weekStart).add(Duration(days: 7)).toIso8601String();
-
-      // 주차 내 모든 세션의 `session_duration` 합계 계산
-      final results = await db.rawQuery('''
-      SELECT SUM(session_duration) as total_duration
-      FROM sessions
-      WHERE uid = ?
-        AND is_deleted = 0
-        AND start_time BETWEEN ? AND ?
-    ''', [uid, weekStart, weekEnd]);
-
-      // 결과 반환, NULL 방지
-      return results.first['total_duration'] as int? ?? 0;
-    } catch (e) {
-      // 에러 로깅
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'SESSION_DURATION_CALCULATION_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Calculating Total Session Duration for Week',
-        severityLevel: 'medium',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error calculating total session duration for week $weekStart: $e');
-      return 0;
-    }
-  }
-
-  // 세션 업데이트 (로컬 디바이스에만 적용)
-  Future<void> restartSession(String? sessionId) async {
-    final db = await database;
-    final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
-    final now = DateTime.now().toUtc().toIso8601String();
-
-    if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Creating session',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error: UID is null. User might not be logged in.');
-      return; // 세션 생성 불가
-    }
-
-    if (sessionId == null || sessionId.isEmpty) {
-      // Session ID가 없거나 비어 있는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'SESSION_ID_MISSING',
-        errorMessage: 'Session ID is null or empty.',
-        errorAction: 'Updating session',
-        severityLevel: 'medium',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error: Session ID is null or empty.');
-      return;
-    }
-
-    final log = await db.query(
-      'sessions',
-      where: 'session_id = ? AND is_deleted = 0',
-      whereArgs: [sessionId],
-      limit: 1,
-    );
-
-    if (log.isEmpty) {
-      // 세션을 찾을 수 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'SESSION_NOT_FOUND',
-        errorMessage: 'Session not found for sessionId: $sessionId',
-        errorAction: 'Updating session',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error: Session not found for sessionId: $sessionId');
-      return;
-    }
-
-    final existingSession = log.first;
-
-    // 활성 세션 중복 체크
-    if (existingSession['end_time'] == null) {
-      print('Session is already active: $sessionId');
-      return; // 이미 활성화된 세션이므로 재시작할 필요 없음
-    }
-
-    try {
-      await db.transaction((txn) async {
-        // 업데이트할 데이터 구성
-        Map<String, dynamic> updateData = {
-          'end_time': null,
-          'last_updated_at': now,
-        };
-
-        await txn.update(
-          'sessions',
-          updateData,
-          where: 'session_id = ?',
-          whereArgs: [sessionId],
-        );
-      });
-    } catch (e) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'SESSION_UPDATE_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Restart session for sessionId: $sessionId',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error updating session: $e');
-    }
-  }
-
-  Future<void> endSession(String? sessionId, int newDuration) async {
+  Future<void> endSession({required String? sessionId, required String endTime, required int duration}) async {
     final db = await database;
     final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
     final now = DateTime.now().toUtc();
@@ -2072,7 +2148,7 @@ class DatabaseService {
       // Session ID가 없거나 비어 있는 경우 에러 로그 생성
       Map<String, dynamic> errorData = await _errorService.createError(
         errorCode: 'SESSION_ID_MISSING',
-        errorMessage: 'Session ID is null or empty.',
+        errorMessage: 'Session ID is null or empty. ${sessionId}',
         errorAction: 'end session',
         severityLevel: 'medium',
       );
@@ -2103,23 +2179,19 @@ class DatabaseService {
       return;
     }
 
-    // 트랜잭션 시작
     try {
       await db.transaction((txn) async {
-        final existingDuration = log.first['session_duration'] as int? ?? 0;
-        final totalDuration = existingDuration + newDuration;
-
-        // long_session_flag 설정 (600초 = 10분 이상 세션일 경우 플래그 설정)
-        final longSessionFlag = totalDuration >= 600 ? 1 : 0;
-
         // 업데이트할 데이터 구성
         Map<String, dynamic> updateData = {
-          'end_time': now.toIso8601String(),
-          'session_duration': totalDuration,
-          'last_session_duration': newDuration,
           'last_updated_at': now.toIso8601String(),
-          'long_session_flag': longSessionFlag,
+          'long_session_flag': duration >= 3600 ? 1 : 0,
         };
+
+        updateData.addAll({
+          'end_time': endTime,
+          'session_duration': duration,
+          'previous_session_duration': duration,
+        });
 
         await txn.update(
           'sessions',
@@ -2129,7 +2201,7 @@ class DatabaseService {
         );
       });
 
-      print('Session ended successfully for sessionId: $sessionId with new duration: $newDuration');
+      print('Session ended successfully for sessionId: $sessionId ');
     } catch (e) {
       // 트랜잭션 중 에러 발생 시 에러 로그 생성
       Map<String, dynamic> errorData = await _errorService.createError(
@@ -2147,7 +2219,6 @@ class DatabaseService {
   Future<void> updateSessionDuration({
     required String sessionId,
     required int additionalDurationSeconds,
-    required String type, // "추가활동" 또는 "휴식"
   }) async {
     final db = await database;
 
@@ -2195,30 +2266,14 @@ class DatabaseService {
         final existingDuration = (log.first['session_duration'] ?? 0) as int;
 
         // 새로운 duration 계산
-        late int newDuration;
-        if (type == "DURATION") {
-          newDuration = min(86400, max(0, existingDuration + additionalDurationSeconds)); // 상한: 86400초
-        } else if (type == "REST") {
-          newDuration = max(0, existingDuration - additionalDurationSeconds); // 음수 방지
-        } else {
-          // 잘못된 type의 경우 에러 로그 생성
-          Map<String, dynamic> errorData = await _errorService.createError(
-            errorCode: 'INVALID_TYPE',
-            errorMessage: 'Invalid type=$type for sessionId=$sessionId',
-            errorAction: 'Updating session duration',
-            severityLevel: 'medium',
-          );
-          await insertErrorLog(errorData);
-
-          print('Error: Invalid type=$type for sessionId=$sessionId');
-          return;
-        }
+        final newDuration = min(86400, max(0, existingDuration + additionalDurationSeconds));
 
         // 세션 업데이트
         final sessionUpdateData = {
           'session_duration': newDuration,
-          'last_session_duration': additionalDurationSeconds,
+          'previous_session_duration': existingDuration,
           'last_updated_at': now,
+          'is_modified': 1,
         };
 
         print('Updating sessionId=$sessionId with newDuration=$newDuration');

@@ -37,6 +37,7 @@ class _RegisterPageState extends State<RegisterPage> {
   String initNickname = "";
   List<String> avatarList = [];
   String selectedAvatar = "";
+  String userHandle = ""; // 사용자의 @handle 저장
   int selectedActivityIndex = -1;
   List<int> selectedActivities = [];
 
@@ -65,15 +66,19 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     super.initState();
-    _dbService = Provider.of<DatabaseService>(context, listen: false); // DatabaseService 주입
+    _dbService = Provider.of<DatabaseService>(context, listen: false);
     _nicknameController = TextEditingController(text: widget.userName);
     _nicknameController.addListener(_onTextChanged);
-    if (widget.profileImage != '') {
-      print('profile : ${widget.profileImage}');
-      avatarList.add(widget.profileImage);
-    }
-    // 닉네임이 비어있지 않은지 확인하여 버튼 활성화 여부 설정
+    _generateHandle(_nicknameController.text);
     _isButtonEnabled = _nicknameController.text.trim().isNotEmpty;
+  }
+
+  void _generateHandle(String name) {
+    if (name.isEmpty) return;
+
+    // 랜덤 숫자 4자리 생성
+    String randomNum = (1000 + DateTime.now().millisecondsSinceEpoch % 9000).toString();
+    userHandle = "@${name.toLowerCase().replaceAll(' ', '')}$randomNum";
   }
 
   @override
@@ -83,9 +88,13 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _onTextChanged() {
+    final newText = _nicknameController.text.trim();
     setState(() {
-      // 닉네임이 비어있지 않으면 버튼 활성화
-      _isButtonEnabled = _nicknameController.text.trim().isNotEmpty;
+      _isButtonEnabled = newText.isNotEmpty;
+      _generateHandle(newText);
+      if (avatarList.isNotEmpty) {
+        selectedAvatar = avatarList[0];
+      }
     });
   }
 
@@ -93,10 +102,15 @@ class _RegisterPageState extends State<RegisterPage> {
   void _onNextPressed() async {
     if (_formKey.currentState!.validate()) {
       if (_currentStep == 0) {
-        for (int i = 0; i < 5; i++) {
-          avatarList.add(
-            'https://api.dicebear.com/9.x/thumbs/svg?seed=${_nicknameController.text}${i}&radius=50',
-          );
+        if (avatarList.isEmpty) {
+          for (int i = 0; i < 15; i++) {
+            avatarList.add(
+              'https://api.dicebear.com/9.x/thumbs/svg?seed=${_nicknameController.text}${i}&radius=50',
+            );
+          }
+        }
+        if (avatarList.isNotEmpty) {
+          selectedAvatar = avatarList[0];
         }
         setState(() {
           _currentStep++;
@@ -198,71 +212,96 @@ class _RegisterPageState extends State<RegisterPage> {
     switch (_currentStep) {
       case 0:
         // 닉네임 입력 단계
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '닉네임을 입력하세요',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _nicknameController,
-              keyboardType: TextInputType.text,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(vertical: 16.0), // 위아래 패딩 설정
-                border: underlineInputBorder,
-                enabledBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey), // 활성화 상태의 밑줄 색상
-                ),
-                focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.blueAccent), // 포커스된 상태의 밑줄 색상
-                ),
-                errorBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.redAccent), // 에러 상태의 밑줄 색상
-                ),
-                focusedErrorBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.redAccent), // 포커스된 에러 상태의 밑줄 색상
-                ),
-                hintText: "닉네임",
-                hintStyle: TextStyle(color: Colors.grey[400]),
-                errorStyle: const TextStyle(
-                  color: Colors.redAccent, // 원하는 색상으로 변경
-                  fontSize: 14.0, // 원하는 크기로 변경
+        return Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '닉네임을 입력하세요',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return '닉네임을 입력해주세요';
-                }
-                return null;
-              },
-            ),
-          ],
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _nicknameController,
+                keyboardType: TextInputType.text,
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16.0), // 위아래 패딩 설정
+                  border: underlineInputBorder,
+                  enabledBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey), // 활성화 상태의 밑줄 색상
+                  ),
+                  focusedBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.blueAccent), // 포커스된 상태의 밑줄 색상
+                  ),
+                  errorBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.redAccent), // 에러 상태의 밑줄 색상
+                  ),
+                  focusedErrorBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.redAccent), // 포커스된 에러 상태의 밑줄 색상
+                  ),
+                  hintText: "닉네임",
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  errorStyle: const TextStyle(
+                    color: Colors.redAccent, // 원하는 색상으로 변경
+                    fontSize: 14.0, // 원하는 크기로 변경
+                  ),
+                  helperText: userHandle, // @handle 표시
+                  helperStyle: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return '닉네임을 입력해주세요';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
         );
       case 1:
         // 아바타 선택 단계
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '아바타를 선택하세요',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: const Text(
+                '아바타를 선택하세요',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
-            const SizedBox(height: 50),
+            const SizedBox(height: 30),
+            // 선택된 아바타 큰 크기로 표시
+            if (selectedAvatar.isNotEmpty)
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 30),
+                  width: 150,
+                  height: 150,
+                  child: SvgPicture.network(
+                    selectedAvatar,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 20),
+
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: avatarList.map((avatar) {
                   bool isSelected = selectedAvatar == avatar;
-                  bool isFirst = avatar == avatarList.first;
 
                   return GestureDetector(
                     onTap: () {
@@ -276,50 +315,36 @@ class _RegisterPageState extends State<RegisterPage> {
                       clipBehavior: Clip.none,
                       children: [
                         Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                          margin: const EdgeInsets.all(8.0),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8.0),
                           ),
-                          child: isFirst && widget.profileImage != ''
-                              ? Container(
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.3),
-                                        blurRadius: 6,
-                                        offset: const Offset(2, 2),
-                                      ),
-                                    ],
-                                    borderRadius: BorderRadius.circular(50),
-                                    color: Colors.grey[300],
-                                  ),
-                                  child: ClipOval(
-                                    child: avatar != ''
-                                        ? Image.network(avatar, fit: BoxFit.cover,
-                                            loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-                                            if (loadingProgress == null) {
-                                              return child; // 로드가 완료되면 이미지를 반환합니다.
-                                            } else {
-                                              // 로딩 중일 때는 빈 컨테이너를 반환합니다.
-                                              return Container();
-                                            }
-                                          }, errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
-                                            // 에러 발생 시 빈 컨테이너를 반환합니다.
-                                            return Container();
-                                          })
-                                        : Container(),
-                                  ),
-                                )
-                              : Container(
-                                  decoration: BoxDecoration(),
-                                  child: SvgPicture.network(
-                                    avatar,
-                                    width: 100,
-                                    height: 100,
-                                  ),
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 6,
+                                  offset: const Offset(2, 2),
                                 ),
+                              ],
+                              borderRadius: BorderRadius.circular(50),
+                              color: Colors.grey[300],
+                            ),
+                            child: ClipOval(
+                              child: SvgPicture.network(
+                                avatar,
+                                fit: BoxFit.cover,
+                                // SVG 로딩 중 플레이스홀더 표시
+                                placeholderBuilder: (BuildContext context) => Container(
+                                  padding: const EdgeInsets.all(30.0),
+                                  child: const CircularProgressIndicator(),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                         if (isSelected)
                           Positioned(
@@ -352,142 +377,145 @@ class _RegisterPageState extends State<RegisterPage> {
         );
       case 2:
         // 활동 선택 단계
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '활동을 추천해드려요',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '활동을 추천해드려요',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              '활동은 나중에 자유롭게 추가하거나 수정할 수 있어요',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
+              const SizedBox(height: 16),
+              const Text(
+                '활동은 나중에 자유롭게 추가하거나 수정할 수 있어요',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
               ),
-            ),
-            const SizedBox(height: 50),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // 한 줄에 2개의 사각형
-                crossAxisSpacing: 8.0, // 가로 간격
-                mainAxisSpacing: 8.0, // 세로 간격
-              ),
-              itemCount: activities.length, // 총 9개의 아이템
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      if (selectedActivities.contains(index)) {
-                        selectedActivities.remove(index);
-                      } else {
-                        selectedActivities.add(index);
-                      }
-                    });
-                    HapticFeedback.lightImpact();
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          ColorService.hexToColor(activities[index]['color']),
-                          ColorService.hexToColor(activities[(index + 1) % activities.length]['color']),
-                        ],
-                        stops: const [0.0, 1.0],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 6,
-                          offset: const Offset(2, 4),
+              const SizedBox(height: 50),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, // 한 줄에 2개의 사각형
+                  crossAxisSpacing: 8.0, // 가로 간격
+                  mainAxisSpacing: 8.0, // 세로 간격
+                ),
+                itemCount: activities.length, // 총 9개의 아이템
+                itemBuilder: (context, index) {
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (selectedActivities.contains(index)) {
+                          selectedActivities.remove(index);
+                        } else {
+                          selectedActivities.add(index);
+                        }
+                      });
+                      HapticFeedback.lightImpact();
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            ColorService.hexToColor(activities[index]['color']),
+                            ColorService.hexToColor(activities[(index + 1) % activities.length]['color']),
+                          ],
+                          stops: const [0.0, 1.0],
                         ),
-                      ],
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          left: 20,
-                          top: 20,
-                          child: Text(
-                            activities[index]['name'],
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 6,
+                            offset: const Offset(2, 4),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            left: 20,
+                            top: 20,
+                            child: Text(
+                              activities[index]['name'],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ),
-                        ),
-                        selectedActivities.contains(index)
-                            ? Positioned(
-                                right: 10, // 우측 위치 조정
-                                top: 10, // 상단 위치 조정
-                                child: Lottie.asset(
-                                  'assets/images/check_3.json', // Lottie 파일 경로
-                                  width: 30,
-                                  height: 30,
-                                  repeat: false,
-                                  onLoaded: (composition) {
-                                    print('애니메이션 로드 완료');
-                                  },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(
-                                      Icons.error,
-                                      color: Colors.red,
-                                      size: 30,
-                                    );
-                                  },
-                                ),
-                              )
-                            : Positioned(
-                                right: 13,
-                                top: 13,
-                                child: Container(
-                                  width: 25,
-                                  height: 25,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle, // 원형으로 설정
-                                    border: Border.all(
-                                      color: Colors.white, // 회색 테두리 색상
-                                      width: 2, // 테두리 두께
+                          selectedActivities.contains(index)
+                              ? Positioned(
+                                  right: 10, // 우측 위치 조정
+                                  top: 10, // 상단 위치 조정
+                                  child: Lottie.asset(
+                                    'assets/images/check_3.json', // Lottie 파일 경로
+                                    width: 30,
+                                    height: 30,
+                                    repeat: false,
+                                    onLoaded: (composition) {
+                                      print('애니메이션 로드 완료');
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(
+                                        Icons.error,
+                                        color: Colors.red,
+                                        size: 30,
+                                      );
+                                    },
+                                  ),
+                                )
+                              : Positioned(
+                                  right: 13,
+                                  top: 13,
+                                  child: Container(
+                                    width: 25,
+                                    height: 25,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle, // 원형으로 설정
+                                      border: Border.all(
+                                        color: Colors.white, // 회색 테두리 색상
+                                        width: 2, // 테두리 두께
+                                      ),
                                     ),
                                   ),
                                 ),
+                          Positioned(
+                            right: 10,
+                            bottom: 10,
+                            child: ShaderMask(
+                              shaderCallback: (bounds) => LinearGradient(
+                                colors: [
+                                  ColorService.hexToColor(activities[index]['color']).withOpacity(0.2),
+                                  ColorService.hexToColor(activities[index]['color']).withOpacity(0.5),
+                                ], // 그라데이션 색상
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ).createShader(bounds),
+                              child: Icon(
+                                activities[index]['icon'],
+                                color: Colors.white,
+                                size: 76,
                               ),
-                        Positioned(
-                          right: 10,
-                          bottom: 10,
-                          child: ShaderMask(
-                            shaderCallback: (bounds) => LinearGradient(
-                              colors: [
-                                ColorService.hexToColor(activities[index]['color']).withOpacity(0.2),
-                                ColorService.hexToColor(activities[index]['color']).withOpacity(0.5),
-                              ], // 그라데이션 색상
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ).createShader(bounds),
-                            child: Icon(
-                              activities[index]['icon'],
-                              color: Colors.white,
-                              size: 76,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-          ],
+                  );
+                },
+              ),
+            ],
+          ),
         );
       default:
         return const SizedBox.shrink();
@@ -501,31 +529,43 @@ class _RegisterPageState extends State<RegisterPage> {
       appBar: AppBar(
         title: const Text('회원가입', style: TextStyle(fontWeight: FontWeight.w400, fontSize: 18)),
         elevation: 0,
+        leading: _currentStep > 0
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  setState(() {
+                    _currentStep--;
+                    // 아바타 선택 페이지로 돌아갈 때 버튼 활성화 상태 복원
+                    if (_currentStep == 1) {
+                      _isButtonEnabled = true;
+                    }
+                  });
+                },
+              )
+            : null, // 첫 페이지에서는 뒤로가기 버튼 숨김
       ),
       body: GestureDetector(
         onTap: () {
           FocusScope.of(context).unfocus(); // 다른 곳 터치 시 키보드 닫기
         },
         child: SingleChildScrollView(
-          child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Form(
-                    key: _formKey, // 폼 유효성 검사를 위해 사용
-                    autovalidateMode: AutovalidateMode.onUserInteraction, // 자동 검증 모드 설정
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 50),
-                        _buildStepContent(),
-                        const SizedBox(height: 32),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 300),
-                ],
-              )),
+          child: Column(
+            children: [
+              Form(
+                key: _formKey, // 폼 유효성 검사를 위해 사용
+                autovalidateMode: AutovalidateMode.onUserInteraction, // 자동 검증 모드 설정
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 50),
+                    _buildStepContent(),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+              SizedBox(height: 300),
+            ],
+          ),
         ),
       ),
       floatingActionButton: Padding(
