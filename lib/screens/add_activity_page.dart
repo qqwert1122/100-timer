@@ -12,11 +12,9 @@ class AddActivityPage extends StatefulWidget {
   final String? activityName; // The existing activity name when editing
   final String? activityIcon; // The existing activity icon when editing
   final String? activityColor; // The existing activity color when editing
-  final String userId; // User ID
 
   const AddActivityPage({
     Key? key,
-    required this.userId,
     this.isEdit = false,
     this.activityId,
     this.activityName,

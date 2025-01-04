@@ -45,8 +45,8 @@ class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateM
     );
 
     _textAnimation = Tween<Offset>(
-      begin: const Offset(0, 0), // 현재 위치
-      end: const Offset(0, -1), // 위로 이동
+      begin: const Offset(0, -1), // 현재 위치
+      end: const Offset(0, 0), // 위로 이동
     ).animate(CurvedAnimation(
       parent: _textAnimationController,
       curve: Curves.easeInOut,

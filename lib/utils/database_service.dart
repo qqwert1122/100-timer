@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path/path.dart';
 import 'package:project1/utils/auth_provider.dart';
 import 'package:project1/utils/device_info_service.dart';
+import 'package:project1/utils/timer_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:project1/utils/error_service.dart';
@@ -154,6 +155,28 @@ class DatabaseService {
         last_updated_at TEXT,
         is_favorite INTEGER DEFAULT 0,
         is_default INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE todos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        uid TEXT,
+        todo_id TEXT,
+        todo_name TEXT,
+        todo_detail TEXT,
+        priority TEXT,
+        activity_id TEXT,
+        activity_name TEXT,
+        activity_icon TEXT,
+        activity_color TEXT,
+        created_at TEXT,
+        deleted_at TEXT,
+        last_updated_at TEXT,
+        due_date TEXT,
+        position INTEGER,
+        is_completed INTEGER DEFAULT 0,
         is_deleted INTEGER DEFAULT 0
       )
     ''');
@@ -392,14 +415,7 @@ class DatabaseService {
     final uid = _authProvider.user?.uid;
 
     if (uid == null) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'Failed to fetch UID from AuthProvider',
-        errorAction: 'Fetching user from Firestore',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
+      handleUidNull(errorAction: "Attempting to fetch user from Firestore");
       print('Error: UID not available from AuthProvider.');
       return null;
     }
@@ -533,7 +549,7 @@ class DatabaseService {
       await db.insert(
         'users',
         userData,
-        conflictAlgorithm: ConflictAlgorithm.replace, // 이미 존재하면 업데이트
+        conflictAlgorithm: ConflictAlgorithm.replace,
       );
       print('User saved to SQLite successfully.');
     } catch (e) {
@@ -900,13 +916,7 @@ class DatabaseService {
     final uid = _authProvider.user?.uid;
 
     if (uid == null) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Updating total_seconds in SQLite',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
+      handleUidNull(errorAction: "Attempting to update user's total_seconds in SQLite");
 
       print('Error: UID is null. User might not be logged in.');
       return;
@@ -968,13 +978,7 @@ class DatabaseService {
     final uid = _authProvider.user?.uid;
 
     if (uid == null) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'Failed to fetch UID from AuthProvider',
-        errorAction: 'Fetching user from database',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
+      handleUidNull(errorAction: "Attempting to fetch user from database");
 
       print('Error: UID not available from AuthProvider.');
       return null;
@@ -1020,13 +1024,7 @@ class DatabaseService {
     final uid = _authProvider.user?.uid;
 
     if (uid == null) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Creating timer in SQLite',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
+      handleUidNull(errorAction: "Attempting to create timer in SQLite");
 
       print('Error: UID is null. User might not be logged in.');
       return;
@@ -1075,14 +1073,7 @@ class DatabaseService {
     final uid = _authProvider.user?.uid;
 
     if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Attempting to fetch timer',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
+      handleUidNull(errorAction: "Attempting to fetch timer");
 
       print('Error: UID is null. User might not be logged in.');
       return null;
@@ -1125,14 +1116,7 @@ class DatabaseService {
     String now = DateTime.now().toUtc().toIso8601String();
 
     if (uid == null) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Attempting to update timer',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
+      handleUidNull(errorAction: "Attempting to update timer");
       print('Error: UID is null. User might not be logged in.');
       return;
     }
@@ -1182,13 +1166,7 @@ class DatabaseService {
     String now = DateTime.now().toUtc().toIso8601String();
 
     if (uid == null) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Attempting to delete timer',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
+      handleUidNull(errorAction: "Attempting to delete timer");
 
       print('Error: UID is null. User might not be logged in.');
       return;
@@ -1255,14 +1233,7 @@ class DatabaseService {
     final uid = _authProvider.user?.uid;
 
     if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Attempting to add activity',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
+      handleUidNull(errorAction: "Attempting to add activity");
 
       print('Error: UID is null. User might not be logged in.');
       return;
@@ -1305,14 +1276,7 @@ class DatabaseService {
     final uid = _authProvider.user?.uid;
     final db = await database;
     if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Attempting to fetch activities',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
+      handleUidNull(errorAction: "Attempting to fetch all activities");
 
       print('Error: UID is null. User might not be logged in.');
       return [];
@@ -1327,99 +1291,15 @@ class DatabaseService {
 
       return result;
     } catch (e) {
-      // 에러 발생 시 에러 로그 생성
       Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'FETCH_ACTIVITIES_FAILED',
+        errorCode: 'GET_ACTIVITIES_FAILED',
         errorMessage: e.toString(),
-        errorAction: 'Fetching activities from SQLite',
+        errorAction: 'getting activities from SQLite',
         severityLevel: 'high',
       );
       await insertErrorLog(errorData);
 
-      print('Error fetching activities. UID: $uid, Error: $e');
-      return [];
-    }
-  }
-
-  Future<Map<String, dynamic>?> getDefaultActivity() async {
-    final uid = _authProvider.user?.uid;
-    final db = await database;
-
-    if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Fetching default activity',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error: UID is null. User might not be logged in.');
-      return null;
-    }
-
-    try {
-      final List<Map<String, dynamic>> result = await db.query(
-        'activities',
-        where: 'uid = ? AND is_deleted = 0 AND is_default = 1',
-        whereArgs: [uid],
-        limit: 1,
-      );
-
-      return result.isNotEmpty ? result.first : null;
-    } catch (e) {
-      // 에러 발생 시 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'FETCH_DEFAULT_ACTIVITY_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Fetching default activity from SQLite',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error fetching default activity. UID: $uid, Error: $e');
-      return null;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> getActivityById(String activityId) async {
-    final uid = _authProvider.user?.uid;
-    final db = await database;
-
-    if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Fetching activity by ID',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error: UID is null. User might not be logged in.');
-      return [];
-    }
-
-    try {
-      final List<Map<String, dynamic>> result = await db.query(
-        'activities',
-        where: 'activity_id = ? AND is_deleted = 0',
-        whereArgs: [activityId],
-      );
-
-      return result;
-    } catch (e) {
-      // 에러 발생 시 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'FETCH_ACTIVITY_BY_ID_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Fetching activity by ID from SQLite',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error fetching activity by ID. Activity ID: $activityId, Error: $e');
+      print('Error getting activities. UID: $uid, Error: $e');
       return [];
     }
   }
@@ -1431,15 +1311,7 @@ class DatabaseService {
     final db = await database; // 데이터베이스 객체 가져오기
 
     if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Updating activity',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
+      handleUidNull(errorAction: "Attempting to update activity");
       print('Error: UID is null. User might not be logged in.');
       return;
     }
@@ -1494,14 +1366,7 @@ class DatabaseService {
     final db = await database; // 데이터베이스 객체 가져오기
 
     if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Deleting activity',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
+      handleUidNull(errorAction: "Attempting to delete activity");
 
       print('Error: UID is null. User might not be logged in.');
       return;
@@ -1554,14 +1419,7 @@ class DatabaseService {
     final db = await database; // 데이터베이스 객체 가져오기
 
     if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Checking duplicate activity name',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
+      handleUidNull(errorAction: "Attempting to check duplicate activity name");
 
       print('Error: UID is null. User might not be logged in.');
       return false; // 중복 확인 불가능한 경우 false 반환
@@ -1592,6 +1450,137 @@ class DatabaseService {
 
   /*
 
+      @todo
+
+
+
+
+  */
+  Future<List<Map<String, dynamic>>> getTodos() async {
+    final uid = _authProvider.user?.uid;
+    final db = await database;
+
+    // 삭제되지 않았고 완료되지 않은 항목만 조회
+    return await db.query(
+      'todos',
+      where: 'uid = ? AND is_deleted = 0 AND is_completed = 0',
+      whereArgs: [uid],
+      orderBy: 'position DESC',
+    );
+  }
+
+  Future<void> createTodo(Map<String, dynamic> todo) async {
+    final db = await database;
+    final uid = _authProvider.user?.uid;
+    if (uid == null) return;
+
+    // position 값 가져오기
+    final maxPosition = await _getMaxPosition();
+
+    final todoId = Uuid().v4();
+
+    await db.insert('todos', {
+      'uid': uid,
+      'todo_id': todoId,
+      'todo_name': todo['todo_name'],
+      'todo_detail': todo['todo_detail'],
+      'priority': todo['priority'],
+      'activity_id': todo['activity_id'],
+      'activity_name': todo['activity_name'],
+      'activity_icon': todo['activity_icon'],
+      'activity_color': todo['activity_color'],
+      'created_at': DateTime.now().toIso8601String(),
+      'last_updated_at': DateTime.now().toIso8601String(),
+      'due_date': todo['due_date'],
+      'position': maxPosition + 10000,
+      'is_completed': 0,
+      'is_deleted': 0,
+    });
+  }
+
+  // 3. 드래그로 순서 변경
+  Future<void> reorderTodo(int oldIndex, int newIndex) async {
+    final db = await database;
+
+    try {
+      // 읽기 전용 리스트 복제
+      final todos = List<Map<String, dynamic>>.from(await getTodos());
+
+      if (oldIndex < newIndex) {
+        newIndex -= 1;
+      }
+
+      final item = todos.removeAt(oldIndex);
+      todos.insert(newIndex, item);
+
+      // 트랜잭션으로 일괄 업데이트
+      await db.transaction((txn) async {
+        for (int i = 0; i < todos.length; i++) {
+          await txn.update(
+            'todos',
+            {
+              'position': (todos.length - i) * 10000, // 역순으로 높은 position 값 할당
+              'last_updated_at': DateTime.now().toIso8601String(),
+            },
+            where: 'todo_id = ?',
+            whereArgs: [todos[i]['todo_id']],
+          );
+        }
+      });
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  // 4. Todo 삭제 (소프트 삭제)
+  Future<void> deleteTodo(String todoId) async {
+    final db = await database;
+
+    await db.update(
+      'todos',
+      {'is_deleted': 1, 'deleted_at': DateTime.now().toIso8601String(), 'last_updated_at': DateTime.now().toIso8601String()},
+      where: 'todo_id = ?',
+      whereArgs: [todoId],
+    );
+  }
+
+  // 5. Todo 완료 상태 변경
+  Future<void> toggleComplete(String todoId, bool isCompleted) async {
+    final db = await database;
+
+    await db.update(
+      'todos',
+      {'is_completed': isCompleted ? 1 : 0, 'last_updated_at': DateTime.now().toIso8601String()},
+      where: 'todo_id = ?',
+      whereArgs: [todoId],
+    );
+  }
+
+  // 6. Todo 수정
+  Future<void> updateTodo(String todoId, Map<String, dynamic> updates) async {
+    final db = await database;
+
+    await db.update(
+      'todos',
+      {...updates, 'last_updated_at': DateTime.now().toIso8601String()},
+      where: 'todo_id = ?',
+      whereArgs: [todoId],
+    );
+  }
+
+  // 헬퍼 메서드: 최대 position 값 조회
+  Future<int> _getMaxPosition() async {
+    final uid = _authProvider.user?.uid;
+    final db = await database;
+
+    final result = await db.rawQuery('SELECT MAX(COALESCE(position, 0)) as maxPosition FROM todos WHERE uid = ? AND is_deleted = 0', [uid]);
+
+    // Object를 int로 변환
+    return (result.first['maxPosition'] as num?)?.toInt() ?? 0;
+  }
+
+  /*
+
       @Session
 
       Session 생성
@@ -1605,21 +1594,17 @@ class DatabaseService {
       {required String sessionId,
       required String timerId,
       required String activityId,
+      required String activityName,
+      required String activityIcon,
+      required String activityColor,
       required String mode,
       required int targetDuration}) async {
-    final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
-    final db = await database; // 데이터베이스 객체 가져오기
+    final uid = _authProvider.user?.uid;
+    final db = await database;
     final deviceInfo = await _deviceInfoService.getDeviceInfo();
 
     if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Creating session',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
+      handleUidNull(errorAction: "Attempting to create session");
 
       print('Error: UID is null. User might not be logged in.');
       return; // 세션 생성 불가
@@ -1629,33 +1614,15 @@ class DatabaseService {
     final timezone = DateTime.now().timeZoneName;
 
     try {
-      // activityId로 활동 정보 가져오기
-      final activityData = await getActivityById(activityId);
-
-      if (activityData.isEmpty) {
-        // 활동 정보가 없을 경우 에러 처리
-        Map<String, dynamic> errorData = await _errorService.createError(
-          errorCode: 'ACTIVITY_NOT_FOUND',
-          errorMessage: 'Activity not found for activityId: $activityId',
-          errorAction: 'Creating session',
-          severityLevel: 'medium',
-        );
-        await insertErrorLog(errorData);
-
-        print('Error: Activity not found for activityId: $activityId');
-        return;
-      }
-
-      final activity = activityData.first; // 가져온 활동 정보
       final _session = {
         'uid': uid,
         'session_id': sessionId,
         'timer_id': timerId,
         'activity_id': activityId,
         'mode': mode,
-        'activity_name': activity['activity_name'] ?? '',
-        'activity_icon': activity['activity_icon'] ?? '',
-        'activity_color': activity['activity_color'] ?? '',
+        'activity_name': activityName,
+        'activity_icon': activityIcon,
+        'activity_color': activityColor,
         'start_time': now,
         'end_time': null,
         'session_duration': 0,
@@ -1713,392 +1680,6 @@ class DatabaseService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getSessionsForToday() async {
-    final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
-    final db = await database;
-
-    try {
-      DateTime now = DateTime.now();
-      String todayStart = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
-      String tomorrowStart = DateTime(now.year, now.month, now.day + 1).toUtc().toIso8601String();
-
-      final result = await db.query(
-        'sessions',
-        where: 'start_time >= ? AND start_time < ? AND is_deleted = 0 AND uid = ?',
-        whereArgs: [todayStart, tomorrowStart, uid],
-      );
-
-      return result;
-    } catch (e) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'GET_SESSIONS_TODAY_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Fetching sessions for today',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error fetching sessions for today: $e');
-      return [];
-    }
-  }
-
-  Future<int> getTotalSessionDurationForActivityToday(String activityId) async {
-    final db = await database;
-    final uid = _authProvider.user?.uid;
-
-    if (uid == null) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Fetching total session duration for today',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error: UID is null. User might not be logged in.');
-      return 0; // UID가 없으므로 계산 불가
-    }
-
-    try {
-      DateTime now = DateTime.now();
-      String todayStart = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
-      String tomorrowStart = DateTime(now.year, now.month, now.day + 1).toUtc().toIso8601String();
-
-      final result = await db.rawQuery('''
-      SELECT SUM(session_duration) AS total_duration
-      FROM sessions
-      WHERE activity_id = ? 
-        AND uid = ? 
-        AND is_deleted = 0 
-        AND start_time >= ? 
-        AND start_time < ?
-    ''', [activityId, uid, todayStart, tomorrowStart]);
-
-      return result.first['total_duration'] as int? ?? 0; // 합계 반환
-    } catch (e) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'FETCH_TOTAL_DURATION_TODAY_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Calculating total session duration for today',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error fetching total session duration for today: $e');
-      return 0; // 에러 발생 시 0 반환
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> getSessionsForThisWeek() async {
-    final db = await database;
-    final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
-
-    try {
-      DateTime now = DateTime.now();
-      // 현재 주의 월요일 계산 (주의 시작)
-      DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
-      // 현재 주의 일요일 계산 (주의 끝)
-      DateTime weekEnd = weekStart.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
-
-      // UTC 형식으로 변환
-      String weekStartStr = DateTime(weekStart.year, weekStart.month, weekStart.day).toUtc().toIso8601String();
-      String weekEndStr = DateTime(weekEnd.year, weekEnd.month, weekEnd.day, 23, 59, 59).toUtc().toIso8601String();
-
-      final result = await db.query(
-        'sessions',
-        where: 'start_time >= ? AND start_time <= ? AND is_deleted = 0 AND uid = ?',
-        whereArgs: [weekStartStr, weekEndStr, uid],
-      );
-
-      return result;
-    } catch (e) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'GET_SESSIONS_THIS_WEEK_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Fetching sessions for this week',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error fetching sessions for this week: $e');
-      return [];
-    }
-  }
-
-  Future<int> getTotalSessionDurationForActivityThisWeek(String activityId) async {
-    final db = await database;
-    final uid = _authProvider.user?.uid;
-
-    if (uid == null) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Fetching total session duration for this week',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error: UID is null. User might not be logged in.');
-      return 0; // UID가 없으므로 계산 불가
-    }
-
-    try {
-      DateTime now = DateTime.now();
-      DateTime weekStart = now.subtract(Duration(days: now.weekday - 1)); // 월요일
-      DateTime weekEnd = weekStart.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59)); // 일요일
-
-      String weekStartStr = DateTime(weekStart.year, weekStart.month, weekStart.day).toUtc().toIso8601String();
-      String weekEndStr = DateTime(weekEnd.year, weekEnd.month, weekEnd.day, 23, 59, 59).toUtc().toIso8601String();
-
-      final result = await db.rawQuery('''
-      SELECT SUM(session_duration) AS total_duration
-      FROM sessions
-      WHERE activity_id = ? 
-        AND uid = ? 
-        AND is_deleted = 0 
-        AND start_time >= ? 
-        AND start_time <= ?
-    ''', [activityId, uid, weekStartStr, weekEndStr]);
-
-      return result.first['total_duration'] as int? ?? 0; // 합계 반환
-    } catch (e) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'FETCH_TOTAL_DURATION_THIS_WEEK_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Calculating total session duration for this week',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error fetching total session duration for this week: $e');
-      return 0; // 에러 발생 시 0 반환
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> getWeeklySessionFlags() async {
-    try {
-      // 이번주 월요일 구하기
-      DateTime now = DateTime.now();
-      DateTime monday = now.subtract(Duration(days: now.weekday - 1));
-      monday = DateTime(monday.year, monday.month, monday.day); // 시간을 00:00:00으로 설정
-
-      // 다음주 월요일 구하기 (이번주 일요일 23:59:59까지의 데이터를 위해)
-      DateTime nextMonday = monday.add(const Duration(days: 7));
-
-      final db = await database;
-      final List<Map<String, dynamic>> maps = await db.query(
-        'sessions',
-        columns: ['start_time', 'long_session_flag'],
-        where: 'start_time >= ? AND start_time < ? AND is_deleted = 0',
-        whereArgs: [monday.toUtc().toIso8601String(), nextMonday.toUtc().toIso8601String()],
-      );
-
-      print('Found ${maps.length} sessions for current week');
-      return maps;
-    } catch (e) {
-      print('Error getting weekly session flags: $e');
-      await _errorService.createError(
-        errorCode: 'GET_WEEKLY_SESSIONS_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Getting weekly session flags',
-        severityLevel: 'medium',
-      );
-      return [];
-    }
-  }
-
-  Future<int> getSessionsOver1HourCount(String weekStart) async {
-    final db = await database;
-    final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
-
-    if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Creating session',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error: UID is null. User might not be logged in.');
-      return 0;
-    }
-
-    try {
-      String weekEnd = DateTime.parse(weekStart).add(const Duration(days: 7)).toIso8601String();
-      final results = await db.rawQuery('''
-      SELECT COUNT(*) as count
-      FROM sessions
-      WHERE uid = ? 
-        AND is_deleted = 0 
-        AND session_duration >= 3600
-        AND start_time BETWEEN ? AND ?
-    ''', [uid, weekStart, weekEnd]);
-
-      return results.first['count'] as int? ?? 0;
-    } catch (e) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'SESSION_OVER_1HOURS_COUNT_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Calculating Sessions Over 1 hours for Week',
-        severityLevel: 'medium',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error calculating sessions over 1 hours: $e');
-      return 0;
-    }
-  }
-
-  Future<int> getTotalSessionDurationForWeek(String weekStart) async {
-    final db = await database;
-    final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
-
-    if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Creating session',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error: UID is null. User might not be logged in.');
-      return 0;
-    }
-
-    try {
-      // 주차의 시작일과 종료일 계산
-      String weekEnd = DateTime.parse(weekStart).add(Duration(days: 7)).toIso8601String();
-
-      // 주차 내 모든 세션의 `session_duration` 합계 계산
-      final results = await db.rawQuery('''
-      SELECT SUM(session_duration) as total_duration
-      FROM sessions
-      WHERE uid = ?
-        AND is_deleted = 0
-        AND start_time BETWEEN ? AND ?
-    ''', [uid, weekStart, weekEnd]);
-
-      // 결과 반환, NULL 방지
-      return results.first['total_duration'] as int? ?? 0;
-    } catch (e) {
-      // 에러 로깅
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'SESSION_DURATION_CALCULATION_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Calculating Total Session Duration for Week',
-        severityLevel: 'medium',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error calculating total session duration for week $weekStart: $e');
-      return 0;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> getSessionsForWeek(int weekOffset) async {
-    final db = await database;
-    final uid = _authProvider.user?.uid; // AuthProvider에서 UID 가져오기
-
-    if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Creating session',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error: UID is null. User might not be logged in.');
-      return []; // 세션 생성 불가
-    }
-    try {
-      // 현재 날짜로부터 weekOffset만큼 이전의 주차 계산
-      DateTime now = DateTime.now().toLocal();
-      DateTime startOfWeek = DateTime.utc(now.year, now.month, now.day, 0, 0, 0).subtract(Duration(days: now.weekday - 1 + 7 * weekOffset));
-      DateTime endOfWeek = startOfWeek.add(Duration(days: 7)).subtract(Duration(seconds: 1));
-
-      String startOfWeekStr = startOfWeek.toIso8601String();
-      String endOfWeekStr = endOfWeek.toIso8601String();
-
-      print('Fetching sessions from $startOfWeekStr to $endOfWeekStr for userId=$uid');
-
-      List<Map<String, dynamic>> results = await db.rawQuery('''
-        SELECT sessions.*, activities.activity_name, activities.activity_icon, activities.activity_color
-        FROM sessions
-        JOIN activities ON sessions.activity_id = activities.activity_id
-        WHERE sessions.uid = ? 
-          AND sessions.is_deleted = 0 
-          AND activities.is_deleted = 0
-          AND (
-            (sessions.start_time BETWEEN ? AND ?)
-            OR (sessions.end_time BETWEEN ? AND ?)
-            OR (sessions.start_time < ? AND (sessions.end_time > ? OR sessions.end_time IS NULL))
-          )
-        ORDER BY sessions.start_time DESC, sessions.end_time DESC;
-        ''', [
-        uid,
-        startOfWeekStr,
-        endOfWeekStr,
-        startOfWeekStr,
-        endOfWeekStr,
-        startOfWeekStr,
-        startOfWeekStr,
-      ]);
-
-      return results;
-    } catch (e) {
-      // 데이터베이스 작업 중 에러 발생 시 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'FETCH_SESSIONS_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Fetching sessions for weekOffset: $weekOffset',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error fetching sessions for weekOffset=$weekOffset: $e');
-      return [];
-    }
-  }
-
-  Future<int> getCompletedSessionsByTargetDuration(int duration) async {
-    final db = await database; // 이미 선언된 getter
-    try {
-      final results = await db.rawQuery('''
-      SELECT COUNT(*) AS count
-      FROM sessions
-      WHERE is_deleted = 0
-        AND target_duration = ?
-        AND session_duration = target_duration
-    ''', [duration]);
-
-      // 결과가 비어 있으면 0, 아니면 count 반환
-      if (results.isNotEmpty) {
-        return (results.first['count'] as int?) ?? 0;
-      } else {
-        return 0;
-      }
-    } catch (e) {
-      // 에러 발생 시 로그 생성 (기존 에러 처리 패턴과 동일하게)
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'FETCH_COMPLETED_SESSIONS_BY_TARGET_DURATION_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Fetching completed sessions by target_duration',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
-
-      print('Error fetching completed sessions by target_duration: $e');
-      return 0;
-    }
-  }
-
   Future<List<Map<String, dynamic>>> getAllSessions() async {
     final db = await database;
 
@@ -2111,7 +1692,6 @@ class DatabaseService {
 
       return results;
     } catch (e) {
-      // 데이터베이스 작업 중 에러 발생 시 에러 로그 생성
       Map<String, dynamic> errorData = await _errorService.createError(
         errorCode: 'FETCH_ALL_SESSIONS_FAILED',
         errorMessage: e.toString(),
@@ -2119,9 +1699,41 @@ class DatabaseService {
         severityLevel: 'high',
       );
       await insertErrorLog(errorData);
+      return [];
+    }
+  }
 
-      print('Error fetching all sessions: $e');
-      return []; // 에러 발생 시 빈 리스트 반환
+  Future<List<Map<String, dynamic>>> getSessionsWithinDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      final db = await database;
+      final List<Map<String, dynamic>> results = await db.rawQuery('''
+      SELECT 
+        s.activity_id,
+        s.activity_name,
+        s.activity_icon,
+        s.activity_color,
+        SUM(s.session_duration) as total_duration
+      FROM sessions s
+      WHERE s.start_time >= ? 
+        AND s.start_time < ?
+        AND s.is_deleted = 0
+        AND s.session_duration > 0
+      GROUP BY s.activity_id, s.activity_name, s.activity_icon, s.activity_color
+    ''', [startDate.toIso8601String(), endDate.toIso8601String()]);
+
+      return results;
+    } catch (e) {
+      Map<String, dynamic> errorData = await _errorService.createError(
+        errorCode: 'GET_SESSIONS_FAILED',
+        errorMessage: e.toString(),
+        errorAction: 'getting sessions with date range from SQLite',
+        severityLevel: 'high',
+      );
+      await insertErrorLog(errorData);
+      return [];
     }
   }
 
@@ -2131,14 +1743,7 @@ class DatabaseService {
     final now = DateTime.now().toUtc();
 
     if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Creating session',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
+      handleUidNull(errorAction: 'Attempting to end session');
 
       print('Error: UID is null. User might not be logged in.');
       return; // 세션 생성 불가
@@ -2307,14 +1912,7 @@ class DatabaseService {
     final now = DateTime.now().toUtc().toIso8601String();
 
     if (uid == null) {
-      // UID가 없는 경우 에러 로그 생성
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'UID_NOT_FOUND',
-        errorMessage: 'UID is null. User might not be logged in.',
-        errorAction: 'Deleting session',
-        severityLevel: 'high',
-      );
-      await insertErrorLog(errorData);
+      handleUidNull(errorAction: 'Attempting to delete session');
 
       print('Error: UID is null. User might not be logged in.');
       return;
@@ -2949,5 +2547,21 @@ class DatabaseService {
     } catch (e) {
       print('Error updating error log: $e');
     }
+  }
+
+  // Helper methods
+  Future<void> handleUidNull({
+    required String errorAction,
+    String errorCode = 'UID_NOT_FOUND',
+  }) async {
+    final errorData = await _errorService.createError(
+      errorCode: errorCode,
+      errorMessage: 'UID is null. User might not be logged in.',
+      errorAction: errorAction,
+      severityLevel: 'high',
+    );
+    await insertErrorLog(errorData);
+
+    print('Error: UID is null. $errorAction');
   }
 }

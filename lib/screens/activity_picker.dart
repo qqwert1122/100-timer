@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/screens/add_activity_page.dart';
+import 'package:project1/theme/app_color.dart';
+import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/stats_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:project1/utils/responsive_size.dart';
 
 class ActivityPicker extends StatefulWidget {
   final String selectedActivity;
@@ -23,29 +27,30 @@ class ActivityPicker extends StatefulWidget {
 
 class _ActivityPickerState extends State<ActivityPicker> {
   late Future<List<Map<String, dynamic>>> _activityListFuture;
-  late final DatabaseService _dbService; // 주입받을 DatabaseService
+  late final DatabaseService _dbService;
+  late final StatsProvider _statsProvider;
   late final defaultAcitivty;
 
   @override
   void initState() {
     super.initState();
-    _dbService = Provider.of<DatabaseService>(context, listen: false); // DatabaseService 주입
+    _statsProvider = Provider.of<StatsProvider>(context, listen: false);
+    _dbService = Provider.of<DatabaseService>(context, listen: false);
     _refreshActivityList();
-    defaultAcitivty = _dbService.getDefaultActivity();
+    defaultAcitivty = _statsProvider.getDefaultActivity();
   }
 
   void _refreshActivityList() {
     setState(() {
-      _activityListFuture = _dbService.getActivities();
+      _activityListFuture = _statsProvider.getAllActivities();
     });
   }
 
   Future<void> _navigateToAddActivityPage(BuildContext context) async {
-    Map<String, dynamic>? userData = await _dbService.getUser();
     final newActivity = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddActivityPage(userId: userData?['uid']),
+        builder: (context) => AddActivityPage(),
       ),
     );
 
@@ -56,12 +61,10 @@ class _ActivityPickerState extends State<ActivityPicker> {
 
   Future<void> _navigateToEditActivityPage(
       BuildContext context, String activityId, String activityName, String activityIcon, String activityColor) async {
-    Map<String, dynamic>? userData = await _dbService.getUser();
     final updatedActivity = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddActivityPage(
-          userId: userData?['uid'],
           isEdit: true,
           activityId: activityId,
           activityName: activityName,
@@ -101,29 +104,25 @@ class _ActivityPickerState extends State<ActivityPicker> {
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: const Text(
-                '정말 삭제하시겠습니까?',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.redAccent,
-                  fontWeight: FontWeight.w900,
-                ),
+              title: Text('정말 삭제하시겠습니까?', style: AppTextStyles.getTitle(context).copyWith(color: Colors.redAccent)),
+              content: Text(
+                '활동을 삭제할 경우 같은 이름으로 재생성 할 수는 있으나 복구할 수 없습니다.',
+                style: AppTextStyles.getBody(context),
               ),
-              content: Text('$activity 활동을 삭제할 경우 해당 기록이 모두 삭제되며 복구할 수 없습니다.'),
               actions: <Widget>[
                 TextButton(
-                  child: const Text(
+                  child: Text(
                     '취소',
-                    style: TextStyle(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.w900),
+                    style: AppTextStyles.getTitle(context).copyWith(color: Colors.grey),
                   ),
                   onPressed: () {
                     Navigator.of(context).pop(false);
                   },
                 ),
                 TextButton(
-                  child: const Text(
+                  child: Text(
                     '삭제',
-                    style: TextStyle(color: Colors.redAccent, fontSize: 18, fontWeight: FontWeight.w900),
+                    style: AppTextStyles.getTitle(context).copyWith(color: Colors.redAccent),
                   ),
                   onPressed: () {
                     Navigator.of(context).pop(true);
@@ -139,29 +138,30 @@ class _ActivityPickerState extends State<ActivityPicker> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 400,
-      padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0),
+      height: context.hp(60),
+      padding: context.paddingMD,
       child: Column(
         children: [
-          // 제목
-          const Padding(
-            padding: EdgeInsets.only(
-              top: 16,
-              left: 8,
-            ),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '활동 선택하기',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                ),
+          Align(
+            alignment: Alignment.topCenter,
+            child: Container(
+              margin: context.paddingXS,
+              width: context.wp(20),
+              height: 5,
+              decoration: BoxDecoration(
+                color: AppColors.buttonSecondary(context),
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
           ),
-          const SizedBox(height: 10),
-          // 활동 리스트
+          Padding(
+            padding: context.paddingSM,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('활동 선택하기', style: AppTextStyles.getTitle(context)),
+            ),
+          ),
+          SizedBox(height: context.hp(1)),
           Expanded(
             child: FutureBuilder(
               future: _activityListFuture,
@@ -170,14 +170,9 @@ class _ActivityPickerState extends State<ActivityPicker> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (snapshot.hasError) {
-                  return const Center(child: Text('오류가 발생했습니다.'));
-                }
-
-                final activities = snapshot.data as List<Map<String, dynamic>>?;
-
-                if (activities == null || activities.isEmpty) {
-                  return const Center(child: Text('활동이 없습니다.'));
+                List<Map<String, dynamic>> activities = [];
+                if (snapshot.hasData) {
+                  activities = snapshot.data as List<Map<String, dynamic>>;
                 }
 
                 return ListView.builder(
@@ -187,14 +182,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
                       // '활동 추가' 버튼
                       return ListTile(
                         leading: const Icon(Icons.add, color: Colors.blue),
-                        title: const Text(
-                          '활동 추가',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        title: Text('활동 추가', style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900)),
                         onTap: () {
                           _navigateToAddActivityPage(context);
                         },
@@ -251,13 +239,12 @@ class _ActivityPickerState extends State<ActivityPicker> {
                             children: [
                               Text(
                                 activity['activity_name'],
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                                style: AppTextStyles.getBody(context).copyWith(
+                                    fontWeight: FontWeight.w900,
                                     color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
                               ),
-                              const SizedBox(
-                                width: 10,
+                              SizedBox(
+                                width: context.wp(4),
                               ),
                               Container(
                                 width: 12,

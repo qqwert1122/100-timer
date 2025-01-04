@@ -5,10 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:project1/main.dart';
+import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/auth_provider.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/responsive_size.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -213,23 +215,20 @@ class _RegisterPageState extends State<RegisterPage> {
       case 0:
         // 닉네임 입력 단계
         return Padding(
-          padding: EdgeInsets.all(16),
+          padding: context.paddingLG,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 '닉네임을 입력하세요',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: AppTextStyles.getHeadline(context),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: context.hp(3)),
               TextFormField(
                 controller: _nicknameController,
                 keyboardType: TextInputType.text,
                 decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16.0), // 위아래 패딩 설정
+                  contentPadding: context.paddingXS, // 위아래 패딩 설정
                   border: underlineInputBorder,
                   enabledBorder: const UnderlineInputBorder(
                     borderSide: BorderSide(color: Colors.grey), // 활성화 상태의 밑줄 색상
@@ -245,15 +244,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   hintText: "닉네임",
                   hintStyle: TextStyle(color: Colors.grey[400]),
-                  errorStyle: const TextStyle(
-                    color: Colors.redAccent, // 원하는 색상으로 변경
-                    fontSize: 14.0, // 원하는 크기로 변경
-                  ),
+                  errorStyle: AppTextStyles.getBody(context).copyWith(color: Colors.redAccent),
                   helperText: userHandle, // @handle 표시
-                  helperStyle: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
+                  helperStyle: AppTextStyles.getCaption(context),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -270,32 +263,30 @@ class _RegisterPageState extends State<RegisterPage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: const Text(
+            Padding(
+              padding: context.paddingLG,
+              child: Text(
                 '아바타를 선택하세요',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: AppTextStyles.getHeadline(context),
               ),
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: context.hp(3)),
             // 선택된 아바타 큰 크기로 표시
             if (selectedAvatar.isNotEmpty)
               Center(
                 child: Container(
-                  margin: const EdgeInsets.only(bottom: 30),
-                  width: 150,
-                  height: 150,
+                  margin: context.paddingMD,
+                  width: context.wp(50),
+                  height: context.hp(20),
                   child: SvgPicture.network(
                     selectedAvatar,
                     fit: BoxFit.contain,
                   ),
                 ),
               ),
-            const SizedBox(height: 20),
-
+            SizedBox(
+              height: context.hp(3),
+            ),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -315,13 +306,13 @@ class _RegisterPageState extends State<RegisterPage> {
                       clipBehavior: Clip.none,
                       children: [
                         Container(
-                          margin: const EdgeInsets.all(8.0),
+                          margin: context.paddingXS,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8.0),
+                            borderRadius: BorderRadius.circular(context.md),
                           ),
                           child: Container(
-                            width: 80,
-                            height: 80,
+                            width: context.wp(20),
+                            height: context.hp(10),
                             decoration: BoxDecoration(
                               boxShadow: [
                                 BoxShadow(
@@ -337,9 +328,8 @@ class _RegisterPageState extends State<RegisterPage> {
                               child: SvgPicture.network(
                                 avatar,
                                 fit: BoxFit.cover,
-                                // SVG 로딩 중 플레이스홀더 표시
                                 placeholderBuilder: (BuildContext context) => Container(
-                                  padding: const EdgeInsets.all(30.0),
+                                  padding: context.paddingXL,
                                   child: const CircularProgressIndicator(),
                                 ),
                               ),
@@ -352,12 +342,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             top: 0, // 상단 위치 조정
                             child: Lottie.asset(
                               'assets/images/check_3.json', // Lottie 파일 경로
-                              width: 30,
-                              height: 30,
+                              width: context.wp(10),
+                              height: context.hp(5),
                               repeat: false,
-                              onLoaded: (composition) {
-                                print('애니메이션 로드 완료');
-                              },
                               errorBuilder: (context, error, stackTrace) {
                                 return const Icon(
                                   Icons.error,
@@ -378,26 +365,20 @@ class _RegisterPageState extends State<RegisterPage> {
       case 2:
         // 활동 선택 단계
         return Padding(
-          padding: const EdgeInsets.all(16),
+          padding: context.paddingLG,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 '활동을 추천해드려요',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: AppTextStyles.getHeadline(context),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                '활동은 나중에 자유롭게 추가하거나 수정할 수 있어요',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 50),
+              SizedBox(height: context.hp(3)),
+              Text('나중에 자유롭게 추가하거나 수정할 수 있어요',
+                  style: AppTextStyles.getBody(context).copyWith(
+                    color: Colors.grey,
+                  )),
+              SizedBox(height: context.hp(8)),
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -442,25 +423,23 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: Stack(
                         children: [
                           Positioned(
-                            left: 20,
-                            top: 20,
+                            left: context.md,
+                            top: context.md,
                             child: Text(
                               activities[index]['name'],
-                              style: const TextStyle(
+                              style: AppTextStyles.getHeadline(context).copyWith(
                                 color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ),
                           selectedActivities.contains(index)
                               ? Positioned(
-                                  right: 10, // 우측 위치 조정
-                                  top: 10, // 상단 위치 조정
+                                  right: context.sm, // 우측 위치 조정
+                                  top: context.sm, // 상단 위치 조정
                                   child: Lottie.asset(
                                     'assets/images/check_3.json', // Lottie 파일 경로
-                                    width: 30,
-                                    height: 30,
+                                    width: context.wp(10),
+                                    height: context.hp(4),
                                     repeat: false,
                                     onLoaded: (composition) {
                                       print('애니메이션 로드 완료');
@@ -475,11 +454,11 @@ class _RegisterPageState extends State<RegisterPage> {
                                   ),
                                 )
                               : Positioned(
-                                  right: 13,
-                                  top: 13,
+                                  right: context.md,
+                                  top: context.md,
                                   child: Container(
-                                    width: 25,
-                                    height: 25,
+                                    width: context.wp(10),
+                                    height: context.hp(3),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle, // 원형으로 설정
                                       border: Border.all(
@@ -527,7 +506,10 @@ class _RegisterPageState extends State<RegisterPage> {
     // 키보드가 올라왔을 때 화면이 밀리지 않도록 설정
     return Scaffold(
       appBar: AppBar(
-        title: const Text('회원가입', style: TextStyle(fontWeight: FontWeight.w400, fontSize: 18)),
+        title: Text(
+          '회원가입',
+          style: AppTextStyles.getHeadline(context),
+        ),
         elevation: 0,
         leading: _currentStep > 0
             ? IconButton(
@@ -569,28 +551,23 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(
-          right: 16,
-          left: 16,
-        ),
+        padding: context.paddingSM,
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             onPressed: _isButtonEnabled ? _onNextPressed : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: _isButtonEnabled ? Colors.blueAccent : Colors.grey.shade400,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: context.paddingSM,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(context.md),
               ),
             ),
-            child: Text(
-              _currentStep == 2 ? '회원가입' : '다음',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: Text(_currentStep == 2 ? '회원가입' : '다음',
+                style: AppTextStyles.getBody(context).copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                )),
           ),
         ),
       ),

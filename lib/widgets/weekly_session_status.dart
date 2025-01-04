@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:project1/theme/app_color.dart';
+import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/database_service.dart';
+import 'package:project1/utils/stats_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:project1/utils/responsive_size.dart';
 
 class WeeklySessionStatus extends StatefulWidget {
-  const WeeklySessionStatus({super.key});
+  final bool isSimple;
+
+  const WeeklySessionStatus({super.key, required this.isSimple});
 
   @override
   State<WeeklySessionStatus> createState() => _WeeklySessionStatusState();
@@ -13,42 +19,59 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
   final DateTime now = DateTime.now();
   List<Map<String, dynamic>> sessions = [];
   bool isLoading = true;
-  late DatabaseService _dbService;
+  late StatsProvider _statsProvider;
 
   @override
   void initState() {
     super.initState();
-    _dbService = Provider.of<DatabaseService>(context, listen: false);
+    _statsProvider = Provider.of<StatsProvider>(context, listen: false);
     _loadSessionData();
   }
 
   Future<void> _loadSessionData() async {
+    if (!mounted) return;
+
     try {
-      setState(() {
-        isLoading = true;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = true;
+        });
+      }
 
-      final weeklyData = await _dbService.getWeeklySessionFlags();
+      final weeklyData = await _statsProvider.getWeeklySessionFlags();
+      print('weeklyData: $weeklyData');
 
-      setState(() {
-        sessions = weeklyData;
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          sessions = weeklyData;
+          isLoading = false;
+        });
+      }
     } catch (e) {
       print('Error loading session data: $e');
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
   List<_DayStatus> _calculateDayStatuses() {
-    // 이번주 월요일 구하기
     DateTime monday = now.subtract(Duration(days: now.weekday - 1));
-
     List<_DayStatus> dayStatuses = [];
     List<String> weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 
+    if (sessions.isEmpty) {
+      return List.generate(7, (i) {
+        DateTime currentDay = monday.add(Duration(days: i));
+        return _DayStatus(
+          weekday: weekdays[i],
+          date: currentDay.day,
+          status: DayStatusType.upcoming,
+        );
+      });
+    }
     for (int i = 0; i < 7; i++) {
       DateTime currentDay = monday.add(Duration(days: i));
       bool isToday = currentDay.day == now.day && currentDay.month == now.month && currentDay.year == now.year;
@@ -63,12 +86,20 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
       bool hasLongSession = daySessions.any((session) => session['long_session_flag'] == 1);
 
       DayStatusType status;
-      if (isToday || currentDay.isAfter(now)) {
-        status = DayStatusType.upcoming;
-      } else if (hasLongSession) {
-        status = DayStatusType.completed;
+      if (hasLongSession) {
+        status = DayStatusType.completed; // 체크 완료
+      } else if (currentDay.isAfter(now)) {
+        status = DayStatusType.upcoming; // 미래
       } else {
-        status = DayStatusType.missed;
+        // 여기서 currentDay <= now 인 상태
+        // 만약 currentDay가 '오늘'이고 아직 자정 전이면?
+        if (isToday && now.hour < 24) {
+          // 원하는 로직대로라면 "WAIT"
+          status = DayStatusType.upcoming;
+        } else {
+          // 이미 날짜가 지났거나, 세션이 없으면 missed
+          status = DayStatusType.missed;
+        }
       }
 
       dayStatuses.add(_DayStatus(
@@ -76,7 +107,10 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
         date: currentDay.day,
         status: status,
       ));
+
+      print('status : $status');
     }
+    print('dayStatuses : $dayStatuses');
 
     return dayStatuses;
   }
@@ -92,48 +126,50 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
     final dayStatuses = _calculateDayStatuses();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: context.paddingSM,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                '이번 주 현황',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+          widget.isSimple
+              ? Container()
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('이번 주 현황', style: AppTextStyles.getTitle(context)),
+                    IconButton(
+                      icon: Icon(Icons.refresh, size: context.xl),
+                      onPressed: _loadSessionData,
+                    ),
+                  ],
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _loadSessionData,
-              ),
-            ],
-          ),
-          const Text(
-            '1시간 이상 집중한 날은 달성 표시가 돼요',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-          const SizedBox(height: 30),
+          widget.isSimple
+              ? Container()
+              : Text(
+                  '1시간 이상 집중한 날은 달성 표시가 돼요',
+                  style: AppTextStyles.getCaption(context),
+                ),
+          SizedBox(height: context.hp(widget.isSimple ? 0 : 3)),
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
-            decoration:
-                BoxDecoration(borderRadius: BorderRadius.circular(16), color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100),
+            padding: context.paddingSM,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: AppColors.backgroundSecondary(context),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 2,
+                  spreadRadius: 3,
+                  color: Colors.grey.shade200,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: dayStatuses.map((status) {
                 return Column(
                   children: [
-                    Text(
-                      status.weekday,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
+                    Text(status.weekday, style: AppTextStyles.getCaption(context)),
+                    SizedBox(height: context.hp(1)),
                     Container(
                       width: 36,
                       height: 36,
@@ -146,19 +182,21 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      '${status.date}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: status.status == DayStatusType.upcoming
-                            ? isDarkMode
-                                ? Colors.grey.shade700
-                                : Colors.grey.shade400
-                            : isDarkMode
-                                ? Colors.white
-                                : Colors.black,
-                      ),
-                    ),
+                    widget.isSimple
+                        ? Container()
+                        : Text(
+                            '${status.date}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: status.status == DayStatusType.upcoming
+                                  ? isDarkMode
+                                      ? Colors.grey.shade700
+                                      : Colors.grey.shade400
+                                  : isDarkMode
+                                      ? Colors.white
+                                      : Colors.black,
+                            ),
+                          ),
                   ],
                 );
               }).toList(),

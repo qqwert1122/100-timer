@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/widgets/edit_activity_log_modal.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -19,7 +20,8 @@ class ActivityLogPage extends StatefulWidget {
 }
 
 class _ActivityLogPageState extends State<ActivityLogPage> {
-  late final DatabaseService _dbService; // 주입받을 DatabaseService
+  late final DatabaseService _dbService;
+  late final StatsProvider _statsProvider;
   List<Map<String, dynamic>> groupedLogs = [];
   final List<String> daysOfWeek = ['월', '화', '수', '목', '금', '토', '일'];
   String selectedDay = '';
@@ -36,9 +38,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
   @override
   void initState() {
     super.initState();
-    _dbService = Provider.of<DatabaseService>(context, listen: false); // DatabaseService 주입
+    _dbService = Provider.of<DatabaseService>(context, listen: false);
+    _statsProvider = Provider.of<StatsProvider>(context, listen: false);
 
-    final today = DateTime.now().toUtc().toLocal();
+    final today = DateTime.now();
     final todayWeekdayIndex = (today.weekday + 6) % 7;
     selectedDay = daysOfWeek[todayWeekdayIndex];
     _initializeLogs(isInitialLoad: true);
@@ -64,8 +67,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
 
       print('_currentWeekOffset : $_currentWeekOffset');
 
-      // 현재 주차로부터 오프셋만큼 이전의 주차 데이터를 가져옵니다.
-      final logData = await _dbService.getSessionsForWeek(_currentWeekOffset);
+      final logData = await _statsProvider.getSessionsForWeek(_currentWeekOffset);
 
       if (logData.isEmpty) {
         print('logdata is empty');

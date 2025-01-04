@@ -6,24 +6,26 @@ import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/member_page.dart'; // MemberPage import 추가
 import 'package:project1/screens/timer_running_page.dart';
-import 'package:project1/utils/auth_provider.dart';
+import 'package:project1/theme/app_color.dart';
+import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
-import 'package:project1/widgets/content_section.dart';
 import 'package:provider/provider.dart';
+import 'package:project1/utils/responsive_size.dart';
 
-class Menu extends StatefulWidget {
-  const Menu({super.key});
+class FocusMode extends StatefulWidget {
+  const FocusMode({super.key});
 
   @override
-  State<Menu> createState() => _MenuState();
+  State<FocusMode> createState() => _FocusModeState();
 }
 
-class _MenuState extends State<Menu> with TickerProviderStateMixin {
+class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
-  late final DatabaseService _dbService; // 주입받을 DatabaseService
+  late final StatsProvider _statsProvider; // 주입받을 DatabaseService
 
   // 친구 카드의 그라데이션 애니메이션을 위한 컨트롤러와 애니메이션
   late AnimationController _shimmerAnimationController;
@@ -31,7 +33,7 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
   List<Map<String, dynamic>> pomodoroItems = [
     {
       'title': '30',
-      'value': 20,
+      'value': 1800,
       'maxCount': 3,
       'currentCount': 0,
       'gradientColors': [Colors.greenAccent, Colors.yellow],
@@ -62,7 +64,7 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _dbService = Provider.of<DatabaseService>(context, listen: false); // DatabaseService 주입
+    _statsProvider = Provider.of<StatsProvider>(context, listen: false); // DatabaseService 주입
     _initPomodoroCounts();
 
     // 애니메이션 컨트롤러 초기화 등 필요한 초기화 코드
@@ -118,17 +120,16 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
 
     for (var item in updatedItems) {
       final targetDuration = item['value'] as int;
-      // DB에서 "targetDuration"으로 완료된 세션이 몇 개인지 조회
-      final count = await _dbService.getCompletedSessionsByTargetDuration(targetDuration);
-
-      // 조회된 count를 currentCount에 반영
+      final count = await _statsProvider.getCompletedFocusMode(targetDuration);
       item['currentCount'] = count;
     }
 
-    // State에 반영
-    setState(() {
-      pomodoroItems = updatedItems;
-    });
+    if (mounted) {
+      // 위젯이 빌드 트리에 있는지 확인
+      setState(() {
+        pomodoroItems = updatedItems;
+      });
+    }
   }
 
   @override
@@ -150,132 +151,31 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
     final timerProvider = Provider.of<TimerProvider>(context);
 
     return SingleChildScrollView(
-      child: Center(
+      child: Padding(
+        padding: context.paddingSM,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 60),
-            _buildPomodoroMenu(timerProvider), // 뽀모도로 메뉴 추가
-            const SizedBox(height: 40),
-            _buildFriendsSection(),
-            const SizedBox(height: 40),
-            const ContentSection(),
-            const SizedBox(height: 100),
+            SizedBox(height: context.hp(3)),
+            Text(
+              '집중 모드',
+              style: AppTextStyles.getHeadline(context),
+            ),
+            SizedBox(height: context.hp(1)),
+            Text(
+              '정해진 시간 동안 멈추지 않고 집중을 달성하세요',
+              style: AppTextStyles.getCaption(context),
+            ),
+            _buildPomodoroMenu(timerProvider),
+            SizedBox(height: context.hp(10)),
+            // const SizedBox(height: 40),
+            // _buildFriendsSection(),
+            // const SizedBox(height: 40),
+            // const ContentSection(),
+            // const SizedBox(height: 100),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildAchievementsSection() {
-    final List<Map<String, dynamic>> achievements = List.generate(30, (index) {
-      return {
-        'title': '업적 ${index + 1}',
-        'description': '이것은 업적 ${index + 1}의 설명입니다.',
-        'achieved': index % 3 == 0, // 3의 배수인 경우 달성된 업적으로 표시
-      };
-    });
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 32.0),
-          child: Text(
-            '업적',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 5,
-              crossAxisSpacing: 4,
-              mainAxisSpacing: 4,
-            ),
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: achievements.length,
-            itemBuilder: (context, index) {
-              final achievement = achievements[index];
-              return GestureDetector(
-                onTap: () {
-                  _showAchievementDialog(achievement);
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    // 이미지 배경 설정
-                    image: const DecorationImage(
-                      image: AssetImage('assets/images/image_afternoon.webp'), // 배경 이미지 경로
-                      fit: BoxFit.cover,
-                    ),
-                    color: achievement['achieved'] ? null : Colors.grey.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: achievement['achieved'] ? Icon(Icons.emoji_events, color: Colors.white) : Icon(Icons.lock, color: Colors.white),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  // 업적 상세 설명 모달 창
-  void _showAchievementDialog(Map<String, dynamic> achievement) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Stack(
-            children: [
-              // 배경 이미지
-              Container(
-                decoration: BoxDecoration(
-                  image: const DecorationImage(
-                    image: AssetImage('assets/images/image_afternoon.webp'), // 큰 배경 이미지 경로
-                    fit: BoxFit.cover,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 업적 제목
-                    Text(
-                      achievement['title'],
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                    const SizedBox(height: 16),
-                    // 업적 설명
-                    Text(
-                      achievement['description'],
-                      style: const TextStyle(fontSize: 16, color: Colors.white),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              // 닫기 버튼
-              Positioned(
-                right: 8,
-                top: 8,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -318,7 +218,7 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
         children: List.generate(
           maxCount,
           (index) => Padding(
-            padding: const EdgeInsets.only(right: 4),
+            padding: EdgeInsets.only(right: context.wp(1)),
             child: Container(
               width: 12,
               height: 12,
@@ -339,154 +239,126 @@ class _MenuState extends State<Menu> with TickerProviderStateMixin {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 32.0),
-              child: Text(
-                '뽀모도로',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
+        SizedBox(height: context.hp(3)),
+        GestureDetector(
+          onTap: () => _showActivityModal(timerProvider),
+          child: Container(
+            padding: context.paddingXS,
+            decoration: BoxDecoration(
+              color: AppColors.backgroundSecondary(context),
+              borderRadius: BorderRadius.circular(16),
             ),
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: GestureDetector(
-                onTap: () => _showActivityModal(timerProvider),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
                   children: [
-                    Material(
-                      color: Colors.transparent,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                    Icon(
+                      getIconData(timerProvider.currentActivityIcon),
+                    ),
+                    SizedBox(width: context.wp(5)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '선택된 활동',
+                          style: AppTextStyles.getCaption(
+                            context,
+                          ).copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          timerProvider.currentActivityName,
+                          style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+                SizedBox(width: context.wp(10)),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: context.xl,
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: context.hp(3)),
+        GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 1.5,
+          ),
+          itemCount: pomodoroItems.length,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemBuilder: (context, index) {
+            final item = pomodoroItems[index];
+
+            return GestureDetector(
+              onTap: () async {
+                await Future.delayed(const Duration(milliseconds: 100));
+                timerProvider.setSessionModeAndTargetDuration(mode: 'SESIOPMDR', targetDuration: item['value']);
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => const TimerRunningPage(),
+                  ),
+                );
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: item['gradientColors'],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Stack(
+                  children: [
+                    Padding(
+                      padding: context.paddingSM,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            getIconData(timerProvider.currentActivityIcon ?? 'category_rounded'),
-                            color: Colors.redAccent.shade200,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                item['title'],
+                                style: TextStyle(
+                                  fontSize: context.lg * 2,
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.white,
+                                  fontFamily: 'chab',
+                                ),
+                              ),
+                              SizedBox(width: context.wp(1)),
+                              Text(
+                                index == 0 ? '분' : '시간',
+                                style: TextStyle(
+                                  fontSize: context.sm,
+                                  fontWeight: FontWeight.w200,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 5),
-                          Text(
-                            (timerProvider.currentActivityName ?? '전체').length > 6
-                                ? '${(timerProvider.currentActivityName ?? '전체').substring(0, 6)}...'
-                                : timerProvider.currentActivityName ?? '전체',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.redAccent.shade200,
-                            ),
+                          SizedBox(height: context.hp(2)),
+                          _buildCountIndicator(
+                            item['maxCount'],
+                            item['currentCount'],
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    const Icon(Icons.keyboard_arrow_down_rounded, size: 30, color: Colors.red),
                   ],
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(
-          height: 10,
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 32.0),
-          child: Text(
-            '원하는 시간을 선택해 집중 모드를 시작하세요',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1.5,
-            ),
-            itemCount: pomodoroItems.length,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemBuilder: (context, index) {
-              final item = pomodoroItems[index];
-
-              return GestureDetector(
-                onTap: () async {
-                  await Future.delayed(const Duration(milliseconds: 100));
-                  timerProvider.setSessionModeAndTargetDuration(mode: 'SESIOPMDR', targetDuration: item['value']);
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (context) => const TimerRunningPage(),
-                    ),
-                  );
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: item['gradientColors'],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Stack(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  item['title'],
-                                  style: const TextStyle(
-                                    fontSize: 48,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white,
-                                    fontFamily: 'chab',
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  index == 0 ? '분' : '시간',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w200,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            _buildCountIndicator(
-                              item['maxCount'],
-                              item['currentCount'],
-                            ),
-                          ],
-                        ),
-                      ),
-                      index == pomodoroItems.length - 1
-                          ? Positioned(
-                              right: -30,
-                              bottom: -30,
-                              child: Image.asset(
-                                'assets/images/cute_timer_1_nobg.png',
-                                width: 140,
-                                height: 140,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : Container()
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+            );
+          },
         ),
       ],
     );

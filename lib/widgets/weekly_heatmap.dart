@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
+import 'package:project1/utils/stats_provider.dart';
 import 'package:provider/provider.dart';
 
 class WeeklyHeatmap extends StatefulWidget {
@@ -13,7 +14,7 @@ class WeeklyHeatmap extends StatefulWidget {
 }
 
 class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
-  late final DatabaseService _dbService; // 주입받을 DatabaseService
+  late final StatsProvider _statsProvider; // 주입받을 DatabaseService
 
   Map<String, Map<String, Map<String, int>>> heatmapData = {};
 
@@ -30,12 +31,12 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
   @override
   void initState() {
     super.initState();
-    _dbService = Provider.of<DatabaseService>(context, listen: false); // DatabaseService 주입
+    _statsProvider = Provider.of<StatsProvider>(context, listen: false); // DatabaseService 주입
     generateWeeklyHeatmap();
   }
 
   Future<void> initializeActivityColors() async {
-    List<Map<String, dynamic>> activities = await _dbService.getActivities();
+    List<Map<String, dynamic>> activities = await _statsProvider.getAllActivities();
     for (var activity in activities) {
       String activityId = activity['activity_id'];
       Color color = ColorService.hexToColor(activity['activity_color']);
@@ -48,7 +49,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
     try {
       await initializeActivityColors();
 
-      List<Map<String, dynamic>> sessions = await _dbService.getSessionsForThisWeek();
+      List<Map<String, dynamic>> sessions = await _statsProvider.getSessionsForWeek(0);
 
       Set<String> activeHourSet = {};
 

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:project1/screens/timer_running_page.dart';
+import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/database_service.dart';
+import 'package:project1/utils/stats_provider.dart';
+import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:project1/utils/responsive_size.dart';
 import 'timer_page.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -14,20 +18,52 @@ class SplashScreen extends StatefulWidget {
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   late DatabaseService _dbService;
   Map<String, dynamic>? _timerData;
+  late AnimationController _animationController;
+  late Animation<double> _opacityAnimation;
+  late Future<void> _initializationFuture;
 
   @override
   void initState() {
     super.initState();
+    _setupAnimation();
+    _initializationFuture = _initializeProviders();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _setupAnimation() {
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _opacityAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 40),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 30),
+    ]).animate(_animationController);
+
+    _animationController.forward();
+  }
+
+  Future<void> _initializeProviders() async {
     _dbService = Provider.of<DatabaseService>(context, listen: false);
-    _initializeApp(); // 비동기 작업을 호출
+
+    await Future.wait([
+      context.read<StatsProvider>().initialized,
+      context.read<TimerProvider>().initialized,
+      _initializeApp(),
+    ]);
   }
 
   Future<void> _initializeApp() async {
-    DateTime startTime = DateTime.now(); // 로딩 시작 시간 기록
-
     DateTime now = DateTime.now();
     String weekStart = getWeekStart(now); // 예시 2024-09-23
 
@@ -69,23 +105,21 @@ class _SplashScreenState extends State<SplashScreen> {
       destinationPage = TimerPage(timerData: _timerData!);
     }
 
-    // 최소 로딩 시간 설정 (1초)
-    Duration minimumLoadingTime = const Duration(seconds: 1);
-    Duration elapsedTime = DateTime.now().difference(startTime);
-    Duration remainingTime = minimumLoadingTime - elapsedTime;
+    await _animationController.forward();
 
-    if (remainingTime > Duration.zero) {
-      // 로딩이 너무 빨리 끝났으므로, 남은 시간만큼 대기
-      await Future.delayed(remainingTime);
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              _timerData!['is_running'] == 1 ? const TimerRunningPage() : TimerPage(timerData: _timerData!),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+      );
     }
-
-    // 메인 화면으로 전환
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => destinationPage, // null이 아님을 보장
-      ),
-    );
   }
 
   // 기본 타이머 생성 메서드
@@ -123,15 +157,57 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 로딩 중에도 항상 로고 이미지를 표시
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center(
-        child: Image.asset(
-          'assets/images/logo.png',
-          width: 150,
-          height: 150,
+      body: FutureBuilder(
+        future: _initializationFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _navigateToNextScreen();
+            });
+          }
+
+          return AnimatedBuilder(
+            animation: _opacityAnimation,
+            builder: (_, __) => _buildSplashContent(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSplashContent() {
+    return Opacity(
+      opacity: _opacityAnimation.value,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/logo_3.png',
+              width: context.wp(50),
+              height: context.hp(30),
+            ),
+            SizedBox(height: context.spacing_md),
+            Text('100 - Timer', style: AppTextStyles.getTitle(context)),
+          ],
         ),
+      ),
+    );
+  }
+
+  void _navigateToNextScreen() {
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, animation, __) => _timerData!['is_running'] == 1 ? const TimerRunningPage() : TimerPage(timerData: _timerData!),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 500),
       ),
     );
   }

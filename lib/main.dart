@@ -2,10 +2,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:project1/firebase_options.dart';
+import 'package:project1/theme/app_theme.dart';
 import 'package:project1/utils/auth_provider.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/device_info_service.dart';
 import 'package:project1/utils/error_service.dart';
+import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/widgets/auth_wrapper.dart';
 import 'package:provider/provider.dart';
@@ -36,10 +38,17 @@ void main() async {
             errorService: context.read<ErrorService>(),
           ),
         ),
+        ChangeNotifierProvider<StatsProvider>(
+          create: (context) => StatsProvider(
+            dbService: context.read<DatabaseService>(),
+            errorService: context.read<ErrorService>(),
+          ),
+        ),
         ChangeNotifierProxyProvider2<DatabaseService, ErrorService, TimerProvider>(
           create: (context) => TimerProvider(
-            context, // BuildContext 전달
+            context,
             dbService: context.read<DatabaseService>(),
+            statsProvider: context.read<StatsProvider>(),
             errorService: context.read<ErrorService>(),
             authProvider: context.read<AuthProvider>(),
           ),
@@ -47,6 +56,7 @@ void main() async {
             return TimerProvider(
               context, // BuildContext 전달
               dbService: databaseService,
+              statsProvider: context.read<StatsProvider>(),
               errorService: errorService,
               authProvider: context.read<AuthProvider>(),
             );
@@ -66,34 +76,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(builder: (context, authProvider, _) {
       return MaterialApp(
-        navigatorKey: navigatorKey, // 여기에 navigatorKey 추가
+        navigatorKey: navigatorKey,
         title: '100-Timer',
-        // 라이트 모드 테마
-        theme: ThemeData(
-          fontFamily: 'NanumHuman',
-          brightness: Brightness.light,
-          primarySwatch: Colors.red,
-          scaffoldBackgroundColor: Colors.white,
-          floatingActionButtonTheme: const FloatingActionButtonThemeData(backgroundColor: Colors.red),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-            elevation: 0.2,
-          ),
-          useMaterial3: true,
-        ),
-        darkTheme: ThemeData(
-          brightness: Brightness.dark,
-          primarySwatch: Colors.blue,
-          scaffoldBackgroundColor: const Color(0xff181C14),
-          floatingActionButtonTheme: const FloatingActionButtonThemeData(backgroundColor: Colors.blue),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            shadowColor: Colors.black,
-            elevation: 0.2,
-          ),
-        ),
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
         home: const AuthWrapper(),
       );
     });

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao_sdk;
+import 'package:project1/theme/app_text_style.dart';
 import 'package:provider/provider.dart';
 import '../utils/auth_provider.dart';
+import 'package:project1/utils/responsive_size.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -103,30 +105,58 @@ class _LoginPageState extends State<LoginPage> {
         },
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: context.paddingXL,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 200),
+                SizedBox(height: context.hp(25)),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    const Text(
-                      '매주 100시간\n목표를 향해 불태우세요',
+                    Text(
+                      '100-timer',
                       style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
+                        fontSize: context.wp(10),
+                        fontFamily: 'chab',
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    Image.asset(
-                      width: 100,
-                      height: 125,
-                      'assets/images/logo.png',
-                      fit: BoxFit.cover,
+                    Text(
+                      ',',
+                      style: TextStyle(
+                        fontSize: context.wp(10),
+                        fontFamily: 'chab',
+                        fontWeight: FontWeight.w500,
+                        color: Colors.redAccent,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 200),
+                SizedBox(height: context.hp(5)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      '매주',
+                      style: AppTextStyles.getHeadline(context).copyWith(color: Colors.grey),
+                    ),
+                    SizedBox(width: context.wp(2)),
+                    Text(
+                      '100',
+                      style:
+                          AppTextStyles.getHeadline(context).copyWith(fontFamily: 'chab', fontWeight: FontWeight.w500, color: Colors.grey),
+                    ),
+                    Text(
+                      '시간,',
+                      style: AppTextStyles.getHeadline(context).copyWith(color: Colors.grey),
+                    ),
+                  ],
+                ),
+                Text(
+                  '목표를 향해 불태우세요',
+                  style: AppTextStyles.getHeadline(context).copyWith(color: Colors.grey),
+                ),
+                SizedBox(height: context.hp(20)),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [

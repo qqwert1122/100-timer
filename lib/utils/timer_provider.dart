@@ -8,19 +8,23 @@ import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/utils/auth_provider.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/error_service.dart';
+import 'package:project1/utils/stats_provider.dart';
 import 'package:uuid/uuid.dart';
 
 class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   final BuildContext context;
-  final DatabaseService _dbService;
+  DatabaseService _dbService;
+  final StatsProvider _statsProvider;
   final AuthProvider _authProvider;
   final ErrorService _errorService; // ErrorService 주입
   TimerProvider(
     this.context, {
-    required DatabaseService dbService, // 또는 databaseService
+    required DatabaseService dbService,
+    required StatsProvider statsProvider,
     required ErrorService errorService,
     required AuthProvider authProvider,
   })  : _dbService = dbService,
+        _statsProvider = statsProvider,
         _errorService = errorService,
         _authProvider = authProvider {
     try {
@@ -36,6 +40,15 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       );
       print('Error initializing TimerProvider: $e');
     }
+  }
+
+  late final Completer<void> _initializedCompleter = Completer();
+  Future<void> get initialized => _initializedCompleter.future;
+
+  void initializeWithDB(DatabaseService db) {
+    _dbService = db;
+    _initializedCompleter.complete();
+    notifyListeners();
   }
 
   Timer? _timer;
@@ -61,11 +74,17 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   int _totalSeconds = 360000;
   int get totalSeconds => _totalSeconds;
 
+  int _totalSessionDuration = 0;
+  int get totalSessionDuration => _totalSessionDuration;
+
   int _remainingSeconds = 360000; // 기본값 100시간 (초 단위)
   int get remainingSeconds => _remainingSeconds.clamp(0, _totalSeconds);
 
   String get formattedTime => _formatTime(remainingSeconds);
+  String get formattedHour => _formatHour(remainingSeconds);
   String get formattedActivityTime => _formatTime(_currentSessionDuration.clamp(0, _totalSeconds));
+  String get formattedTotalSessionDuration => _formatTime(_totalSessionDuration);
+  String get formattedTotalSessionHour => _formatHour(_totalSessionDuration);
 
   // activity
   String? _currentActivityId;
@@ -137,13 +156,13 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       }
 
       // 세션의 duration 합 계산
-      int totalSessionDuration = await _dbService.getTotalSessionDurationForWeek(weekStart);
+      _totalSessionDuration = await _statsProvider.getTotalDurationForWeek(weekStart);
 
       // 남은 시간 계산
-      _remainingSeconds = (_totalSeconds - totalSessionDuration).clamp(0, _totalSeconds);
+      _remainingSeconds = (_totalSeconds - _totalSessionDuration).clamp(0, _totalSeconds);
 
       // 10분 이상 세션 수 갱신
-      int sessionsOver1hour = await _dbService.getSessionsOver1HourCount(weekStart);
+      int sessionsOver1hour = await _statsProvider.getSessionsOver1HourCount(weekStart);
       _timerData?['sessions_over_1hour'] = sessionsOver1hour;
       _dbService.updateTimer(_timerData?['timer_id'], {
         'sessions_over_1hour': sessionsOver1hour,
@@ -224,9 +243,9 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       // 마지막 session 불러오기
 
       String weekStart = _timerData?['week_start'] ?? getWeekStart(DateTime.now());
-      int totalSessionDuration = await _dbService.getTotalSessionDurationForWeek(weekStart);
+      _totalSessionDuration = await _statsProvider.getTotalDurationForWeek(weekStart);
       int totalSeconds = _timerData?['total_seconds'] ?? 360000; // 기본값 100시간
-      _remainingSeconds = (totalSeconds - totalSessionDuration).clamp(0, totalSeconds);
+      _remainingSeconds = (totalSeconds - _totalSessionDuration).clamp(0, totalSeconds);
 
       _isRunning = (_timerData!['is_running'] ?? 0) == 1;
 
@@ -252,6 +271,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       } else {
         // 새로운 세션 시작을 위한 초기화
         print("새로운세션을 위한 초기화작업");
+        _timer?.cancel();
         _currentSessionDuration = 0;
         _currentSessionMode = "";
         _currentSessionTargetDuration = _remainingSeconds;
@@ -279,12 +299,12 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   Future<void> _setLastActivty({required lastActivityId}) async {
     try {
-      final lastActivity = await _dbService.getActivityById(lastActivityId);
-      if (lastActivity.isNotEmpty) {
-        _currentActivityId = lastActivity.first['activity_id'];
-        _currentActivityName = lastActivity.first['activity_name'];
-        _currentActivityIcon = lastActivity.first['activity_icon'];
-        _currentActivityColor = lastActivity.first['activity_color'];
+      final lastActivity = await _statsProvider.getActivityById(lastActivityId);
+      if (lastActivity != null && lastActivity.isNotEmpty) {
+        _currentActivityId = lastActivity['activity_id'];
+        _currentActivityName = lastActivity['activity_name'];
+        _currentActivityIcon = lastActivity['activity_icon'];
+        _currentActivityColor = lastActivity['activity_color'];
         notifyListeners();
       } else {
         await _setDefaultActivity();
@@ -302,7 +322,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   Future<void> _setDefaultActivity() async {
     try {
-      final defaultActivity = await _dbService.getDefaultActivity();
+      final defaultActivity = await _statsProvider.getDefaultActivity();
       if (defaultActivity != null) {
         _currentActivityId = defaultActivity['activity_id'];
         _currentActivityName = defaultActivity['activity_name'];
@@ -451,13 +471,18 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
       _timer?.cancel();
 
+      final defaultActivity = await _statsProvider.getDefaultActivity();
+
       // 새 session 생성
       try {
         final sessionId = const Uuid().v4();
         await _dbService.createSession(
           sessionId: sessionId,
           timerId: _timerData!['timer_id'],
-          activityId: activityId,
+          activityId: _currentActivityId ?? defaultActivity!['activity_id'],
+          activityName: _currentActivityName,
+          activityIcon: _currentActivityIcon,
+          activityColor: _currentActivityColor,
           mode: mode,
           targetDuration: targetDuration,
         );
@@ -637,6 +662,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       );
 
       // 타이머 상태 업데이트
+      print('timerID : ${_timerData!['timer_id']}');
       await _dbService.updateTimer(_timerData!['timer_id'], {
         'is_running': 0,
         'last_updated_at': DateTime.now().toUtc().toIso8601String(),
@@ -708,6 +734,11 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     final minutes = ((seconds % 3600) ~/ 60).toString().padLeft(2, '0');
     final secs = (seconds % 60).toString().padLeft(2, '0');
     return '$hours:$minutes:$secs';
+  }
+
+  String _formatHour(int seconds) {
+    final hours = seconds ~/ 3600;
+    return '${hours}h';
   }
 
   String getWeekStart(DateTime date) {

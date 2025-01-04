@@ -1,15 +1,15 @@
 import 'dart:async';
-
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:intl/intl.dart';
-import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/timer_page.dart';
+import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:project1/utils/responsive_size.dart';
 
 class TimerRunningPage extends StatefulWidget {
   const TimerRunningPage({
@@ -35,9 +35,13 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   final GlobalKey _circleKey = GlobalKey();
 
   late Timer _messageTimer;
-  int currentMessageIndex = 0; // 메시지 인덱스
-  final List<String> messages = []; // 메시지 리스트
-  bool _hasShownCompletionDialog = false; // 모달 표시 여부 플래그 추가
+  int currentMessageIndex = 0;
+  final List<String> messages = [];
+  bool _hasShownCompletionDialog = false;
+
+  bool _isMusicOn = false;
+  bool _isLightOn = false;
+  bool _isAlarmOn = false;
 
   @override
   void initState() {
@@ -46,6 +50,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     _dbService = Provider.of<DatabaseService>(context, listen: false);
     timerProvider = Provider.of<TimerProvider>(context, listen: false);
 
+    timerProvider.addListener(_handleTimerStateChange);
     _initializeTimer();
     _initMessageAnimation();
 
@@ -64,6 +69,16 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
         _startWaveAnimation();
       }
     });
+  }
+
+  void _handleTimerStateChange() {
+    if (!timerProvider.isRunning && mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => TimerPage(timerData: timerProvider.timerData!),
+        ),
+      );
+    }
   }
 
   @override
@@ -554,6 +569,45 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
               return Column(
                 children: [
+                  SizedBox(height: context.hp(3)),
+                  Padding(
+                      padding: context.paddingSM,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            timerProvider.currentSessionMode == "SESIPMDR" ? "집중 모드" : "일반 모드",
+                            style: AppTextStyles.getHeadline(context),
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                onPressed: () {},
+                                icon: Icon(
+                                  Icons.music_note_rounded,
+                                  size: context.xl,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  Fluttertoast.showToast(
+                                    msg: "알림이 설정되었습니다",
+                                    toastLength: Toast.LENGTH_SHORT,
+                                    gravity: ToastGravity.TOP,
+                                    backgroundColor: Colors.redAccent.shade200,
+                                    textColor: Colors.white,
+                                    fontSize: context.md,
+                                  );
+                                },
+                                icon: Icon(
+                                  Icons.notifications_active_rounded,
+                                  size: context.xl,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )),
                   Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -568,6 +622,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                       ],
                     ),
                   ),
+                  _buildCountIndicator(3, 2),
+                  const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: SizedBox(
@@ -629,6 +685,30 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                 ],
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCountIndicator(int maxCount, int currentCount) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(
+        maxCount,
+        (index) => Padding(
+          padding: EdgeInsets.only(right: context.wp(1)),
+          child: Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: index < currentCount ? Colors.red : Colors.red.withOpacity(0.3),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.5),
+                width: 1,
+              ),
+            ),
           ),
         ),
       ),
