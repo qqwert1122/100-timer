@@ -67,11 +67,10 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
     super.initState();
     _timerProvider = Provider.of<TimerProvider>(context, listen: false); // TimerProvider 저장
 
-    _timerProvider!.addListener(_handleTimerStateChange);
     Future.delayed(Duration.zero, () async {
-      _timerProvider!.setTimerData(widget.timerData);
       _timerProvider!.initializeWeeklyActivityData();
       _timerProvider!.initializeHeatMapData();
+      _timerProvider!.refreshRemainingSeconds();
     });
     _initAnimations();
     WidgetsBinding.instance.addObserver(this);
@@ -79,19 +78,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
     _isDarkMode = brightness == Brightness.dark;
   }
 
-  void _handleTimerStateChange() {
-    if (_timerProvider!.isRunning && mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const TimerRunningPage(),
-        ),
-      );
-    }
-  }
-
   @override
   void dispose() {
-    _timerProvider?.removeListener(_handleTimerStateChange);
     _controller.dispose();
     _slipAnimationController.dispose();
     _shimmerAnimationcontroller.dispose();
@@ -517,10 +505,11 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                                               HapticFeedback.lightImpact();
                                               if (timerProvider.currentActivityId != null) {
                                                 timerProvider.setSessionModeAndTargetDuration(
-                                                    mode: 'SESINORM', targetDuration: timerProvider.remainingSeconds);
+                                                    mode: 'SESSIONNORMAL', targetDuration: timerProvider.remainingSeconds);
                                                 Navigator.of(context).push(
                                                   PageRouteBuilder(
-                                                    pageBuilder: (context, animation, secondaryAnimation) => const TimerRunningPage(),
+                                                    pageBuilder: (context, animation, secondaryAnimation) =>
+                                                        TimerRunningPage(timerData: widget.timerData),
                                                     transitionDuration: const Duration(milliseconds: 500),
                                                     reverseTransitionDuration: const Duration(milliseconds: 500),
                                                   ),
@@ -546,7 +535,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                           ),
                         ),
                       ),
-                      const FocusMode(),
+                      FocusMode(timerData: widget.timerData),
                       Todo(),
                     ],
                   ),

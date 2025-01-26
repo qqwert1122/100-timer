@@ -125,9 +125,9 @@ class StatsProvider extends ChangeNotifier {
         startDate: monday.toUtc(),
         endDate: nextMonday.toUtc(),
       );
-
-      results.sort((a, b) => (b['total_duration'] as int).compareTo(a['total_duration'] as int));
-
+      if (results.isNotEmpty) {
+        results.sort((a, b) => (b['total_duration'] as int).compareTo(a['total_duration'] as int));
+      }
       return results;
     } catch (e) {
       Map<String, dynamic> errorData = await _errorService.createError(

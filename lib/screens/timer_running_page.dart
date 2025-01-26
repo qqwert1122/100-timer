@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/screens/timer_page.dart';
+import 'package:project1/screens/timer_result_page.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
@@ -12,21 +13,26 @@ import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
 
 class TimerRunningPage extends StatefulWidget {
-  const TimerRunningPage({
-    super.key,
-  });
+  final Map<String, dynamic> timerData;
+
+  const TimerRunningPage({super.key, required this.timerData});
 
   @override
   State<TimerRunningPage> createState() => _TimerRunningPageState();
 }
 
 class _TimerRunningPageState extends State<TimerRunningPage> with TickerProviderStateMixin {
-  bool _isInitialized = false;
   late AnimationController _messageAnimationController;
   late Animation<Offset> _messageAnimation;
   late Animation<double> _messageOpacityAnimation;
   late final DatabaseService _dbService; // 주입받을 DatabaseService
   late final TimerProvider timerProvider;
+
+  bool _isProviderInitialized = false;
+  bool _isTimerInitialized = false;
+  bool _isAnimationInitialized = false;
+  bool _isListenerAdded = false;
+  bool _isNavigating = false; // 네비게이션 상태 추적
 
   List<Wave> waves = [];
   bool _showInitialMessage = true;
@@ -50,11 +56,153 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     _dbService = Provider.of<DatabaseService>(context, listen: false);
     timerProvider = Provider.of<TimerProvider>(context, listen: false);
 
-    timerProvider.addListener(_handleTimerStateChange);
-    _initializeTimer();
-    _initMessageAnimation();
+    if (!_isListenerAdded) {
+      timerProvider.addListener(_handleTimerStateChange);
+      _isListenerAdded = true;
+    }
 
-    // 메시지 교체 Timer 시작
+    _initTimer();
+    _initMessageAnimation();
+    _startMessageTimer();
+  }
+
+  /// 초기 타이머 실행 흐름
+  Future<void> _initTimer() async {
+    if (_isTimerInitialized) return;
+    try {
+      if (timerProvider.currentState == 'STOP') {
+        await _startNewSession();
+      } else {
+        await _handleExistingSession();
+      }
+      _isTimerInitialized = true;
+    } catch (_) {
+      _isTimerInitialized = false;
+    }
+  }
+
+  Future<void> _startNewSession() async {
+    print('Starting new session');
+    await timerProvider.startTimer(
+      activityId: timerProvider.currentActivityId!,
+      mode: timerProvider.currentSessionMode!,
+      targetDuration: timerProvider.currentSessionTargetDuration!,
+    );
+  }
+
+  Future<void> _handleExistingSession() async {
+    print('Handling existing session');
+    final sessionId = widget.timerData['last_session_id'];
+    final currentSession = await _dbService.getSession(sessionId);
+
+    if (currentSession != null) {
+      final startTime = DateTime.parse(currentSession['start_time']);
+      final currentDuration = DateTime.now().difference(startTime).inSeconds;
+      final targetDuration = currentSession['target_duration'];
+
+      print('Session details:');
+      print('Start Time: $startTime');
+      print('Current Duration: $currentDuration');
+      print('Target Duration: $targetDuration');
+
+      if (currentDuration >= targetDuration) {
+        print('Session exceeded target duration');
+        await _handleStop(isExceeded: true, targetDuration: targetDuration);
+      } else {
+        if (timerProvider.currentState == "RUNNING") {
+          await timerProvider.restartTimer(sessionId: sessionId);
+        }
+      }
+    }
+  }
+
+  void _handleTimerStateChange() {
+    if (!mounted || _isNavigating) return;
+
+    final isRunning = timerProvider.isRunning;
+    final isExceeded = timerProvider.isExceeded;
+    final currentState = timerProvider.currentState;
+
+    print('===== Timer State Changed =====');
+    print('Is Running: $isRunning');
+    print('Is Exceeded: $isExceeded');
+
+    // Handle exceeding case first
+    if (isExceeded && !_hasShownCompletionDialog) {
+      _isNavigating = true;
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TimerResultPage(
+              timerData: timerProvider.timerData!,
+              sessionDuration: timerProvider.currentSessionDuration,
+              isExceeded: true,
+            ),
+          ),
+        ).then((_) {
+          _isNavigating = false;
+        });
+      }
+      _hasShownCompletionDialog = true;
+      return;
+    }
+
+    if (currentState == 'RUNNING') {
+      setState(() {
+        _isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
+        if (waves.isEmpty) {
+          _initAnimations();
+        } else {
+          _startWaveAnimation();
+        }
+        _isAnimationInitialized = true;
+      });
+    } else {
+      _stopWaveAnimation();
+    }
+
+    // Handle normal stop case
+    if (!isRunning && !isExceeded) {
+      _isNavigating = true;
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TimerResultPage(
+              timerData: timerProvider.timerData!,
+              sessionDuration: timerProvider.currentSessionDuration,
+              isExceeded: false,
+            ),
+          ),
+        ).then((_) {
+          _isNavigating = false;
+        });
+      }
+    }
+  }
+
+  void _startWaveAnimation() {
+    if (!mounted) return;
+
+    for (var wave in waves) {
+      if (wave.controller.isAnimating) continue;
+      if (!wave.controller.isDismissed) continue;
+      wave.controller.repeat();
+    }
+  }
+
+  void _stopWaveAnimation() {
+    if (!mounted) return;
+
+    for (var wave in waves) {
+      if (wave.controller.isAnimating) {
+        wave.controller.stop();
+      }
+    }
+  }
+
+  void _startMessageTimer() {
     _messageTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) {
         setState(() {
@@ -62,41 +210,40 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
         });
       }
     });
-
-    // 1초 후 웨이브 애니메이션 시작
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        _startWaveAnimation();
-      }
-    });
-  }
-
-  void _handleTimerStateChange() {
-    if (!timerProvider.isRunning && mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => TimerPage(timerData: timerProvider.timerData!),
-        ),
-      );
-    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_isInitialized) {
+    print('===== didChangeDependencies =====');
+
+    final isRunning = Provider.of<TimerProvider>(context, listen: false).isRunning;
+
+    // Initialize animations only if timer is running and not already initialized
+    if (isRunning && !_isAnimationInitialized) {
+      print('Initializing animations - Timer is running');
       _isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
       _initAnimations();
+      _isAnimationInitialized = true;
 
-      // 1초 후 웨이브 애니메이션 시작
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted) {
           _startWaveAnimation();
         }
       });
-
-      _isInitialized = true;
+    } else if (!isRunning && _isAnimationInitialized) {
+      print('Disposing animations - Timer is not running');
+      _disposeAnimations();
+      _isAnimationInitialized = false;
     }
+  }
+
+  void _disposeAnimations() {
+    for (var wave in waves) {
+      wave.controller.stop();
+      wave.controller.dispose();
+    }
+    waves.clear();
   }
 
   String getWeekStart(DateTime date) {
@@ -104,63 +251,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     // 월요일을 기준으로 주 시작일을 계산 (월요일이 1, 일요일이 7)
     DateTime weekStart = date.subtract(Duration(days: weekday - 1));
     return weekStart.toIso8601String().split('T').first;
-  }
-
-  Future<void> _initializeTimer() async {
-    try {
-      // timerData 가져오기
-      if (timerProvider.timerData == null) {
-        final weekStart = getWeekStart(DateTime.now());
-        final timer = await _dbService.getTimer(weekStart);
-        if (timer != null) {
-          timerProvider.setTimerData(timer);
-        }
-      }
-
-      if (timerProvider.currentSessionId != null && timerProvider.currentSessionId!.isNotEmpty) {
-        // 현재 세션 먼저 가져오기
-        final currentSession = await _dbService.getSession(timerProvider.currentSessionId!);
-
-        if (currentSession != null) {
-          // 세션이 있을 때만 체크
-          if (timerProvider.isRunning) {
-            final startTime = DateTime.parse(currentSession['start_time']);
-            final currentDuration = DateTime.now().difference(startTime).inSeconds;
-            final targetDuration = currentSession['target_duration'];
-
-            bool isExceeded = currentDuration >= targetDuration;
-
-            if (isExceeded) {
-              await _handleStop(isExceeded: true, targetDuration: targetDuration);
-            } else {
-              timerProvider.resumeTimer(
-                sessionId: timerProvider.currentSessionId!,
-              );
-            }
-          }
-        }
-      } else {
-        timerProvider.startTimer(
-          activityId: timerProvider.currentActivityId!,
-          mode: timerProvider.currentSessionMode!,
-          targetDuration: timerProvider.currentSessionTargetDuration!,
-        );
-      }
-    } catch (e) {
-      print('Error initializing timer: $e');
-      // 에러 발생 시 TimerPage로 이동
-      if (mounted) {
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => TimerPage(timerData: timerProvider.timerData!),
-              ),
-            );
-          },
-        );
-      }
-    }
   }
 
   Future<void> _handleStop({bool isExceeded = false, int? targetDuration}) async {
@@ -171,146 +261,28 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
       _messageTimer.cancel();
 
       // 세션 종료
-
-      await timerProvider.stopTimer(isExceeded: isExceeded, sessionId: timerProvider.currentSessionId!);
+      await timerProvider.stopTimer(isExceeded: isExceeded, sessionId: timer['last_session_id']);
 
       // 애니메이션 중지
       for (var wave in waves) {
         wave.controller.stop();
       }
 
-      // exceeded인 경우에만 completion 모달 표시
-      if (isExceeded && mounted) {
-        _showCompletionDialog(timerProvider, targetDuration!);
-      } else {
-        // 일반 종료인 경우 바로 타이머 페이지로 이동
-
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => TimerPage(timerData: timer),
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TimerResultPage(
+              timerData: timer,
+              sessionDuration: timerProvider.currentSessionDuration,
+              isExceeded: isExceeded,
             ),
-          );
-        }
+          ),
+        );
       }
     } catch (e) {
       print('Error handling stop: $e');
     }
-  }
-
-  void _showCompletionDialog(TimerProvider timerProvider, int targetDuration) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.0),
-          ),
-          titlePadding: const EdgeInsets.all(20),
-          contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.check_circle_outline,
-                  color: Colors.redAccent,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                '목표 달성',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              RichText(
-                text: TextSpan(
-                  style: DefaultTextStyle.of(context).style,
-                  children: [
-                    TextSpan(
-                      text: timerProvider.currentActivityName ?? '전체',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.redAccent,
-                      ),
-                    ),
-                    const TextSpan(
-                      text: ' 활동의',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.redAccent,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '목표 시간 ${Duration(seconds: targetDuration).inMinutes}분을 달성했어요!',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                '다음에 또 도전해요 💪',
-                style: TextStyle(
-                  color: Colors.grey,
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TimerPage(timerData: timerProvider.timerData!),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  '확인',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   void _initMessageAnimation() {
@@ -337,7 +309,10 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   }
 
   void _initAnimations() {
-    // 각 웨이브의 애니메이션 설정
+    // Clear existing waves if any
+    _disposeAnimations();
+    waves.clear();
+
     for (int i = 0; i < 3; i++) {
       AnimationController controller = AnimationController(
         duration: const Duration(milliseconds: 4000), // 2초
@@ -375,19 +350,13 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
         opacityAnimation: opacityAnimation,
         controller: controller,
       ));
-
-      // 각 웨이브의 시작을 약간씩 지연
-      Future.delayed(Duration(milliseconds: i * 666), () {
-        if (mounted) {
-          controller.repeat();
-        }
-      });
-    }
-  }
-
-  void _startWaveAnimation() {
-    for (var wave in waves) {
-      wave.controller.repeat();
+      if (mounted && timerProvider.currentState == 'RUNNING') {
+        Future.delayed(Duration(milliseconds: i * 666), () {
+          if (mounted && timerProvider.currentState == 'RUNNING') {
+            controller.repeat();
+          }
+        });
+      }
     }
   }
 
@@ -467,6 +436,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     final activityColor = ColorService.hexToColor(timerProvider.currentActivityColor);
     final activityName = timerProvider.currentActivityName;
     final activityIcon = timerProvider.currentActivityIcon;
+    final isStateRunning = timerProvider.currentState == 'RUNNING';
 
     return SizedBox(
       width: 150,
@@ -474,15 +444,16 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
       child: Stack(
         alignment: Alignment.center,
         children: [
-          ...waves.map(
-            (wave) => CustomPaint(
-              painter: WavePainter(
-                waves: waves,
-                baseColor: activityColor,
+          if (isStateRunning && waves.isNotEmpty) // Check waves existence
+            ...waves.map(
+              (wave) => CustomPaint(
+                painter: WavePainter(
+                  waves: waves,
+                  baseColor: activityColor,
+                ),
+                size: const Size(150, 150),
               ),
-              size: const Size(150, 150),
             ),
-          ),
           Transform.scale(
             scale: 5,
             child: CircularProgressIndicator(
@@ -498,13 +469,13 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                getIconData(activityIcon ?? 'category_rounded'),
+                getIconData(activityIcon),
                 color: activityColor,
                 size: 28,
               ),
               const SizedBox(width: 10),
               Text(
-                (activityName ?? '전체').length > 6 ? '${(activityName ?? '전체').substring(0, 6)}...' : (activityName ?? '전체'),
+                (activityName).length > 6 ? '${(activityName).substring(0, 6)}...' : (activityName),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -519,7 +490,16 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   }
 
   Widget _buildTimeDisplay(TimerProvider timerProvider) {
-    final duration = Duration(seconds: timerProvider.currentSessionDuration);
+    final Duration duration;
+
+    if (timerProvider.currentSessionMode == "SESSIONPMDR") {
+      // 뽀모도로 모드: 남은 시간 표시
+      final remainingSeconds = timerProvider.currentSessionTargetDuration! - timerProvider.currentSessionDuration;
+      duration = Duration(seconds: remainingSeconds.clamp(0, timerProvider.currentSessionTargetDuration!));
+    } else {
+      // 일반 모드: 경과 시간 표시
+      duration = Duration(seconds: timerProvider.currentSessionDuration);
+    }
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
     final seconds = duration.inSeconds.remainder(60);
@@ -539,13 +519,16 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
   @override
   void dispose() {
-    _messageTimer.cancel(); // Timer 종료
-
+    if (_isListenerAdded) {
+      timerProvider.removeListener(_handleTimerStateChange);
+      _isListenerAdded = false;
+    }
+    _messageTimer.cancel();
     _messageAnimationController.dispose();
 
-    for (var wave in waves) {
-      wave.controller.dispose();
-    }
+    // Safely dispose animations
+    _disposeAnimations();
+
     super.dispose();
   }
 
@@ -557,137 +540,120 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
       child: Scaffold(
         backgroundColor: isDarkMode ? Colors.black : Colors.white,
         body: SafeArea(
-          child: Consumer<TimerProvider>(
-            builder: (context, timerProvider, child) {
-              if (timerProvider.isExceeded && !_hasShownCompletionDialog) {
-                _hasShownCompletionDialog = true;
-                // Frame이 완전히 빌드된 후 모달 표시
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _showCompletionDialog(timerProvider, timerProvider.currentSessionTargetDuration!);
-                });
-              }
-
-              return Column(
-                children: [
-                  SizedBox(height: context.hp(3)),
-                  Padding(
-                      padding: context.paddingSM,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            timerProvider.currentSessionMode == "SESIPMDR" ? "집중 모드" : "일반 모드",
-                            style: AppTextStyles.getHeadline(context),
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                onPressed: () {},
-                                icon: Icon(
-                                  Icons.music_note_rounded,
-                                  size: context.xl,
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  Fluttertoast.showToast(
-                                    msg: "알림이 설정되었습니다",
-                                    toastLength: Toast.LENGTH_SHORT,
-                                    gravity: ToastGravity.TOP,
-                                    backgroundColor: Colors.redAccent.shade200,
-                                    textColor: Colors.white,
-                                    fontSize: context.md,
-                                  );
-                                },
-                                icon: Icon(
-                                  Icons.notifications_active_rounded,
-                                  size: context.xl,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      )),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildProgressCircle(timerProvider),
-                        const SizedBox(height: 80),
-                        _buildTimeDisplay(timerProvider),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        _buildActivityMessage(timerProvider),
-                      ],
-                    ),
-                  ),
-                  _buildCountIndicator(3, 2),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          // 활동 종료 전 모달창 띄우기
-                          showDialog(
-                            context: context,
-                            builder: (ctx) {
-                              return AlertDialog(
-                                backgroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16.0),
-                                ),
-                                title: const Text("활동 종료"),
-                                content: const Text("활동을 마무리 하시겠어요?"),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      // 아니오: 모달창 닫기
-                                      Navigator.of(ctx).pop();
-                                    },
-                                    child: const Text(
-                                      "아니오",
-                                      style: TextStyle(color: Colors.grey),
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () async {
-                                      Navigator.of(ctx).pop();
-                                      await _handleStop();
-                                    },
-                                    child: const Text("네", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                        child: const Text(
-                          "활동 종료",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
+          // Consumer를 제거하고 각 위젯별로 필요한 부분만 Consumer로 감싸기
+          child: Column(
+            children: [
+              SizedBox(height: context.hp(3)),
+              _buildHeader(),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildProgressCircleWithConsumer(),
+                    const SizedBox(height: 80),
+                    _buildTimeDisplayWithConsumer(),
+                    const SizedBox(height: 10),
+                    _buildActivityMessageWithConsumer(),
+                  ],
+                ),
+              ),
+              Text('state: ${widget.timerData['state']}'),
+              Text('state: ${timerProvider.currentState}'),
+              Text('session_duration: ${timerProvider.currentSessionDuration}'),
+              _buildCountIndicator(3, 2),
+              const SizedBox(height: 16),
+              _buildPauseButton(), // 휴식 버튼
+              _buildStopButton(),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  // 각 위젯을 Consumer로 감싸는 새로운 메서드들
+  Widget _buildProgressCircleWithConsumer() {
+    return Consumer<TimerProvider>(
+      builder: (context, provider, child) {
+        return _buildProgressCircle(provider);
+      },
+    );
+  }
+
+  Widget _buildTimeDisplayWithConsumer() {
+    return Consumer<TimerProvider>(
+      builder: (context, provider, child) {
+        if (provider.isExceeded && !_hasShownCompletionDialog && mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TimerResultPage(
+                  timerData: provider.timerData!,
+                  sessionDuration: provider.currentSessionDuration,
+                  isExceeded: true,
+                ),
+              ),
+            );
+          });
+          _hasShownCompletionDialog = true;
+        }
+        return _buildTimeDisplay(provider);
+      },
+    );
+  }
+
+  Widget _buildActivityMessageWithConsumer() {
+    return Consumer<TimerProvider>(
+      builder: (context, provider, child) {
+        return _buildActivityMessage(provider);
+      },
+    );
+  }
+
+  Widget _buildHeader() {
+    return Consumer<TimerProvider>(
+      builder: (context, provider, child) {
+        return Padding(
+          padding: context.paddingSM,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                provider.currentSessionMode == "SESSIONPMDR" ? "집중 모드" : "일반 모드",
+                style: AppTextStyles.getHeadline(context),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(
+                      Icons.music_note_rounded,
+                      size: context.xl,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Fluttertoast.showToast(
+                        msg: "알림이 설정되었습니다",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.TOP,
+                        backgroundColor: Colors.redAccent.shade200,
+                        textColor: Colors.white,
+                        fontSize: context.md,
+                      );
+                    },
+                    icon: Icon(
+                      Icons.notifications_active_rounded,
+                      size: context.xl,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -708,6 +674,111 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                 color: Colors.white.withOpacity(0.5),
                 width: 1,
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStopButton() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.redAccent,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          onPressed: () {
+            // 활동 종료 전 모달창 띄우기
+            showDialog(
+              context: context,
+              builder: (ctx) {
+                return AlertDialog(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16.0),
+                  ),
+                  title: const Text("활동 종료"),
+                  content: const Text("활동을 마무리 하시겠어요?"),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        // 아니오: 모달창 닫기
+                        Navigator.of(ctx).pop();
+                      },
+                      child: const Text(
+                        "아니오",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.of(ctx).pop();
+                        await _handleStop();
+                      },
+                      child: const Text("네", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+          child: const Text(
+            "활동 종료",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPauseButton() {
+    final currentState = timerProvider.currentState;
+
+    // 상태에 따른 버튼 텍스트
+    final buttonText = currentState == 'RUNNING' ? '잠깐 휴식' : '다시 시작';
+
+    // 상태에 따른 버튼 색상
+    final backgroundColor = currentState == 'RUNNING' ? Colors.grey : Colors.blueAccent;
+
+    // 상태에 따른 버튼 동작
+    void onPressed() {
+      if (currentState == 'RUNNING') {
+        timerProvider.pauseTimer();
+      } else if (currentState == 'PAUSED') {
+        timerProvider.resumeTimer(sessionId: widget.timerData['last_session_id']);
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: backgroundColor,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          onPressed: onPressed,
+          child: Text(
+            buttonText,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ),

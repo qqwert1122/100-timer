@@ -16,7 +16,9 @@ import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
 
 class FocusMode extends StatefulWidget {
-  const FocusMode({super.key});
+  final Map<String, dynamic> timerData;
+
+  const FocusMode({super.key, required this.timerData});
 
   @override
   State<FocusMode> createState() => _FocusModeState();
@@ -32,8 +34,8 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
   late Animation<Alignment> _shimmerAnimation;
   List<Map<String, dynamic>> pomodoroItems = [
     {
-      'title': '30',
-      'value': 1800,
+      'title': '10초',
+      'value': 10,
       'maxCount': 3,
       'currentCount': 0,
       'gradientColors': [Colors.greenAccent, Colors.yellow],
@@ -300,10 +302,10 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
             return GestureDetector(
               onTap: () async {
                 await Future.delayed(const Duration(milliseconds: 100));
-                timerProvider.setSessionModeAndTargetDuration(mode: 'SESIOPMDR', targetDuration: item['value']);
+                timerProvider.setSessionModeAndTargetDuration(mode: 'SESSIONPMDR', targetDuration: item['value']);
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
-                    builder: (context) => const TimerRunningPage(),
+                    builder: (context) => TimerRunningPage(timerData: widget.timerData),
                   ),
                 );
               },

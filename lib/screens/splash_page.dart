@@ -97,14 +97,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _timerData = timer;
 
-    Widget destinationPage;
-
-    if (_timerData!['is_running'] == 1) {
-      destinationPage = const TimerRunningPage();
-    } else {
-      destinationPage = TimerPage(timerData: _timerData!);
-    }
-
     await _animationController.forward();
 
     if (mounted) {
@@ -112,7 +104,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
-              _timerData!['is_running'] == 1 ? const TimerRunningPage() : TimerPage(timerData: _timerData!),
+              _timerData!['state'] != 'STOP' ? TimerRunningPage(timerData: _timerData!) : TimerPage(timerData: _timerData!),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
@@ -135,7 +127,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       'week_start': getWeekStart(now),
       'total_seconds': userTotalSeconds,
       'last_session_id': null,
-      'is_running': 0,
+      'state': 'STOP',
       'created_at': now.toUtc().toIso8601String(), // toUtc로 변경
       'deleted_at': null,
       'last_started_at': null,
@@ -203,7 +195,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, animation, __) => _timerData!['is_running'] == 1 ? const TimerRunningPage() : TimerPage(timerData: _timerData!),
+        pageBuilder: (_, animation, __) =>
+            _timerData!['state'] != 'STOP' ? TimerRunningPage(timerData: _timerData!) : TimerPage(timerData: _timerData!),
         transitionsBuilder: (_, animation, __, child) {
           return FadeTransition(opacity: animation, child: child);
         },

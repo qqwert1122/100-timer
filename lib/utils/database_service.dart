@@ -101,7 +101,7 @@ class DatabaseService {
         week_start TEXT,
         total_seconds INTEGER,
         last_session_id TEXT,
-        is_running INTEGER,
+        state TEXT,
         created_at TEXT,
         deleted_at TEXT,
         last_started_at TEXT,
@@ -1652,6 +1652,41 @@ class DatabaseService {
       await insertErrorLog(errorData);
 
       print('Error creating session. Session ID: $sessionId, UID: $uid, Error: $e');
+    }
+  }
+
+  Future<void> updateSession({required sessionId, required seconds}) async {
+    final db = await database;
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    try {
+      await db.transaction((txn) async {
+        Map<String, dynamic> updateData = {
+          'last_updated_at': now,
+          'session_duration': seconds,
+          'previous_session_duration': seconds,
+        };
+
+        await txn.update(
+          'sessions',
+          updateData,
+          where: 'session_id = ?',
+          whereArgs: [sessionId],
+        );
+      });
+
+      print('Session updated successfully for sessionId: $sessionId ');
+    } catch (e) {
+      // 트랜잭션 중 에러 발생 시 에러 로그 생성
+      Map<String, dynamic> errorData = await _errorService.createError(
+        errorCode: 'SESSION_UPDATE_FAILED',
+        errorMessage: e.toString(),
+        errorAction: 'Updating session for sessionId: $sessionId',
+        severityLevel: 'high',
+      );
+      await insertErrorLog(errorData);
+
+      print('Error Updating session: $e');
     }
   }
 

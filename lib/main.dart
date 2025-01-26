@@ -45,6 +45,7 @@ void main() async {
           ),
         ),
         ChangeNotifierProxyProvider2<DatabaseService, ErrorService, TimerProvider>(
+          // 최초 생성
           create: (context) => TimerProvider(
             context,
             dbService: context.read<DatabaseService>(),
@@ -52,14 +53,26 @@ void main() async {
             errorService: context.read<ErrorService>(),
             authProvider: context.read<AuthProvider>(),
           ),
-          update: (context, databaseService, errorService, timerProvider) {
-            return TimerProvider(
-              context, // BuildContext 전달
-              dbService: databaseService,
-              statsProvider: context.read<StatsProvider>(),
-              errorService: errorService,
-              authProvider: context.read<AuthProvider>(),
-            );
+          // 의존성이 업데이트될 때마다 기존 인스턴스를 재활용
+          update: (context, databaseService, errorService, existingTimerProvider) {
+            if (existingTimerProvider == null) {
+              // 기존 인스턴스가 없으면 새로 생성
+              return TimerProvider(
+                context,
+                dbService: databaseService,
+                statsProvider: context.read<StatsProvider>(),
+                errorService: errorService,
+                authProvider: context.read<AuthProvider>(),
+              );
+            } else {
+              // 기존 인스턴스가 있으면 필요한 의존성만 업데이트
+              existingTimerProvider.updateDependencies(
+                dbService: databaseService,
+                errorService: errorService,
+                // 필요한 경우 statsProvider 등도 함께 업데이트
+              );
+              return existingTimerProvider;
+            }
           },
         ),
       ],

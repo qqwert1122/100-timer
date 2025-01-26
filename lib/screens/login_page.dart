@@ -174,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                       child: Image.asset(
                         'assets/images/kakao_login_medium_wide.png', // 버튼 이미지 경로
                         fit: BoxFit.cover,
-                        width: 300,
+                        width: context.wp(80),
                       ),
                     ),
                   ],
