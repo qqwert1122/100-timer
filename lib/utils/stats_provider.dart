@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/error_service.dart';
@@ -53,20 +52,13 @@ class StatsProvider extends ChangeNotifier {
 
   */
 
-  Future<List<Map<String, dynamic>>> getAllActivities() async {
+  Future<List<Map<String, dynamic>>> getActivities() async {
     try {
       final result = await _dbService.getActivities();
 
       return result;
     } catch (e) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'GET_ACTIVITIES_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'getting activities from SQLite',
-        severityLevel: 'high',
-      );
-      await _dbService.insertErrorLog(errorData);
-
+      // error log
       return [];
     }
   }
@@ -81,13 +73,7 @@ class StatsProvider extends ChangeNotifier {
 
       return defaultActivity.isNotEmpty ? defaultActivity : null;
     } catch (e) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'FETCH_DEFAULT_ACTIVITY_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Fetching default activity from SQLite',
-        severityLevel: 'high',
-      );
-      await _dbService.insertErrorLog(errorData);
+      // error log
       return null;
     }
   }
@@ -103,22 +89,18 @@ class StatsProvider extends ChangeNotifier {
 
       return activity.isNotEmpty ? activity : null;
     } catch (e) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'FILTER_ACTIVITY_BY_ID_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Filtering activity by ID from all activities',
-        severityLevel: 'medium',
-      );
-      await _dbService.insertErrorLog(errorData);
+      // error log
       return null;
     }
   }
 
-  Future<List<Map<String, dynamic>>> getWeeklyActivityStats() async {
+  Future<List<Map<String, dynamic>>> getWeeklySessionStatByActivity() async {
     try {
       DateTime now = DateTime.now().toLocal();
 
-      DateTime monday = DateTime(now.year, now.month, now.day - (now.weekday - 1)).add(Duration(days: _weekOffset * 7));
+      DateTime monday =
+          DateTime(now.year, now.month, now.day - (now.weekday - 1))
+              .add(Duration(days: _weekOffset * 7));
       DateTime nextMonday = monday.add(const Duration(days: 7));
 
       final results = await _dbService.getSessionsWithinDateRange(
@@ -126,17 +108,12 @@ class StatsProvider extends ChangeNotifier {
         endDate: nextMonday.toUtc(),
       );
       if (results.isNotEmpty) {
-        results.sort((a, b) => (b['total_duration'] as int).compareTo(a['total_duration'] as int));
+        results.sort((a, b) =>
+            (b['total_duration'] as int).compareTo(a['total_duration'] as int));
       }
       return results;
     } catch (e) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'FETCH_WEEKLY_STATS_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Fetching weekly activity stats',
-        severityLevel: 'medium',
-      );
-      await _dbService.insertErrorLog(errorData);
+      // error
       return [];
     }
   }
@@ -159,7 +136,8 @@ class StatsProvider extends ChangeNotifier {
       );
 
       // 필요한 데이터 가공 또는 정렬
-      results.sort((a, b) => (b['total_duration'] as int).compareTo(a['total_duration'] as int));
+      results.sort((a, b) =>
+          (b['total_duration'] as int).compareTo(a['total_duration'] as int));
 
       return results;
     } catch (e) {
@@ -169,7 +147,6 @@ class StatsProvider extends ChangeNotifier {
         errorAction: 'Fetching sessions for weekOffset: $weekOffset',
         severityLevel: 'high',
       );
-      await _dbService.insertErrorLog(errorData);
       return [];
     }
   }
@@ -200,28 +177,6 @@ class StatsProvider extends ChangeNotifier {
         errorAction: 'Fetching weekly session flags',
         severityLevel: 'medium',
       );
-      await _dbService.insertErrorLog(errorData);
-
-      return [];
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> getRecentSessions() async {
-    try {
-      final allSessions = await _dbService.getAllSessions();
-
-      final recentSessions = allSessions.where((session) => session['is_deleted'] == 0).take(7).toList();
-
-      return recentSessions;
-    } catch (e) {
-      Map<String, dynamic> errorData = await _errorService.createError(
-        errorCode: 'FETCH_RECENT_SESSIONS_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Filtering recent sessions',
-        severityLevel: 'medium',
-      );
-      await _dbService.insertErrorLog(errorData);
-
       return [];
     }
   }
@@ -252,7 +207,6 @@ class StatsProvider extends ChangeNotifier {
         errorAction: 'Calculating Total Session Duration for Week',
         severityLevel: 'medium',
       );
-      await _dbService.insertErrorLog(errorData);
       return 0;
     }
   }
@@ -281,8 +235,6 @@ class StatsProvider extends ChangeNotifier {
         errorAction: 'Calculating sessions over 1 hour',
         severityLevel: 'medium',
       );
-      await _dbService.insertErrorLog(errorData);
-
       return 0;
     }
   }
@@ -290,7 +242,8 @@ class StatsProvider extends ChangeNotifier {
   Future<int> getCompletedFocusMode(int duration) async {
     try {
       DateTime now = DateTime.now();
-      DateTime weekStart = now.subtract(Duration(days: now.weekday - 1 + _weekOffset * 7));
+      DateTime weekStart =
+          now.subtract(Duration(days: now.weekday - 1 + _weekOffset * 7));
       DateTime weekEnd = weekStart.add(const Duration(days: 7));
 
       final sessions = await _dbService.getSessionsWithinDateRange(
@@ -313,7 +266,6 @@ class StatsProvider extends ChangeNotifier {
         errorAction: 'Fetching completed focus mode sessions',
         severityLevel: 'high',
       );
-      await _dbService.insertErrorLog(errorData);
       return 0;
     }
   }
@@ -341,19 +293,35 @@ class StatsProvider extends ChangeNotifier {
         final dayName = dayNames[startTime.weekday % 7]; // 요일 이름
         final hour = startTime.hour.toString().padLeft(2, '0'); // 시간 (2자리)
 
-        dayTotals[dayName] = (dayTotals[dayName] ?? 0) + (session['session_duration'] as int);
-        hourTotals[hour] = (hourTotals[hour] ?? 0) + (session['session_duration'] as int);
+        dayTotals[dayName] =
+            (dayTotals[dayName] ?? 0) + (session['session_duration'] as int);
+        hourTotals[hour] =
+            (hourTotals[hour] ?? 0) + (session['session_duration'] as int);
       }
 
       // 가장 활동적인 요일과 시간 계산
-      final mostActiveDay = dayTotals.entries.isNotEmpty ? dayTotals.entries.reduce((a, b) => a.value > b.value ? a : b) : null;
+      final mostActiveDay = dayTotals.entries.isNotEmpty
+          ? dayTotals.entries.reduce((a, b) => a.value > b.value ? a : b)
+          : null;
 
-      final mostActiveHour = hourTotals.entries.isNotEmpty ? hourTotals.entries.reduce((a, b) => a.value > b.value ? a : b) : null;
+      final mostActiveHour = hourTotals.entries.isNotEmpty
+          ? hourTotals.entries.reduce((a, b) => a.value > b.value ? a : b)
+          : null;
 
       // 결과 데이터 생성
       return {
-        'mostActiveDate': mostActiveDay != null ? {'dayName': mostActiveDay.key, 'total_duration': mostActiveDay.value} : null,
-        'mostActiveHour': mostActiveHour != null ? {'hour': mostActiveHour.key, 'total_duration': mostActiveHour.value} : null,
+        'mostActiveDate': mostActiveDay != null
+            ? {
+                'dayName': mostActiveDay.key,
+                'total_duration': mostActiveDay.value
+              }
+            : null,
+        'mostActiveHour': mostActiveHour != null
+            ? {
+                'hour': mostActiveHour.key,
+                'total_duration': mostActiveHour.value
+              }
+            : null,
       };
     } catch (e) {
       await _errorService.createError(
@@ -409,7 +377,8 @@ class StatsProvider extends ChangeNotifier {
       final result = aggregatedData.values.toList();
 
       // 요일별 정렬
-      result.sort((a, b) => (a['weekday'] as int).compareTo(b['weekday'] as int));
+      result
+          .sort((a, b) => (a['weekday'] as int).compareTo(b['weekday'] as int));
 
       return result;
     } catch (e) {
@@ -435,7 +404,9 @@ class DateUtils {
       nowLocal.month,
       nowLocal.day - (nowLocal.weekday - 1) + (7 * weekOffset),
     );
-    DateTime endOfWeek = startOfWeek.add(const Duration(days: 7)).subtract(const Duration(seconds: 1));
+    DateTime endOfWeek = startOfWeek
+        .add(const Duration(days: 7))
+        .subtract(const Duration(seconds: 1));
 
     return {
       'startOfWeek': startOfWeek,

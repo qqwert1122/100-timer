@@ -33,15 +33,13 @@ class TimerPage extends StatefulWidget {
   _TimerPageState createState() => _TimerPageState();
 }
 
-class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, WidgetsBindingObserver {
+class _TimerPageState extends State<TimerPage>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   TimerProvider? _timerProvider; // TimerProvider 변수 추가
 
-  double _sheetSize = 0.13; // 초기 크기
-  final DraggableScrollableController _controller = DraggableScrollableController();
+  final DraggableScrollableController _controller =
+      DraggableScrollableController();
   final ScrollController _sheetScrollController = ScrollController();
-
-  int _currentPageIndex = 1; // 현재 페이지 인덱스
-  int? selectedIndex = 0;
 
   late AnimationController _slipAnimationController;
   late Animation<Offset> _slipAnimation;
@@ -51,11 +49,10 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
   final PageController _pageController = PageController(initialPage: 1);
   final GlobalKey _playButtonKey = GlobalKey();
 
-  final List<String> imgList = getSampleImages();
-  final List<Achievement> achievements = getAchievements();
-
+  int _currentPageIndex = 1;
+  int? selectedIndex = 0;
   bool _isBackButtonPressed = false;
-
+  double _sheetSize = 0.13; // 초기 크기
   double minSheetHeight = 0.13;
   double maxSheetHeight = 1.0;
   double _circleWidth = 40;
@@ -65,16 +62,22 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
   @override
   void initState() {
     super.initState();
-    _timerProvider = Provider.of<TimerProvider>(context, listen: false); // TimerProvider 저장
 
+    // provider init
+    _timerProvider = Provider.of<TimerProvider>(context, listen: false);
+
+    // 통계 데이터 init
     Future.delayed(Duration.zero, () async {
       _timerProvider!.initializeWeeklyActivityData();
       _timerProvider!.initializeHeatMapData();
       _timerProvider!.refreshRemainingSeconds();
     });
+
+    // animation init
     _initAnimations();
     WidgetsBinding.instance.addObserver(this);
-    final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    final brightness =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness;
     _isDarkMode = brightness == Brightness.dark;
   }
 
@@ -91,7 +94,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
 
   void _initAnimations() {
     _slipAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 500), // 1초 동안 애니메이션 실행
+      duration: const Duration(milliseconds: 500),
       vsync: this,
     );
 
@@ -143,10 +146,12 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
     ]).animate(_shimmerAnimationcontroller);
   }
 
+  @override
   void didChangePlatformBrightness() {
     super.didChangePlatformBrightness();
 
-    final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    final brightness =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness;
     final isDarkMode = brightness == Brightness.dark;
 
     if (_isDarkMode != isDarkMode) {
@@ -191,8 +196,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
 
   // Activities
   void _showActivityModal(TimerProvider timerProvider) {
+    // 타이머가 작동 중일 때는 토스트 메시지 띄우기
     if (timerProvider.isRunning) {
-      // 타이머가 작동 중일 때는 토스트 메시지 띄우기
       Fluttertoast.showToast(
         msg: "타이머를 중지하고 활동을 변경해주세요",
         toastLength: Toast.LENGTH_SHORT,
@@ -211,9 +216,15 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
         ),
         builder: (BuildContext context) {
           return ActivityPicker(
-            onSelectActivity:
-                (String selectedActivityListId, String selectedActivity, String selectedActivityIcon, String selectedActivityColor) {
-              timerProvider.setCurrentActivity(selectedActivityListId, selectedActivity, selectedActivityIcon, selectedActivityColor);
+            onSelectActivity: (String selectedActivityListId,
+                String selectedActivity,
+                String selectedActivityIcon,
+                String selectedActivityColor) {
+              timerProvider.setCurrentActivity(
+                  selectedActivityListId,
+                  selectedActivity,
+                  selectedActivityIcon,
+                  selectedActivityColor);
               Navigator.pop(context);
             },
             selectedActivity: timerProvider.currentActivityName,
@@ -225,12 +236,6 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
 
   // 전체 시간대 표시 여부
   bool showAllHours = true;
-
-  void _toggleShowAllHours(bool value) {
-    setState(() {
-      showAllHours = value;
-    });
-  }
 
   bool refreshKey = false;
   void rerenderingHeatmap() {
@@ -266,7 +271,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
         // sheet가 최소 크기일 때만 앱 종료 로직 처리
         if ((_sheetSize - minSheetHeight).abs() < 0.01) {
           DateTime now = DateTime.now();
-          if (_lastBackPressed == null || now.difference(_lastBackPressed!) > Duration(seconds: 2)) {
+          if (_lastBackPressed == null ||
+              now.difference(_lastBackPressed!) > Duration(seconds: 2)) {
             _lastBackPressed = now;
             Fluttertoast.showToast(
               msg: "한 번 더 뒤로가기를 누르면 종료됩니다.",
@@ -357,10 +363,13 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
               ),
               Center(
                 child: SizedBox(
-                  height: MediaQuery.of(context).size.height - 200, // 페이지뷰의 높이를 제한
+                  height:
+                      MediaQuery.of(context).size.height - 200, // 페이지뷰의 높이를 제한
                   child: PageView(
                     controller: _pageController,
-                    physics: timerProvider.isRunning ? const NeverScrollableScrollPhysics() : const AlwaysScrollableScrollPhysics(),
+                    physics: timerProvider.isRunning
+                        ? const NeverScrollableScrollPhysics()
+                        : const AlwaysScrollableScrollPhysics(),
                     onPageChanged: _onPageChanged,
                     children: [
                       Dashboard(
@@ -392,18 +401,24 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                                     padding: context.paddingSM,
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(16),
-                                      color: AppColors.backgroundSecondary(context),
+                                      color: AppColors.backgroundSecondary(
+                                          context),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           '남은 시간',
-                                          style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
+                                          style: AppTextStyles.getBody(context)
+                                              .copyWith(
+                                                  fontWeight: FontWeight.w900),
                                         ),
                                         Text(
                                           timerProvider.formattedTime,
-                                          style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                          style: AppTextStyles.getTimeDisplay(
+                                                  context)
+                                              .copyWith(
                                             color: AppColors.primary(context),
                                             fontFamily: 'chab',
                                           ),
@@ -413,35 +428,50 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                                   ),
                                   SizedBox(height: context.hp(2)),
                                   GestureDetector(
-                                    onTap: () => _showActivityModal(timerProvider),
+                                    onTap: () =>
+                                        _showActivityModal(timerProvider),
                                     child: Container(
                                       padding: context.paddingXS,
                                       decoration: BoxDecoration(
-                                        color: AppColors.backgroundSecondary(context),
+                                        color: AppColors.backgroundSecondary(
+                                            context),
                                         borderRadius: BorderRadius.circular(16),
                                       ),
                                       child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Row(
                                             children: [
                                               SizedBox(width: context.wp(2)),
                                               Icon(
-                                                getIconData(timerProvider.currentActivityIcon),
+                                                getIconData(timerProvider
+                                                    .currentActivityIcon),
                                               ),
                                               SizedBox(width: context.wp(5)),
                                               Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
                                                     '선택된 활동',
-                                                    style: AppTextStyles.getCaption(
+                                                    style: AppTextStyles
+                                                        .getCaption(
                                                       context,
-                                                    ).copyWith(fontWeight: FontWeight.w600),
+                                                    ).copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w600),
                                                   ),
                                                   Text(
-                                                    timerProvider.currentActivityName,
-                                                    style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
+                                                    timerProvider
+                                                        .currentActivityName,
+                                                    style:
+                                                        AppTextStyles.getBody(
+                                                                context)
+                                                            .copyWith(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w900),
                                                   ),
                                                 ],
                                               )
@@ -481,49 +511,78 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                                                 Colors.orange,
                                                 Colors.pinkAccent,
                                                 Colors.red,
-                                                ColorService.hexToColor(timerProvider.currentActivityColor),
+                                                ColorService.hexToColor(
+                                                    timerProvider
+                                                        .currentActivityColor),
                                               ],
-                                              begin: _shimmerAnimation.value, // 애니메이션 시작점
-                                              end: Alignment(-_shimmerAnimation.value.x, -_shimmerAnimation.value.y), // 애니메이션 끝점
-                                              tileMode: TileMode.mirror, // 경계에서 반복
+                                              begin: _shimmerAnimation
+                                                  .value, // 애니메이션 시작점
+                                              end: Alignment(
+                                                  -_shimmerAnimation.value.x,
+                                                  -_shimmerAnimation
+                                                      .value.y), // 애니메이션 끝점
+                                              tileMode:
+                                                  TileMode.mirror, // 경계에서 반복
                                             ),
-                                            borderRadius: BorderRadius.circular(50),
+                                            borderRadius:
+                                                BorderRadius.circular(50),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.pinkAccent.withOpacity(0.5),
+                                                color: Colors.pinkAccent
+                                                    .withOpacity(0.5),
                                                 blurRadius: 8, // 그림자 흐림 정도
-                                                offset: const Offset(0, 4), // 그림자 위치
+                                                offset: const Offset(
+                                                    0, 4), // 그림자 위치
                                               ),
                                             ],
                                           ),
                                           child: IconButton(
-                                            key: ValueKey<bool>(timerProvider.isRunning),
-                                            icon: const Icon(Icons.play_arrow_rounded),
+                                            key: ValueKey<bool>(
+                                                timerProvider.isRunning),
+                                            icon: const Icon(
+                                                Icons.play_arrow_rounded),
                                             iconSize: context.wp(20),
                                             color: Colors.white,
                                             onPressed: () {
                                               HapticFeedback.lightImpact();
-                                              if (timerProvider.currentActivityId != null) {
-                                                timerProvider.setSessionModeAndTargetDuration(
-                                                    mode: 'SESSIONNORMAL', targetDuration: timerProvider.remainingSeconds);
+                                              if (timerProvider
+                                                      .currentActivityId !=
+                                                  null) {
+                                                timerProvider
+                                                    .setSessionModeAndTargetDuration(
+                                                        mode: 'SESSIONNORMAL',
+                                                        targetDuration:
+                                                            timerProvider
+                                                                .remainingSeconds);
                                                 Navigator.of(context).push(
                                                   PageRouteBuilder(
-                                                    pageBuilder: (context, animation, secondaryAnimation) =>
-                                                        TimerRunningPage(timerData: widget.timerData),
-                                                    transitionDuration: const Duration(milliseconds: 500),
-                                                    reverseTransitionDuration: const Duration(milliseconds: 500),
+                                                    pageBuilder: (context,
+                                                            animation,
+                                                            secondaryAnimation) =>
+                                                        TimerRunningPage(
+                                                            timerData: widget
+                                                                .timerData),
+                                                    transitionDuration:
+                                                        const Duration(
+                                                            milliseconds: 500),
+                                                    reverseTransitionDuration:
+                                                        const Duration(
+                                                            milliseconds: 500),
                                                   ),
                                                 );
                                               } else {
                                                 Fluttertoast.showToast(
                                                   msg: "활동을 선택해주세요",
-                                                  toastLength: Toast.LENGTH_SHORT,
+                                                  toastLength:
+                                                      Toast.LENGTH_SHORT,
                                                   gravity: ToastGravity.TOP,
-                                                  backgroundColor: Colors.redAccent.shade200,
+                                                  backgroundColor:
+                                                      Colors.redAccent.shade200,
                                                   textColor: Colors.white,
                                                   fontSize: context.md,
                                                 );
-                                                _showActivityModal(timerProvider);
+                                                _showActivityModal(
+                                                    timerProvider);
                                               }
                                             },
                                           ),
@@ -568,7 +627,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                         AnimatedPositioned(
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
-                          left: _currentPageIndex * itemWidth + (itemWidth - _circleWidth) / 2,
+                          left: _currentPageIndex * itemWidth +
+                              (itemWidth - _circleWidth) / 2,
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
@@ -576,7 +636,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                             height: _circleHeight,
                             decoration: BoxDecoration(
                               color: Colors.redAccent,
-                              borderRadius: BorderRadius.circular(50), // 항상 원으로 유지
+                              borderRadius:
+                                  BorderRadius.circular(50), // 항상 원으로 유지
                             ),
                           ),
                         ),
@@ -590,8 +651,12 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                                 onTap: () => _onIconTap(index),
                                 child: TweenAnimationBuilder<Color?>(
                                   tween: ColorTween(
-                                    begin: _currentPageIndex == index ? Colors.grey : Colors.white,
-                                    end: _currentPageIndex == index ? Colors.white : Colors.grey,
+                                    begin: _currentPageIndex == index
+                                        ? Colors.grey
+                                        : Colors.white,
+                                    end: _currentPageIndex == index
+                                        ? Colors.white
+                                        : Colors.grey,
                                   ),
                                   duration: const Duration(milliseconds: 300),
                                   builder: (context, color, child) {

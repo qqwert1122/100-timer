@@ -42,7 +42,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
 
   void _refreshActivityList() {
     setState(() {
-      _activityListFuture = _statsProvider.getAllActivities();
+      _activityListFuture = _statsProvider.getActivities();
     });
   }
 
@@ -60,7 +60,11 @@ class _ActivityPickerState extends State<ActivityPicker> {
   }
 
   Future<void> _navigateToEditActivityPage(
-      BuildContext context, String activityId, String activityName, String activityIcon, String activityColor) async {
+      BuildContext context,
+      String activityId,
+      String activityName,
+      String activityIcon,
+      String activityColor) async {
     final updatedActivity = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -79,13 +83,16 @@ class _ActivityPickerState extends State<ActivityPicker> {
     }
   }
 
-  Future<void> _deleteActivity(BuildContext context, String activityId, String activityName) async {
-    final shouldDelete = await _showDeleteConfirmationDialog(context, activityName);
+  Future<void> _deleteActivity(
+      BuildContext context, String activityId, String activityName) async {
+    final shouldDelete =
+        await _showDeleteConfirmationDialog(context, activityName);
     if (shouldDelete) {
       await _dbService.deleteActivity(activityId);
       _refreshActivityList();
       if (widget.selectedActivity == activityName) {
-        widget.onSelectActivity(defaultAcitivty['acitivty_id'], '전체', 'category_rounded', '#B7B7B7');
+        widget.onSelectActivity(defaultAcitivty['acitivty_id'], '전체',
+            'category_rounded', '#B7B7B7');
       }
       Fluttertoast.showToast(
         msg: "활동이 삭제되었습니다",
@@ -98,13 +105,16 @@ class _ActivityPickerState extends State<ActivityPicker> {
     }
   }
 
-  Future<bool> _showDeleteConfirmationDialog(BuildContext context, String activity) async {
+  Future<bool> _showDeleteConfirmationDialog(
+      BuildContext context, String activity) async {
     return await showDialog<bool>(
           context: context,
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('정말 삭제하시겠습니까?', style: AppTextStyles.getTitle(context).copyWith(color: Colors.redAccent)),
+              title: Text('정말 삭제하시겠습니까?',
+                  style: AppTextStyles.getTitle(context)
+                      .copyWith(color: Colors.redAccent)),
               content: Text(
                 '활동을 삭제할 경우 같은 이름으로 재생성 할 수는 있으나 복구할 수 없습니다.',
                 style: AppTextStyles.getBody(context),
@@ -113,7 +123,8 @@ class _ActivityPickerState extends State<ActivityPicker> {
                 TextButton(
                   child: Text(
                     '취소',
-                    style: AppTextStyles.getTitle(context).copyWith(color: Colors.grey),
+                    style: AppTextStyles.getTitle(context)
+                        .copyWith(color: Colors.grey),
                   ),
                   onPressed: () {
                     Navigator.of(context).pop(false);
@@ -122,7 +133,8 @@ class _ActivityPickerState extends State<ActivityPicker> {
                 TextButton(
                   child: Text(
                     '삭제',
-                    style: AppTextStyles.getTitle(context).copyWith(color: Colors.redAccent),
+                    style: AppTextStyles.getTitle(context)
+                        .copyWith(color: Colors.redAccent),
                   ),
                   onPressed: () {
                     Navigator.of(context).pop(true);
@@ -182,7 +194,9 @@ class _ActivityPickerState extends State<ActivityPicker> {
                       // '활동 추가' 버튼
                       return ListTile(
                         leading: const Icon(Icons.add, color: Colors.blue),
-                        title: Text('활동 추가', style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900)),
+                        title: Text('활동 추가',
+                            style: AppTextStyles.getBody(context)
+                                .copyWith(fontWeight: FontWeight.w900)),
                         onTap: () {
                           _navigateToAddActivityPage(context);
                         },
@@ -219,7 +233,10 @@ class _ActivityPickerState extends State<ActivityPicker> {
                                 ),
                                 SlidableAction(
                                   onPressed: (context) {
-                                    _deleteActivity(context, activity['activity_id'], activity['activity_name']);
+                                    _deleteActivity(
+                                        context,
+                                        activity['activity_id'],
+                                        activity['activity_name']);
                                   },
                                   backgroundColor: Colors.red,
                                   foregroundColor: Colors.white,
@@ -233,7 +250,10 @@ class _ActivityPickerState extends State<ActivityPicker> {
                         padding: const EdgeInsets.symmetric(vertical: 0),
                         child: ListTile(
                           leading: Icon(iconData,
-                              color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
+                              color: activity['activity_name'] ==
+                                      widget.selectedActivity
+                                  ? Colors.redAccent.shade200
+                                  : null),
                           title: Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
@@ -241,7 +261,10 @@ class _ActivityPickerState extends State<ActivityPicker> {
                                 activity['activity_name'],
                                 style: AppTextStyles.getBody(context).copyWith(
                                     fontWeight: FontWeight.w900,
-                                    color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
+                                    color: activity['activity_name'] ==
+                                            widget.selectedActivity
+                                        ? Colors.redAccent.shade200
+                                        : null),
                               ),
                               SizedBox(
                                 width: context.wp(4),
@@ -249,9 +272,11 @@ class _ActivityPickerState extends State<ActivityPicker> {
                               Container(
                                 width: 12,
                                 height: 12,
-                                margin: const EdgeInsets.symmetric(vertical: 2.0),
+                                margin:
+                                    const EdgeInsets.symmetric(vertical: 2.0),
                                 decoration: BoxDecoration(
-                                  color: ColorService.hexToColor(activity['activity_color']),
+                                  color: ColorService.hexToColor(
+                                      activity['activity_color']),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),

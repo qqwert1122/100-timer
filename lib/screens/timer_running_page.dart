@@ -92,7 +92,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
   Future<void> _handleExistingSession() async {
     print('Handling existing session');
-    final sessionId = widget.timerData['last_session_id'];
+    final sessionId = widget.timerData['session_id'];
     final currentSession = await _dbService.getSession(sessionId);
 
     if (currentSession != null) {
@@ -261,7 +261,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
       _messageTimer.cancel();
 
       // 세션 종료
-      await timerProvider.stopTimer(isExceeded: isExceeded, sessionId: timer['last_session_id']);
+      await timerProvider.stopTimer(isExceeded: isExceeded, sessionId: timer['session_id']);
 
       // 애니메이션 중지
       for (var wave in waves) {
@@ -756,7 +756,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
       if (currentState == 'RUNNING') {
         timerProvider.pauseTimer();
       } else if (currentState == 'PAUSED') {
-        timerProvider.resumeTimer(sessionId: widget.timerData['last_session_id']);
+        timerProvider.resumeTimer(sessionId: widget.timerData['session_id']);
       }
     }
 

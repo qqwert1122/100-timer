@@ -119,13 +119,15 @@ class _DashboardState extends State<Dashboard> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("12월 5주차", style: AppTextStyles.getTitle(context)),
+                              Text("12월 5주차",
+                                  style: AppTextStyles.getTitle(context)),
                               SizedBox(height: context.hp(1)),
                               Row(
                                 children: [
                                   Text(
                                     timerProvider?.formattedHour ?? '0h',
-                                    style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                    style: AppTextStyles.getTimeDisplay(context)
+                                        .copyWith(
                                       fontFamily: 'chab',
                                       color: Colors.redAccent,
                                     ),
@@ -135,12 +137,16 @@ class _DashboardState extends State<Dashboard> {
                                     width: 1, // 선의 두께
                                     height: context.hp(2), // 선의 높이
                                     color: Colors.grey.shade400, // 선의 색상
-                                    margin: EdgeInsets.symmetric(horizontal: context.wp(1)), // 양쪽 여백
+                                    margin: EdgeInsets.symmetric(
+                                        horizontal: context.wp(1)), // 양쪽 여백
                                   ),
                                   SizedBox(width: context.wp(1)),
                                   Text(
                                     '100',
-                                    style: AppTextStyles.getTimeDisplay(context).copyWith(fontFamily: 'chab', color: Colors.grey.shade300),
+                                    style: AppTextStyles.getTimeDisplay(context)
+                                        .copyWith(
+                                            fontFamily: 'chab',
+                                            color: Colors.grey.shade300),
                                   ),
                                 ],
                               ),
@@ -156,7 +162,8 @@ class _DashboardState extends State<Dashboard> {
                               children: [
                                 Text(
                                   percentText,
-                                  style: AppTextStyles.getBody(context).copyWith(
+                                  style:
+                                      AppTextStyles.getBody(context).copyWith(
                                     fontSize: context.xl,
                                     color: Colors.redAccent,
                                     fontFamily: 'chab',
@@ -185,7 +192,8 @@ class _DashboardState extends State<Dashboard> {
               padding: context.paddingHorizSM,
               child: Text(
                 '집중 달성한 날',
-                style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
+                style: AppTextStyles.getBody(context)
+                    .copyWith(fontWeight: FontWeight.w900),
               ),
             ),
             const WeeklySessionStatus(isSimple: true),
@@ -194,7 +202,8 @@ class _DashboardState extends State<Dashboard> {
               padding: context.paddingHorizSM,
               child: Text(
                 '주간 활동 차트',
-                style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
+                style: AppTextStyles.getBody(context)
+                    .copyWith(fontWeight: FontWeight.w900),
               ),
             ),
             FutureBuilder<List<Map<String, dynamic>>>(
@@ -209,102 +218,12 @@ class _DashboardState extends State<Dashboard> {
                 );
               },
             ),
-            Container(
-              padding: context.paddingSM,
-              margin: context.paddingSM,
-              decoration: BoxDecoration(
-                color: AppColors.backgroundSecondary(context),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.shade200,
-                    offset: const Offset(0, 2),
-                    blurRadius: 2,
-                    spreadRadius: 3,
-                  ),
-                ],
-              ),
-              child: FutureBuilder<List<Map<String, dynamic>>>(
-                future: _statsProvider.getWeeklyActivityStats(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return CircularProgressIndicator();
-                  weeklyActivities = snapshot.data!;
-
-                  return Row(
-                    children: [
-                      Expanded(
-                        flex: 4,
-                        child: SizedBox(
-                          height: context.hp(15),
-                          child: PieChart(
-                            PieChartData(
-                              centerSpaceRadius: context.wp(8),
-                              borderData: FlBorderData(show: false),
-                              sectionsSpace: 5,
-                              sections: snapshot.data!.map((activity) {
-                                return PieChartSectionData(
-                                  color: ColorService.hexToColor(activity['activity_color']),
-                                  value: activity['total_duration'].toDouble(),
-                                  showTitle: false,
-                                  radius: context.wp(8),
-                                  borderSide: BorderSide(width: 2, color: Colors.white), // 흰색 테두리
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 3,
-                        child: SizedBox(
-                          height: context.hp(15),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: snapshot.data!.map((activity) {
-                                return Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 4.0),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: context.wp(3),
-                                        height: context.wp(3),
-                                        decoration: BoxDecoration(
-                                          color: ColorService.hexToColor(activity['activity_color']),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      SizedBox(width: context.wp(2)),
-                                      Text(
-                                        activity['activity_name'],
-                                        style: AppTextStyles.getCaption(context),
-                                      ),
-                                      Spacer(),
-                                      Text(
-                                        formatDuration(activity['total_duration']),
-                                        style: AppTextStyles.getCaption(context),
-                                      )
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            SizedBox(
-              height: context.hp(3),
-            ),
             Padding(
               padding: context.paddingHorizSM,
               child: Text(
                 '이번주에',
-                style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
+                style: AppTextStyles.getBody(context)
+                    .copyWith(fontWeight: FontWeight.w900),
               ),
             ),
             Padding(
@@ -331,7 +250,8 @@ class _DashboardState extends State<Dashboard> {
                       child: FutureBuilder<Map<String, dynamic>>(
                           future: _statsProvider.getWeeklyReport(),
                           builder: (context, snapshot) {
-                            if (!snapshot.hasData) return const CircularProgressIndicator();
+                            if (!snapshot.hasData)
+                              return const CircularProgressIndicator();
 
                             final stats = snapshot.data!['mostActiveDate'];
 
@@ -340,21 +260,30 @@ class _DashboardState extends State<Dashboard> {
                               children: [
                                 Text(
                                   '가장 활발했던 날',
-                                  style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
+                                  style: AppTextStyles.getBody(context)
+                                      .copyWith(fontWeight: FontWeight.w900),
                                 ),
                                 SizedBox(height: context.hp(1)),
                                 Text(
-                                  stats == null ? '없음' : '${stats['dayName']}요일',
-                                  style: AppTextStyles.getHeadline(context).copyWith(
-                                    color: stats == null ? Colors.grey : Colors.redAccent,
+                                  stats == null
+                                      ? '없음'
+                                      : '${stats['dayName']}요일',
+                                  style: AppTextStyles.getHeadline(context)
+                                      .copyWith(
+                                    color: stats == null
+                                        ? Colors.grey
+                                        : Colors.redAccent,
                                   ),
                                 ),
                                 SizedBox(
                                   height: context.hp(2),
                                 ),
                                 Text(
-                                  stats == null ? '' : formatDuration(stats['total_duration']),
-                                  style: AppTextStyles.getTitle(context).copyWith(
+                                  stats == null
+                                      ? ''
+                                      : formatDuration(stats['total_duration']),
+                                  style:
+                                      AppTextStyles.getTitle(context).copyWith(
                                     fontWeight: FontWeight.w500,
                                     color: Colors.grey,
                                   ),
@@ -385,7 +314,8 @@ class _DashboardState extends State<Dashboard> {
                       child: FutureBuilder<Map<String, dynamic>>(
                           future: _statsProvider.getWeeklyReport(),
                           builder: (context, snapshot) {
-                            if (!snapshot.hasData) return const CircularProgressIndicator();
+                            if (!snapshot.hasData)
+                              return const CircularProgressIndicator();
 
                             final stats = snapshot.data!['mostActiveHour'];
                             return Column(
@@ -393,12 +323,16 @@ class _DashboardState extends State<Dashboard> {
                               children: [
                                 Text(
                                   '최대 집중시간',
-                                  style: AppTextStyles.getBody(context).copyWith(color: Colors.white, fontWeight: FontWeight.w900),
+                                  style: AppTextStyles.getBody(context)
+                                      .copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900),
                                 ),
                                 SizedBox(height: context.hp(1)),
                                 Text(
                                   formatDuration(stats?['total_duration'] ?? 0),
-                                  style: AppTextStyles.getHeadline(context).copyWith(color: Colors.white),
+                                  style: AppTextStyles.getHeadline(context)
+                                      .copyWith(color: Colors.white),
                                 ),
                                 SizedBox(height: context.hp(3)),
                               ],
@@ -408,66 +342,6 @@ class _DashboardState extends State<Dashboard> {
                   ),
                 ],
               ),
-            ),
-            SizedBox(height: context.hp(3)),
-            Padding(
-              padding: context.paddingHorizSM,
-              child: Text(
-                '최근 활동들',
-                style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
-              ),
-            ),
-            FutureBuilder<List<Map<String, dynamic>>>(
-              future: _statsProvider.getRecentSessions(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return CircularProgressIndicator();
-
-                final activities = snapshot.data!; // 직접 snapshot 데이터 사용
-
-                if (activities.isEmpty) {
-                  // 데이터가 없을 경우 처리
-                  return const SizedBox.shrink();
-                }
-
-                return Padding(
-                  padding: context.paddingMD,
-                  child: SizedBox(
-                    width: context.wp(15) + (activities.length - 1) * context.wp(12),
-                    height: context.hp(7),
-                    child: Stack(
-                      children: List.generate(
-                        activities.length,
-                        (index) {
-                          final activity = activities[index];
-                          return Positioned(
-                            left: index * context.wp(9),
-                            child: Container(
-                              width: context.wp(12),
-                              height: context.wp(12),
-                              decoration: BoxDecoration(
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 6,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                                borderRadius: BorderRadius.circular(50),
-                                color: AppColors.backgroundSecondary(context),
-                              ),
-                              child: Icon(
-                                getIconData(activity['activity_icon']),
-                                size: context.wp(5),
-                                color: ColorService.hexToColor(activity['activity_color']),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                );
-              },
             ),
             SizedBox(
               height: context.hp(30),

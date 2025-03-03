@@ -10,15 +10,16 @@ import 'package:project1/utils/responsive_size.dart';
 import 'timer_page.dart';
 
 class SplashScreen extends StatefulWidget {
-  final String userId;
-
-  const SplashScreen({super.key, required this.userId});
+  const SplashScreen({
+    super.key,
+  });
 
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late DatabaseService _dbService;
   Map<String, dynamic>? _timerData;
   late AnimationController _animationController;
@@ -67,31 +68,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     DateTime now = DateTime.now();
     String weekStart = getWeekStart(now); // 예시 2024-09-23
 
-    // 사용자 데이터 가져오기
-    await _dbService.fetchOrDownloadUser();
-
     // **사용자 데이터가 완전히 로드된 후에 활동 데이터를 가져옵니다.**
     List<Map<String, dynamic>> activities = await _dbService.getActivities();
-
-    if (activities.isEmpty) {
-      // 활동 데이터가 없으면 서버에서 다운로드
-      await _dbService.downloadDataFromServer();
-
-      // 활동 데이터를 다시 로드
-      activities = await _dbService.getActivities();
-
-      // 여전히 activities가 비어있다면 기본 활동을 생성하거나 오류 처리
-      if (activities.isEmpty) {
-        print('활동 데이터를 가져올 수 없습니다.');
-        // 기본 활동 생성 로직 또는 오류 처리 로직 추가
-      }
-    }
 
     // 타이머가 있는지 확인
     Map<String, dynamic>? timer = await _dbService.getTimer(weekStart);
 
     if (timer == null) {
-      timer = await _createDefaultTimer(widget.userId);
+      timer = await _createDefaultTimer();
       await _dbService.createTimer(timer);
     }
 
@@ -104,7 +88,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
-              _timerData!['state'] != 'STOP' ? TimerRunningPage(timerData: _timerData!) : TimerPage(timerData: _timerData!),
+              _timerData!['state'] != 'STOP'
+                  ? TimerRunningPage(timerData: _timerData!)
+                  : TimerPage(timerData: _timerData!),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
@@ -115,27 +101,24 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   // 기본 타이머 생성 메서드
-  Future<Map<String, dynamic>> _createDefaultTimer(String userId) async {
+  Future<Map<String, dynamic>> _createDefaultTimer() async {
     final now = DateTime.now();
     final timerId = const Uuid().v4();
-    Map<String, dynamic>? userData = await _dbService.getUser();
-    int userTotalSeconds = userData?['total_seconds'] ?? 360000; // 기본값은 100시간
+    // int userTotalSeconds = userData?['total_seconds'] ?? 360000;
+    int userTotalSeconds = 360000; // 기본값은 100시간
 
     return {
-      'uid': userId,
       'timer_id': timerId,
+      'current_session_id': null,
       'week_start': getWeekStart(now),
       'total_seconds': userTotalSeconds,
-      'last_session_id': null,
-      'state': 'STOP',
+      'timer_state': 'STOP',
       'created_at': now.toUtc().toIso8601String(), // toUtc로 변경
       'deleted_at': null,
       'last_started_at': null,
       'last_ended_at': null,
       'last_updated_at': now.toUtc().toIso8601String(),
-      'last_notified_at': null,
       'is_deleted': 0,
-      'sessions_over_1hour': 0,
       'timezone': DateTime.now().timeZoneName,
     };
   }
@@ -195,8 +178,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, animation, __) =>
-            _timerData!['state'] != 'STOP' ? TimerRunningPage(timerData: _timerData!) : TimerPage(timerData: _timerData!),
+        pageBuilder: (_, animation, __) => _timerData!['state'] != 'STOP'
+            ? TimerRunningPage(timerData: _timerData!)
+            : TimerPage(timerData: _timerData!),
         transitionsBuilder: (_, animation, __, child) {
           return FadeTransition(opacity: animation, child: child);
         },
