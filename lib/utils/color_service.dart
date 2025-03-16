@@ -14,7 +14,7 @@ class ColorService {
 
     // 길이 검증 및 보정
     if (hexString.length == 6) {
-      hexString = 'FF' + hexString; // 불투명도 추가
+      hexString = 'FF$hexString'; // 불투명도 추가
     } else if (hexString.length != 8) {
       // 길이가 6자리나 8자리가 아닌 경우 기본 색상 반환
       return Colors.grey.shade400;

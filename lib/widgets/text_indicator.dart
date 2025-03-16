@@ -103,23 +103,14 @@ class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateM
                         color: isDarkMode ? Colors.white : Colors.black,
                       ),
                     ),
-                    widget.timerProvider.isRunning
-                        ? TextSpan(
-                            text: '휴식',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.blueAccent.shade200,
-                            ),
-                          )
-                        : TextSpan(
-                            text: '버닝',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.redAccent.shade200,
-                            ),
-                          ),
+                    TextSpan(
+                      text: '시작',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.redAccent.shade200,
+                      ),
+                    ),
                     TextSpan(
                       text: '하기',
                       style: TextStyle(

@@ -5,10 +5,10 @@ class ToggleTotalViewSwtich extends StatefulWidget {
   final ValueChanged<bool> onChanged;
 
   const ToggleTotalViewSwtich({
-    Key? key,
+    super.key,
     required this.value,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   _ToggleTotalViewSwtich createState() => _ToggleTotalViewSwtich();
@@ -77,7 +77,7 @@ class _ToggleTotalViewSwtich extends State<ToggleTotalViewSwtich> with SingleTic
               child: Container(
                 width: 25,
                 height: 21,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white,
                 ),

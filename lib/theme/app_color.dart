@@ -12,7 +12,7 @@ class AppColors {
   }
 
   static Color textSecondary(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white;
+    return Theme.of(context).brightness == Brightness.dark ? Colors.grey : Colors.grey;
   }
 
   // 배경 색상
@@ -21,7 +21,12 @@ class AppColors {
   }
 
   static Color backgroundSecondary(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade100;
+    return Theme.of(context).brightness == Brightness.dark ? const Color(0xff2A2F25) : Colors.grey.shade200;
+  }
+
+  // 텍스트 on 배경 색상 (배경에 쓰이는 텍스트 색상)
+  static Color textOnBackgroundSecondary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87;
   }
 
   // 버튼 색상

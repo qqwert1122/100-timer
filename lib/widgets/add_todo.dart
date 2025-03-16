@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:project1/theme/app_color.dart';
@@ -12,8 +11,8 @@ import 'package:provider/provider.dart';
 
 class AddTodoSheet extends StatefulWidget {
   const AddTodoSheet({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   State<AddTodoSheet> createState() => _AddTodoSheetState();
@@ -326,7 +325,7 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                               });
                             },
                             child: AnimatedContainer(
-                              duration: Duration(milliseconds: 300),
+                              duration: const Duration(milliseconds: 300),
                               padding: context.paddingXS,
                               margin: context.paddingXS,
                               decoration: BoxDecoration(
@@ -338,7 +337,7 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                                   BoxShadow(
                                     blurRadius: 4,
                                     color: Colors.grey.shade300,
-                                    offset: Offset(0, 2),
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
@@ -410,24 +409,24 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                     children: [
                       _buildDeadlineButton(
                         '1일 내',
-                        () => _setDeadline(DateTime.now().add(Duration(days: 1))),
+                        () => _setDeadline(DateTime.now().add(const Duration(days: 1))),
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       _buildDeadlineButton(
                         '3일 내',
-                        () => _setDeadline(DateTime.now().add(Duration(days: 3))),
+                        () => _setDeadline(DateTime.now().add(const Duration(days: 3))),
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       _buildDeadlineButton(
                         '7일 내',
-                        () => _setDeadline(DateTime.now().add(Duration(days: 7))),
+                        () => _setDeadline(DateTime.now().add(const Duration(days: 7))),
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       _buildDeadlineButton(
                         '한달 내',
-                        () => _setDeadline(DateTime.now().add(Duration(days: 30))),
+                        () => _setDeadline(DateTime.now().add(const Duration(days: 30))),
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       _buildDeadlineButton(
                         '달력',
                         _showDatePicker,
@@ -458,7 +457,7 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                       .map((priority) => GestureDetector(
                             onTap: () => setState(() => _priority = priority['value']),
                             child: AnimatedContainer(
-                              duration: Duration(milliseconds: 300),
+                              duration: const Duration(milliseconds: 300),
                               margin: context.paddingXS,
                               padding: context.paddingXS,
                               decoration: BoxDecoration(
@@ -468,7 +467,7 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                                   BoxShadow(
                                     blurRadius: 4,
                                     color: Colors.grey.shade300,
-                                    offset: Offset(0, 2),
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
@@ -521,7 +520,7 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 300),
         padding: context.paddingXS,
         decoration: BoxDecoration(
           color: isSelected ? Colors.blue : AppColors.backgroundSecondary(context),
@@ -530,7 +529,7 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
             BoxShadow(
               blurRadius: 4,
               color: Colors.grey.shade300,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),

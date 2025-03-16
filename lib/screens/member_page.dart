@@ -84,7 +84,7 @@ class _MemberPageState extends State<MemberPage> with SingleTickerProviderStateM
       ),
       body: Column(
         children: [
-          Padding(
+          const Padding(
             padding: EdgeInsets.only(
               top: 16,
               left: 32,
@@ -100,7 +100,7 @@ class _MemberPageState extends State<MemberPage> with SingleTickerProviderStateM
               ),
             ),
           ),
-          SizedBox(
+          const SizedBox(
             height: 30,
           ),
           selectedUser != null
@@ -139,7 +139,7 @@ class _MemberPageState extends State<MemberPage> with SingleTickerProviderStateM
                     },
                   ),
                 )
-              : Container(
+              : SizedBox(
                   height: MediaQuery.of(context).size.height * 0.3,
                   child: const Center(
                     child: Text("친구를 추가하세요"),
@@ -183,14 +183,14 @@ class MemberWidget extends StatelessWidget {
   final bool isTop;
 
   const MemberWidget({
-    Key? key,
+    super.key,
     required this.user,
     required this.onTap,
     this.size = 80.0,
     this.rotationAngle = 0.0,
     this.animateProgress = false,
     this.isTop = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -244,7 +244,7 @@ class MemberWidget extends StatelessWidget {
                       width: size / 2,
                       height: size / 2,
                     ),
-                    SizedBox(height: 5), // 간격 조정
+                    const SizedBox(height: 5), // 간격 조정
                     Row(
                       children: [
                         Text(
@@ -253,9 +253,9 @@ class MemberWidget extends StatelessWidget {
                         ),
                         isTop && isRunning
                             ? Padding(
-                                padding: EdgeInsets.only(left: 4),
+                                padding: const EdgeInsets.only(left: 4),
                                 child: Container(
-                                  padding: EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                                  padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
                                   decoration: BoxDecoration(
                                     color: Colors.redAccent,
                                     borderRadius: BorderRadius.circular(16.0),
@@ -264,29 +264,29 @@ class MemberWidget extends StatelessWidget {
                                         color: Colors.black.withOpacity(0.2),
                                         spreadRadius: 2,
                                         blurRadius: 4,
-                                        offset: Offset(0, 2),
+                                        offset: const Offset(0, 2),
                                       ),
                                     ],
                                   ),
-                                  child: Text(
+                                  child: const Text(
                                     '활동중',
                                     style: TextStyle(color: Colors.white, fontSize: 12),
                                   ),
                                 ),
                               )
-                            : SizedBox(),
+                            : const SizedBox(),
                       ],
                     ),
                     isTop
                         ? Text(
                             '${formattedTime(user['remaining_seconds'])} 남았어요',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: Colors.grey,
                             ),
                           )
-                        : SizedBox(),
+                        : const SizedBox(),
                   ],
                 ),
               ),
@@ -326,8 +326,8 @@ class HalfCirclePainter extends CustomPainter {
       radius: radius,
     );
 
-    final double startAngle = -pi; // 왼쪽부터 시작
-    final double sweepAngle = pi; // 180도 (반원)
+    const double startAngle = -pi; // 왼쪽부터 시작
+    const double sweepAngle = pi; // 180도 (반원)
 
     // 배경 반원 그리기
     canvas.drawArc(

@@ -33,13 +33,13 @@ class _ShopPageState extends State<ShopPage> {
       body: SingleChildScrollView(
         scrollDirection: Axis.vertical,
         child: Padding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 '귀여운 캐릭터',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
                 ),
@@ -69,7 +69,7 @@ class _ShopPageState extends State<ShopPage> {
                           : Container(
                               width: 50,
                               height: 50,
-                              padding: EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(50),
@@ -78,7 +78,7 @@ class _ShopPageState extends State<ShopPage> {
                                     color: Colors.black.withOpacity(0.2),
                                     spreadRadius: 2,
                                     blurRadius: 4,
-                                    offset: Offset(0, 2),
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                                 image: DecorationImage(
@@ -90,37 +90,37 @@ class _ShopPageState extends State<ShopPage> {
                             ),
                       Text(
                         avatar['name'],
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                       ),
                       Text(
                         '${avatar['price'].toString()}원',
-                        style: TextStyle(fontSize: 12),
+                        style: const TextStyle(fontSize: 12),
                       )
                     ],
                   );
                 },
               ),
-              Text(
+              const Text(
                 '잠금 해제',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              SizedBox(
+              const SizedBox(
                 height: 30,
               ),
-              Text(
+              const Text(
                 '이런 상품 어때요?',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              SizedBox(
+              const SizedBox(
                 height: 30,
               ),
-              SizedBox(
+              const SizedBox(
                 height: 100,
               ),
             ],

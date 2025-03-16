@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:project1/utils/database_service.dart';
-import 'package:project1/utils/error_service.dart';
+import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -12,37 +11,29 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   final BuildContext context;
   DatabaseService _dbService;
   final StatsProvider _statsProvider;
-  ErrorService _errorService; // ErrorService 주입
   TimerProvider(
     this.context, {
     required DatabaseService dbService,
     required StatsProvider statsProvider,
-    required ErrorService errorService,
   })  : _dbService = dbService,
-        _statsProvider = statsProvider,
-        _errorService = errorService {
+        _statsProvider = statsProvider {
     try {
       // WidgetsBindingObserver 등록
       WidgetsBinding.instance.addObserver(this);
-      setTimer(); // 초기화
+      setTimer();
+      Future.delayed(Duration.zero, () {
+        initializeFromLastSession();
+      });
     } catch (e) {
-      _errorService.createError(
-        errorCode: 'TIMER_INIT_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Initializing Timer Data in TimerProvider',
-        severityLevel: 'high',
-      );
+      // error log
       print('Error initializing TimerProvider: $e');
     }
   }
 
   void updateDependencies({
     required DatabaseService dbService,
-    required ErrorService errorService,
   }) {
     _dbService = dbService;
-    _errorService = errorService;
-    // statsProvider, authProvider는 수정이 필요하면 인자로 추가하세요.
   }
 
   late final Completer<void> _initializedCompleter = Completer();
@@ -57,7 +48,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   Timer? _timer;
 
   bool _disposed = false; // dispose 여부를 추적
-  bool _shouldNotify = false;
+  final bool _shouldNotify = false;
 
   Map<String, dynamic>? _timerData;
   Map<String, dynamic>? get timerData => _timerData;
@@ -86,10 +77,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   String get formattedTime => _formatTime(remainingSeconds);
   String get formattedHour => _formatHour(remainingSeconds);
-  String get formattedActivityTime =>
-      _formatTime(_currentSessionDuration.clamp(0, _totalSeconds));
-  String get formattedTotalSessionDuration =>
-      _formatTime(_totalSessionDuration);
+  String get formattedActivityTime => _formatTime(_currentSessionDuration.clamp(0, _totalSeconds));
+  String get formattedTotalSessionDuration => _formatTime(_totalSessionDuration);
   String get formattedTotalSessionHour => _formatHour(_totalSessionDuration);
 
   // activity
@@ -128,9 +117,91 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   /*
 
-      @Init
+        @Init
 
-  */
+    */
+
+  Future<void> initializeFromLastSession() async {
+    try {
+      // timer 불러오기
+      String weekStart = getWeekStart(DateTime.now());
+      final timer = await _dbService.getTimer(weekStart);
+
+      if (timer == null) return;
+
+      // current_session 불러오기
+      String sessionId = timer['current_session_id'] ?? '';
+      if (sessionId.isEmpty) return;
+
+      // 진행 중이던 세션이 있는지 확인
+      if (timer['timer_state'] == 'RUNNING') {
+        // timer_state가 RUNNING일 경우
+        // timer에 부착된 session 불러오기기
+        final session = await _dbService.getSession(sessionId);
+        if (session == null) return;
+
+        // 타이머가 작동중인데 백그라운드로 이동했거나 강제종료 되었으므로 경과 시간 계산 필요
+        // 시간 계산 - 앱 종료 시점부터 현재까지 경과 시간
+        DateTime lastUpdatedAt = DateTime.parse(session['last_updated_at']);
+        DateTime now = DateTime.now();
+        int elapsedSeconds = now.difference(lastUpdatedAt).inSeconds;
+
+        // 총 진행 시간 = 저장된 진행 시간 + 앱 종료 후 경과 시간
+        int totalDuration = session['duration'] + elapsedSeconds;
+
+        // 시간이 경과했으므로 목표 시간 초과 여부 확인
+        int targetDuration = session['target_duration'] ?? _totalSeconds;
+        if (totalDuration >= targetDuration) {
+          // 초과했을 경우 세션 완료 처리
+          await stopTimer(isExceeded: true, sessionId: sessionId);
+          _isExceeded = true;
+        } else {
+          // 초과하지 않았을 경우 계속 작동해야 하므로 세션 상태 복원
+          _currentSessionMode = session['mode'];
+          _currentSessionDuration = totalDuration;
+          _currentSessionTargetDuration = targetDuration;
+          _currentActivityId = session['activity_id'];
+          _currentActivityName = session['activity_name'];
+          _currentActivityIcon = session['activity_icon'];
+          _currentActivityColor = session['activity_color'];
+          _currentState = 'RUNNING';
+          _isRunning = true;
+
+          // 타이머 재시작
+          _timer?.cancel();
+          _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+            _onTimerTick(sessionId: sessionId);
+          });
+
+          // DB 업데이트
+          await _dbService.updateSession(
+            sessionId: sessionId,
+            seconds: totalDuration,
+          );
+        }
+
+        notifyListeners();
+      } else if (timer['timer_state'] == 'PAUSED') {
+        // timer가 PAUSED일 경우
+        // timer에 부착된 session 불러오기
+        final session = await _dbService.getSession(sessionId);
+        if (session == null) return;
+
+        // 세션 상태 복원
+        _currentSessionMode = session['mode'];
+        _currentSessionDuration = session['duration'];
+        _currentSessionTargetDuration = session['target_duration'];
+        _currentActivityId = session['activity_id'];
+        _currentActivityName = session['activity_name'];
+        _currentActivityIcon = session['activity_icon'];
+        _currentActivityColor = session['activity_color'];
+        _currentState = 'PAUSED';
+        _isRunning = true;
+      }
+    } catch (e) {
+      logger.e('Error initializing from last session: $e');
+    }
+  }
 
   Future<void> setTimer() async {
     try {
@@ -140,8 +211,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
       if (rawTimerData != null) {
         _timerData = Map<String, dynamic>.from(rawTimerData);
-        _totalSeconds = _timerData?['total_seconds'];
-        _isRunning = (_timerData?['state'] ?? 'STOP') != 'STOP';
+        _totalSeconds = _timerData?['total_seconds'] ?? 360000;
+        _isRunning = (_timerData?['timer_state'] ?? 'STOP') == 'RUNNING';
       } else {
         _timerData = await _createNewTimer(weekStart);
         _totalSeconds = _timerData?['total_seconds'] ?? 360000;
@@ -149,39 +220,36 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       }
 
       // 세션의 duration 합 계산
-      _totalSessionDuration =
-          await _statsProvider.getTotalDurationForWeek(weekStart);
+      _totalSessionDuration = await _statsProvider.getTotalDurationForWeek(weekStart);
 
-      // 남은 시간 계산
-      _remainingSeconds =
-          (_totalSeconds - _totalSessionDuration).clamp(0, _totalSeconds);
+      // 남은 시간 계산 - 여기가 문제일 수 있음
+      _remainingSeconds = (_totalSeconds - _totalSessionDuration).clamp(0, _totalSeconds);
 
-      // (3) 만약 타이머가 'RUNNING','PAUSED' 상태라면, 마지막 세션 정보를 불러오고 세팅
+      print('Total seconds: $_totalSeconds');
+      print('Total session duration: $_totalSessionDuration');
+      print('Remaining seconds: $_remainingSeconds');
+
+      // 세션 정보 확인
       if (_isRunning) {
-        String lastSessionId = _timerData?['session_id'] ?? '';
+        String lastSessionId = _timerData?['current_session_id'] ?? '';
         if (lastSessionId.isNotEmpty) {
           final lastSession = await _dbService.getSession(lastSessionId);
           if (lastSession != null && lastSession.isNotEmpty) {
             _currentSessionMode = lastSession['mode'];
-            _currentSessionDuration = lastSession['session_duration'];
+            _currentSessionDuration = lastSession['duration'];
             _currentSessionTargetDuration = lastSession['target_duration'];
             _currentActivityId = lastSession['activity_id'];
             _currentActivityName = lastSession['activity_name'];
             _currentActivityIcon = lastSession['activity_icon'];
             _currentActivityColor = lastSession['activity_color'];
+
+            // 현재 진행 중인 활동도 잔여시간에서 차감되어야 함
+            _remainingSeconds = (_totalSeconds - _totalSessionDuration).clamp(0, _totalSeconds);
           }
         }
       }
 
-      // 10분 이상 세션 수 갱신
-      int sessionsOver1hour =
-          await _statsProvider.getSessionsOver1HourCount(weekStart);
-      _dbService.updateTimer(_timerData?['timer_id'], {
-        'sessions_over_1hour': sessionsOver1hour,
-        'last_updated_at': DateTime.now().toUtc().toIso8601String(),
-      });
-      _timerData = await _dbService.getTimer(weekStart);
-
+      // 기타 현재 활동 정보 설정
       if (_currentActivityId != null && _currentActivityId!.isNotEmpty) {
         _setLastActivty(lastActivityId: _currentActivityId);
       } else {
@@ -190,12 +258,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
       notifyListeners();
     } catch (e) {
-      await _errorService.createError(
-        errorCode: 'TIMER_INITIALIZATION_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Initializing Timer Data',
-        severityLevel: 'high',
-      );
       print('Error initializing timer data: $e');
     }
   }
@@ -225,20 +287,13 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       await _dbService.createTimer(timerData);
       return timerData;
     } catch (e) {
-      await _errorService.createError(
-        errorCode: 'CREATE_NEW_TIMER_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Creating New Timer',
-        severityLevel: 'high',
-      );
-      print('Error creating new timer: $e');
+      // error log
       return {};
     }
   }
 
   // 현재 활동 정보를 설정하는 메서드
-  void setCurrentActivity(String activityId, String activityName,
-      String activityIcon, String activityColor) {
+  void setCurrentActivity(String activityId, String activityName, String activityIcon, String activityColor) {
     _currentActivityId = activityId;
     _currentActivityName = activityName;
     _currentActivityIcon = activityIcon;
@@ -259,13 +314,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         await _setDefaultActivity();
       }
     } catch (e) {
-      await _errorService.createError(
-        errorCode: 'UPDATE_ACTIVITY_DETAILS_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Updating last Activity Details',
-        severityLevel: 'high',
-      );
-      print('Error updating last activity details: $e');
+      // error log
     }
   }
 
@@ -279,33 +328,20 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         _currentActivityColor = defaultActivity['activity_color'];
         notifyListeners();
       } else {
-        // 기본 활동이 없을 경우 에러 처리
-        await _errorService.createError(
-          errorCode: 'DEFAULT_ACTIVITY_NOT_FOUND',
-          errorMessage: 'No default activity found for the user.',
-          errorAction: 'Setting Default Activity',
-          severityLevel: 'medium',
-        );
-        print('Error: No default activity found for the user.');
+        // error log
       }
     } catch (e) {
-      await _errorService.createError(
-        errorCode: 'SET_DEFAULT_ACTIVITY_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Setting Default Activity',
-        severityLevel: 'high',
-      );
-      print('Error setting default activity: $e');
+      // error log
     }
   }
 
-/*
+  /*
 
-    @Dispose
-    @Lifecycle
-    @Background
+      @Dispose
+      @Lifecycle
+      @Background
 
-*/
+  */
 
   @override
   void dispose() {
@@ -324,31 +360,38 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         _onAppResumed();
       }
     } catch (e) {
-      _errorService.createError(
-        errorCode: 'APP_LIFECYCLE_ERROR',
-        errorMessage: e.toString(),
-        errorAction: 'Handling AppLifecycleState',
-        severityLevel: 'high',
-      );
-      print('Error in didChangeAppLifecycleState: $e');
+      // error log
     }
   }
 
   void _onAppPaused() async {
     print('_onAppPaused called');
     try {
-      // 현재 상태를 데이터베이스에 저장
-      await _updateTimerDataInDatabase();
-      // 타이머 정지
-      _timer?.cancel();
+      if (_currentState == 'RUNNING') {
+        // 상태는 그대로 RUNNING으로 유지하고 마지막 업데이트 시간만 저장
+        DateTime now = DateTime.now().toUtc();
+        await _dbService.updateTimer(
+          _timerData!['timer_id'],
+          {
+            'last_updated_at': now.toIso8601String(),
+            // 'timer_state'는 변경하지 않음
+          },
+        );
+
+        // 세션의 현재 진행 시간 저장
+        String sessionId = _timerData?['current_session_id'] ?? '';
+        if (sessionId.isNotEmpty) {
+          await _dbService.updateSession(
+            sessionId: sessionId,
+            seconds: _currentSessionDuration,
+          );
+        }
+
+        // 타이머는 취소하지만, 상태는 계속 'RUNNING'으로 유지
+        _timer?.cancel();
+      }
     } catch (e) {
-      await _errorService.createError(
-        errorCode: 'APP_PAUSED_ERROR',
-        errorMessage: e.toString(),
-        errorAction: 'Pausing App Timer',
-        severityLevel: 'high',
-      );
-      print('Error during _onAppPaused: $e');
+      print('Error in _onAppPaused: $e');
     }
   }
 
@@ -361,69 +404,76 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       Map<String, dynamic>? timer = await _dbService.getTimer(weekStart);
       if (timer == null) return;
 
-      String lastSessionId = timer['session_id'] ?? '';
+      String lastSessionId = timer['current_session_id'] ?? '';
+      if (lastSessionId.isEmpty) return;
 
       // 작동 중이던 세션이 있는지 확인
-      if (timer['state'] == 'RUNNING') {
-        // restartTimer 통해 타이머 재시작
-        restartTimer(sessionId: lastSessionId);
+      if (timer['timer_state'] == 'RUNNING') {
+        final lastSession = await _dbService.getSession(lastSessionId);
+        if (lastSession == null) return;
 
+        // 마지막 업데이트 시간 이후 경과한 시간 계산
+        DateTime lastUpdatedAt = DateTime.parse(lastSession['last_updated_at']);
+        int elapsedSeconds = now.difference(lastUpdatedAt).inSeconds;
+
+        // 세션의 진행 시간을 업데이트 (백그라운드에서 경과한 시간 포함)
+        int updatedDuration = lastSession['duration'] + elapsedSeconds;
+        await _dbService.updateSession(
+          sessionId: lastSessionId,
+          seconds: updatedDuration,
+        );
+
+        // 상태 업데이트
+        _currentSessionDuration = updatedDuration;
+
+        // 타이머 재시작
+        restartTimer(sessionId: lastSessionId);
         notifyListeners();
       }
     } catch (e) {
-      await _errorService.createError(
-        errorCode: 'APP_RESUMED_ERROR',
-        errorMessage: e.toString(),
-        errorAction: 'Resuming App Timer',
-        severityLevel: 'high',
-      );
-      print('Error during _onAppResumed: $e');
+      print('Error in _onAppResumed: $e');
     }
   }
 
   /*
 
-    @refrest
+      @refrest
 
-  */
+    */
 
   void refreshRemainingSeconds() async {
     String weekStart = getWeekStart(DateTime.now());
-    final _totalSeconds = timerData!['total_seconds'];
+    final totalSeconds = timerData!['total_seconds'];
 
-    _totalSessionDuration =
-        await _statsProvider.getTotalDurationForWeek(weekStart);
-    _remainingSeconds =
-        (_totalSeconds - _totalSessionDuration).clamp(0, _totalSeconds);
+    _totalSessionDuration = await _statsProvider.getTotalDurationForWeek(weekStart);
+    _remainingSeconds = (totalSeconds - _totalSessionDuration).clamp(0, totalSeconds);
   }
 
   /*
 
-      @start Timer
+        @start Timer
 
 
-  */
+    */
 
-  void setSessionModeAndTargetDuration(
-      {required String mode, required int targetDuration}) {
+  void setSessionModeAndTargetDuration({required String mode, required int targetDuration}) {
     _currentSessionMode = mode;
     _currentSessionTargetDuration = targetDuration;
   }
 
-  Future<void> startTimer(
-      {required String activityId,
-      required String mode,
-      required int targetDuration}) async {
+  Future<void> startTimer({required String activityId, required String mode, required int targetDuration}) async {
     try {
+      // 현재 local날짜 계산해서 utc로 변환환
       DateTime now = DateTime.now();
       DateTime utcNow = now.toUtc();
 
+      // 이미 실행중인 타이머가 있다면 cancel
       _timer?.cancel();
 
-      // activity?
+      // activityId를 통해 activity 호출
       final activity = await _statsProvider.getActivityById(activityId);
 
-      // create Session
+      // session 생성
       final sessionId = const Uuid().v4();
       await _dbService.createSession(
         sessionId: sessionId,
@@ -436,15 +486,21 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         targetDuration: targetDuration,
       );
 
+      logger.d('timer_id: ${_timerData!['timer_id']}');
+      logger.d('current_session_id: $sessionId');
+
+      // timer에 current_session_id, timer_state를 업데이트트
       await _dbService.updateTimer(
         _timerData!['timer_id'],
         {
           'last_started_at': utcNow.toIso8601String(),
           'last_updated_at': utcNow.toIso8601String(),
-          'session_id': sessionId,
-          'state': 'RUNNING',
+          'current_session_id': sessionId,
+          'timer_state': 'RUNNING',
         },
       );
+      // 업데이트한 timer를 다시 불러와 전역변수 업데이트
+      _timerData = await _dbService.getTimer(_timerData!['week_start']);
       _currentState = "RUNNING";
       _currentSessionMode = mode;
       _currentSessionTargetDuration = targetDuration;
@@ -455,10 +511,13 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       _currentActivityIcon = activity['activity_icon'];
       _currentActivityColor = activity['activity_color'];
 
+      // 타이머 실행
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
         _onTimerTick(sessionId: sessionId);
       });
     } catch (e) {
+      // 오류 발생 시 로그 기록 후 상위 호출자에게 예외 전파
+      logger.e('타이머 시작 중 오류 발생: $e');
       rethrow;
     }
   }
@@ -472,13 +531,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       final timerData = _timerData;
 
       if (timerData == null) {
-        print('타이머 데이터를 찾을 수 없습니다.');
-        await _errorService.createError(
-          errorCode: 'TIMER_NOT_FOUND',
-          errorMessage: 'Timer data not found for weekStart',
-          errorAction: 'Starting timer',
-          severityLevel: 'medium',
-        );
+        // error log
         return;
       }
 
@@ -491,8 +544,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       _currentState = 'RUNNING';
       _currentSessionMode = lastSession['mode'];
       _currentSessionTargetDuration = lastSession['target_duration'];
-      _currentSessionDuration =
-          lastSession['session_duration'] + elapsedSeconds;
+      _currentSessionDuration = lastSession['duration'] + elapsedSeconds;
       _isRunning = true;
       _currentActivityId = lastSession['activity_id'];
       _currentActivityName = lastSession['activity_name'];
@@ -500,88 +552,101 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       _currentActivityColor = lastSession['activity_color'];
 
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        _onTimerTick(sessionId: timerData['session_id']);
+        _onTimerTick(sessionId: timerData['current_session_id']);
       });
     } catch (e) {
-      print("Error in restarting: $e");
-      await _errorService.createError(
-        errorCode: 'TIMER_RESTART_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Restart timer',
-        severityLevel: 'critical',
-      );
+      // error log
     }
   }
 
-  Future<void> resumeTimer({required String sessionId}) async {
+  Future<void> resumeTimer({required String sessionId, bool updateUIImmediately = false}) async {
     try {
-      DateTime now = DateTime.now().toUtc();
-
-      // 타이머 데이터 가져오기
-      final timerData = _timerData;
-
-      if (timerData == null) {
-        print('타이머 데이터를 찾을 수 없습니다.');
-        await _errorService.createError(
-          errorCode: 'TIMER_NOT_FOUND',
-          errorMessage: 'Timer data not found for weekStart',
-          errorAction: 'Starting timer',
-          severityLevel: 'medium',
-        );
-        return;
+      // sessionId 유효성 검사
+      if (sessionId.isEmpty) {
+        print('Warning: Invalid sessionId provided to resumeTimer');
+        sessionId = _timerData?['current_session_id'];
       }
 
-      _timer?.cancel();
+      // UI 즉시 업데이트
+      if (updateUIImmediately) {
+        _currentState = 'RUNNING';
+        _isRunning = true;
+        notifyListeners();
 
-      final lastSession = await _dbService.getSession(sessionId);
+        // 타이머 즉시 시작
+        _timer?.cancel();
+        _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          _onTimerTick(sessionId: sessionId);
+        });
+      }
 
+      // 필요한 경우에만 세션 정보 로드 (최소화)
+      if (_currentSessionMode == null || _currentActivityId == null) {
+        final lastSession = await _dbService.getSession(sessionId);
+        if (lastSession != null) {
+          _currentSessionMode = lastSession['mode'];
+          _currentSessionTargetDuration = lastSession['target_duration'];
+          _currentSessionDuration = lastSession['duration'];
+          _currentActivityId = lastSession['activity_id'];
+          _currentActivityName = lastSession['activity_name'];
+          _currentActivityIcon = lastSession['activity_icon'];
+          _currentActivityColor = lastSession['activity_color'];
+        }
+      }
+
+      // 백그라운드에서 DB 업데이트
+      DateTime now = DateTime.now().toUtc();
       await _dbService.updateTimer(
         _timerData!['timer_id'],
         {
           'last_updated_at': now.toIso8601String(),
-          'state': 'RUNNING',
+          'timer_state': 'RUNNING',
         },
       );
-      _currentState = 'RUNNING';
-      _currentSessionMode = lastSession!['mode'];
-      _currentSessionTargetDuration = lastSession['target_duration'];
-      _currentSessionDuration = lastSession['session_duration'];
-      _isRunning = true;
-      _currentActivityId = lastSession['activity_id'];
-      _currentActivityName = lastSession['activity_name'];
-      _currentActivityIcon = lastSession['activity_icon'];
-      _currentActivityColor = lastSession['activity_color'];
 
-      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        _onTimerTick(sessionId: timerData['session_id']);
-      });
+      // UI 업데이트가 아직 안되었으면 처리
+      if (!updateUIImmediately) {
+        _currentState = 'RUNNING';
+        _isRunning = true;
+
+        _timer?.cancel();
+        _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          _onTimerTick(sessionId: sessionId);
+        });
+
+        notifyListeners();
+      }
     } catch (e) {
-      print("Error in resuming: $e");
-      await _errorService.createError(
-        errorCode: 'TIMER_RESUME_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Resuming timer',
-        severityLevel: 'critical',
-      );
+      print('Error in resumeTimer: $e');
     }
   }
 
-  Future<void> pauseTimer() async {
-    DateTime now = DateTime.now();
-    DateTime utcNow = now.toUtc();
-
-    try {
+  Future<void> pauseTimer({bool updateUIImmediately = false}) async {
+    if (updateUIImmediately) {
+      // UI 즉시 업데이트
+      _currentState = 'PAUSED';
       _timer?.cancel();
+      notifyListeners();
+    }
+
+    // 백그라운드에서 DB 업데이트
+    try {
+      DateTime now = DateTime.now().toUtc();
       await _dbService.updateTimer(
         _timerData!['timer_id'],
         {
-          'last_updated_at': utcNow.toIso8601String(),
-          'state': 'PAUSED',
+          'last_updated_at': now.toIso8601String(),
+          'timer_state': 'PAUSED',
         },
       );
-      _currentState = 'PAUSED';
+
+      if (!updateUIImmediately) {
+        _currentState = 'PAUSED';
+        _timer?.cancel();
+        notifyListeners();
+      }
     } catch (e) {
-      rethrow;
+      print('Error in pauseTimer: $e');
     }
   }
 
@@ -595,16 +660,12 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       _currentSessionDuration++;
       _remainingSeconds--;
 
-      _dbService.updateSession(
-          sessionId: sessionId, seconds: _currentSessionDuration);
+      _dbService.updateSession(sessionId: sessionId, seconds: _currentSessionDuration);
 
-      bool isExceeded = _currentSessionDuration >=
-              (_currentSessionTargetDuration ?? _remainingSeconds) ||
-          _remainingSeconds <= 0;
+      bool isExceeded = _currentSessionDuration >= (_currentSessionTargetDuration ?? _remainingSeconds) || _remainingSeconds <= 0;
       if (isExceeded) {
         // exceeded 시 세션 시간을 목표 시간으로 고정
-        _currentSessionDuration =
-            (_currentSessionTargetDuration ?? _remainingSeconds);
+        _currentSessionDuration = (_currentSessionTargetDuration ?? _remainingSeconds);
         _isExceeded = true;
 
         // 타이머 정지
@@ -620,8 +681,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<void> stopTimer(
-      {required bool isExceeded, required String sessionId}) async {
+  Future<void> stopTimer({required bool isExceeded, required String sessionId}) async {
     print('stopTimer called : $sessionId');
 
     try {
@@ -660,8 +720,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
       // 2) _timerData 및 'timer_id' 체크
       if (_timerData == null || !_timerData!.containsKey('timer_id')) {
-        print(
-            'Error: _timerData or timer_id is null => cannot update timer status');
+        print('Error: _timerData or timer_id is null => cannot update timer status');
         return;
       }
       await _dbService.updateTimer(
@@ -669,7 +728,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         {
           'last_updated_at': DateTime.now().toUtc().toIso8601String(),
           'last_ended_at': DateTime.now().toUtc().toIso8601String(),
-          'state': 'STOP',
+          'timer_state': 'STOP',
         },
       );
       _currentState = 'STOP';
@@ -678,19 +737,13 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
       notifyListeners();
     } catch (e) {
-      print('Error stopping timer: $e');
-      await _errorService.createError(
-        errorCode: 'TIMER_STOP_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Stopping timer',
-        severityLevel: 'critical',
-      );
+      // error log
     }
   }
 
   void resetCurrentSession() {
     _currentSessionDuration = 0;
-    _currentSessionMode = 'SESSIONNORMAL';
+    _currentSessionMode = 'NORMAL';
     _currentSessionTargetDuration = _remainingSeconds;
   }
 
@@ -711,22 +764,10 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
         await _dbService.updateTimer(timerId, updatedData);
       } else {
-        print('Timer data not found for weekStart: $weekStart');
-        await _errorService.createError(
-          errorCode: 'TIMER_DATA_NOT_FOUND',
-          errorMessage: 'No timer data found for weekStart: $weekStart',
-          errorAction: 'Fetching timer data in _updateTimerDataInDatabase',
-          severityLevel: 'medium',
-        );
+        // error log
       }
     } catch (e) {
-      print('Error updating timer data in database: $e');
-      await _errorService.createError(
-        errorCode: 'UPDATE_TIMER_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Updating timer data in _updateTimerDataInDatabase',
-        severityLevel: 'high',
-      );
+      // error log
     }
   }
 
@@ -744,7 +785,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   String getWeekStart(DateTime date) {
     int weekday = date.weekday;
-    DateTime weekStart = date.subtract(Duration(days: weekday - 1));
+    // 월요일을 기준으로 주 시작일을 계산 (월요일이 1, 일요일이 7)
+    DateTime weekStart = date.subtract(Duration(days: weekday - 1)).copyWith(hour: 0, minute: 0, second: 0, millisecond: 0);
     return weekStart.toIso8601String().split('T').first;
   }
 
@@ -756,7 +798,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     }).toList();
   }
 
-// 주간 활동 데이터 초기화 메서드
+  // 주간 활동 데이터 초기화 메서드
   void initializeWeeklyActivityData() async {
     try {
       List<Map<String, dynamic>> logs = await activityLogs; // 활동 로그 데이터 가져오기
@@ -767,12 +809,12 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       for (var log in logs) {
         try {
           // 로그 데이터의 필드 유효성 검사
-          if (log['start_time'] == null || !(log['start_time'] is String)) {
+          if (log['start_time'] == null || log['start_time'] is! String) {
             throw Exception('Invalid or missing start_time in log: $log');
           }
 
           String startTimeString = log['start_time'];
-          int duration = log['session_duration'] ?? 0;
+          int duration = log['duration'] ?? 0;
           int restTime = log['rest_time'] ?? 0; // rest_time 가져오기
 
           if (startTimeString.isNotEmpty) {
@@ -783,19 +825,10 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
             double actualDuration = (duration - restTime) / 60.0;
 
             // 주간 활동 데이터에 추가 (분 단위)
-            _weeklyActivityData[dayOfWeek] =
-                (_weeklyActivityData[dayOfWeek] ?? 0) + actualDuration;
+            _weeklyActivityData[dayOfWeek] = (_weeklyActivityData[dayOfWeek] ?? 0) + actualDuration;
           }
         } catch (e) {
-          // 개별 로그 처리 중 에러 발생 시 로그 기록 및 저장
-          print('Error processing log: $log, Error: $e');
-          await _errorService.createError(
-            errorCode: 'PROCESS_LOG_FAILED',
-            errorMessage: e.toString(),
-            errorAction:
-                'Processing individual log in initializeWeeklyActivityData',
-            severityLevel: 'medium',
-          );
+          // error log
           continue; // 다른 로그 처리 계속
         }
       }
@@ -805,148 +838,122 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         notifyListeners();
       }
     } catch (e) {
-      // 메서드 전체 실행 중 에러 처리
-      print('Error initializing weekly activity data: $e');
-      await _errorService.createError(
-        errorCode: 'INITIALIZE_WEEKLY_ACTIVITY_FAILED',
-        errorMessage: e.toString(),
-        errorAction:
-            'Initializing weekly activity data in initializeWeeklyActivityData',
-        severityLevel: 'high',
-      );
+      // error log
     }
   }
 
-// activityLogs 메서드 추가 - 활동 로그 가져오기
   Future<List<Map<String, dynamic>>> get activityLogs async {
     try {
       DateTime now = DateTime.now();
-      // 주 시작과 종료 날짜 설정
-      DateTime weekStart = DateTime(now.year, now.month, now.day)
-          .subtract(Duration(days: now.weekday - 1));
-      DateTime weekEnd = weekStart
-          .add(const Duration(days: 7))
-          .subtract(const Duration(seconds: 1));
+      // _statsProvider.weekOffset을 사용하여 원하는 주(예: -1: 지난 주, 0: 이번 주, 1: 다음 주)를 계산
+      int offset = _statsProvider.weekOffset;
+      DateTime weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1)).add(Duration(days: offset * 7));
+      DateTime weekEnd = weekStart.add(const Duration(days: 7)).subtract(const Duration(seconds: 1));
 
-      // 모든 활동 로그 가져오기
-      List<Map<String, dynamic>> allLogs =
-          await _dbService.getSessionsWithinDateRange(
+      // 해당 주 범위의 활동 로그를 DB에서 가져오기
+      List<Map<String, dynamic>> allLogs = await _dbService.getSessionsWithinDateRange(
         startDate: weekStart,
         endDate: weekEnd,
       );
 
-      // 이번 주의 활동 로그만 필터링
+      // 주간 활동 로그만 필터링
       List<Map<String, dynamic>> weeklyLogs = allLogs.where((log) {
         try {
-          // 로그의 시작 시간 유효성 검사
           String? startTimeString = log['start_time'];
-
           if (startTimeString != null && startTimeString.isNotEmpty) {
             DateTime startTime = DateTime.parse(startTimeString).toLocal();
-            return !startTime.isBefore(weekStart) &&
-                startTime.isBefore(weekEnd);
+            return !startTime.isBefore(weekStart) && startTime.isBefore(weekEnd);
           }
         } catch (e) {
-          print('Error parsing log: $log, Error: $e');
-          _errorService.createError(
-            errorCode: 'ACTIVITY_LOG_PARSE_FAILED',
-            errorMessage: e.toString(),
-            errorAction: 'Filtering logs in activityLogs',
-            severityLevel: 'medium',
-          );
+          // 에러 발생 시 해당 로그는 제외
         }
-        return false; // 유효하지 않은 로그는 제외
+        return false;
       }).toList();
 
       return weeklyLogs;
     } catch (e) {
-      print('Error fetching activity logs: $e');
-      await _errorService.createError(
-        errorCode: 'FETCH_ACTIVITY_LOGS_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Fetching all activity logs in activityLogs',
-        severityLevel: 'high',
-      );
-      return []; // 에러 발생 시 빈 리스트 반환
+      // 에러 발생 시 빈 리스트 반환
+      return [];
     }
   }
 
-// 활동 데이터를 저장할 맵
+  // 활동 데이터를 저장할 맵
   Map<DateTime, int> _heatMapDataSet = {};
 
-// heatMapDataSet의 getter
+  // heatMapDataSet의 getter
   Map<DateTime, int> get heatMapDataSet => _heatMapDataSet;
-
-// 활동 로그 데이터를 기반으로 heatmap 데이터를 초기화하는 메서드
-  Future<void> initializeHeatMapData() async {
+  Future<void> initializeHeatMapData({int? year, int? month}) async {
     try {
       DateTime now = DateTime.now();
-      // 주 시작과 종료 날짜 설정
-      DateTime weekStart = DateTime(now.year, now.month, now.day)
-          .subtract(Duration(days: now.weekday - 1));
-      DateTime weekEnd = weekStart
-          .add(const Duration(days: 7))
-          .subtract(const Duration(seconds: 1));
+      int selectedYear = year ?? now.year;
+      int selectedMonth = month ?? now.month;
 
-      // DB에서 모든 세션 데이터를 가져옴
-      List<Map<String, dynamic>> logs =
-          await _dbService.getSessionsWithinDateRange(
-        startDate: weekStart,
-        endDate: weekEnd,
+      // 선택한 월의 시작일과 종료일 계산
+      DateTime monthStart = DateTime(selectedYear, selectedMonth, 1);
+      DateTime monthEnd;
+      if (selectedMonth == 12) {
+        monthEnd = DateTime(selectedYear + 1, 1, 1);
+      } else {
+        monthEnd = DateTime(selectedYear, selectedMonth + 1, 1);
+      }
+
+      // DB에서 세션 데이터를 가져옴
+      List<Map<String, dynamic>> logs = await _dbService.getSessionsWithinDateRange(
+        startDate: monthStart,
+        endDate: monthEnd,
       );
+      debugPrint("initializeHeatMapData: Retrieved ${logs.length} logs from DB");
 
-      // 맵 초기화
       _heatMapDataSet = {};
 
+      debugPrint("데이터 로드 완료: $_heatMapDataSet");
       for (var log in logs) {
         try {
           String? startTimeString = log['start_time'];
-          int duration = log['session_duration'] ?? 0;
+          int duration = log['duration'] ?? 0;
+          debugPrint("Processing log: start_time = $startTimeString, duration = $duration (seconds)");
 
-          // 시작 시간이 존재하고 비어있지 않은 경우만 처리
           if (startTimeString != null && startTimeString.isNotEmpty) {
             DateTime date = DateTime.parse(startTimeString).toLocal();
-
-            // 날짜만 사용하는 방식으로 변환
+            // 날짜만 사용하기 위해 시간 정보를 제거
             DateTime dateOnly = DateTime(date.year, date.month, date.day);
-
-            // duration이 음수인 경우 0으로 처리
             int effectiveDuration = max(0, duration);
 
-            // 기존 값이 있으면 누적, 없으면 새로 추가
+            debugPrint("Date: $dateOnly, Duration: $effectiveDuration seconds (${effectiveDuration / 3600} hours)");
+
             _heatMapDataSet.update(
               dateOnly,
-              (existing) =>
-                  existing + (effectiveDuration ~/ 60), // 분 단위로 변환하여 누적
-              ifAbsent: () => (effectiveDuration ~/ 60), // 분 단위로 변환하여 저장
+              (existing) {
+                int newValue = existing + effectiveDuration;
+                debugPrint("Updating $dateOnly: existing = $existing, new = $newValue seconds");
+                return newValue;
+              },
+              ifAbsent: () {
+                debugPrint("Adding new entry for $dateOnly: $effectiveDuration seconds");
+                return effectiveDuration;
+              },
             );
           } else {
-            // 시작 시간이 없는 경우 에러 기록
-            throw Exception('Missing or invalid start_time in log: $log');
+            debugPrint("Skipping log due to missing start_time: $log");
           }
         } catch (e) {
-          // 개별 로그 처리 중 에러 발생 시 에러 서비스에 기록
-          print('Error processing log: $log, Error: $e');
-          await _errorService.createError(
-            errorCode: 'HEATMAP_LOG_PROCESS_FAILED',
-            errorMessage: e.toString(),
-            errorAction: 'Processing individual log in initializeHeatMapData',
-            severityLevel: 'medium',
-          );
+          debugPrint("Error processing log: $e");
         }
       }
 
-      // 데이터 갱신 알림
+      if (_heatMapDataSet.isEmpty) {
+        debugPrint("WARNING: HeatMap dataset is empty after processing!");
+      } else {
+        debugPrint("Final heatMapDataSet (${_heatMapDataSet.length} entries):");
+        _heatMapDataSet.forEach((date, seconds) {
+          debugPrint("  $date: $seconds seconds (${seconds / 3600} hours)");
+        });
+      }
+      debugPrint("데이터 로드 완료: $_heatMapDataSet");
+
       notifyListeners();
     } catch (e) {
-      // 전체 초기화 과정에서 에러 발생 시 에러 서비스에 기록
-      print('Error initializing heatmap data: $e');
-      await _errorService.createError(
-        errorCode: 'HEATMAP_INITIALIZATION_FAILED',
-        errorMessage: e.toString(),
-        errorAction: 'Initializing heatmap data in initializeHeatMapData',
-        severityLevel: 'high',
-      );
+      debugPrint("Exception in initializeHeatMapData: $e");
     }
   }
 }

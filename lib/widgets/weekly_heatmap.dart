@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:project1/utils/color_service.dart';
-import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -14,13 +13,13 @@ class WeeklyHeatmap extends StatefulWidget {
 }
 
 class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
-  late final StatsProvider _statsProvider; // 주입받을 DatabaseService
+  late StatsProvider _statsProvider;
 
+  // heatmapData 구조: { hourKey: { dayKey: { activityId: minutes } } }
   Map<String, Map<String, Map<String, int>>> heatmapData = {};
 
   final List<String> dayKeys = ['월', '화', '수', '목', '금', '토', '일'];
-  List<String> allHourKeys =
-      List.generate(24, (index) => '${index.toString().padLeft(2, '0')}:00');
+  List<String> allHourKeys = List.generate(24, (index) => '${index.toString().padLeft(2, '0')}:00');
   List<String> activeHourKeys = [];
 
   final Map<String, Color> activityColorMap = {};
@@ -32,14 +31,25 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
   @override
   void initState() {
     super.initState();
-    _statsProvider = Provider.of<StatsProvider>(context,
-        listen: false); // DatabaseService 주입
+    _statsProvider = Provider.of<StatsProvider>(context, listen: false);
+    // 리스너 추가: weekOffset 변경 시 heatmap 재생성
+    _statsProvider.addListener(_onStatsProviderChanged);
+    generateWeeklyHeatmap();
+  }
+
+  @override
+  void dispose() {
+    _statsProvider.removeListener(_onStatsProviderChanged);
+    super.dispose();
+  }
+
+  void _onStatsProviderChanged() {
+    // weekOffset가 변경되면 heatmap 데이터를 다시 생성
     generateWeeklyHeatmap();
   }
 
   Future<void> initializeActivityColors() async {
-    List<Map<String, dynamic>> activities =
-        await _statsProvider.getActivities();
+    List<Map<String, dynamic>> activities = await _statsProvider.getActivities();
     for (var activity in activities) {
       String activityId = activity['activity_id'];
       Color color = ColorService.hexToColor(activity['activity_color']);
@@ -50,10 +60,15 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
 
   Future<void> generateWeeklyHeatmap() async {
     try {
+      setState(() {
+        isLoading = true;
+        errorMessage = null;
+      });
+
       await initializeActivityColors();
 
-      List<Map<String, dynamic>> sessions =
-          await _statsProvider.getSessionsForWeek(0);
+      // offset를 반영하여 해당 주의 세션 데이터 로드
+      List<Map<String, dynamic>> sessions = await _statsProvider.getSessionsForWeek(_statsProvider.weekOffset);
 
       Set<String> activeHourSet = {};
 
@@ -62,20 +77,17 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
       for (var session in sessions) {
         String activityId = session['activity_id'];
         DateTime startTime = DateTime.parse(session['start_time']).toLocal();
-        DateTime endTime = session['end_time'] != null
-            ? DateTime.parse(session['end_time']).toLocal()
-            : DateTime.now();
+        DateTime endTime = session['end_time'] != null ? DateTime.parse(session['end_time']).toLocal() : DateTime.now();
 
         // session_duration 활용 (초 단위)
-        int sessionDuration = session['session_duration'] ?? 0;
+        int sessionDuration = session['duration'] ?? 0;
         int totalSeconds = endTime.difference(startTime).inSeconds;
         if (totalSeconds == 0) totalSeconds = 1;
         double ratio = sessionDuration / totalSeconds;
 
         DateTime current = startTime;
         while (current.isBefore(endTime)) {
-          DateTime nextHour = DateTime(
-              current.year, current.month, current.day, current.hour + 1);
+          DateTime nextHour = DateTime(current.year, current.month, current.day, current.hour + 1);
           DateTime segmentEnd = endTime.isBefore(nextHour) ? endTime : nextHour;
 
           int rawMinutes = segmentEnd.difference(current).inMinutes;
@@ -115,8 +127,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
   }
 
   Widget buildWeeklyHeatmapWidget() {
-    List<String> displayHourKeys =
-        widget.showAllHours ? allHourKeys : activeHourKeys;
+    List<String> displayHourKeys = widget.showAllHours ? allHourKeys : activeHourKeys;
 
     if (!isLoading && displayHourKeys.isEmpty) {
       return const Center(
@@ -146,11 +157,10 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
                   alignment: Alignment.center,
                   child: Text(
                     dayKey,
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
           ...displayHourKeys.map((hourKey) {
@@ -166,8 +176,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
                   ),
                 ),
                 ...dayKeys.map((dayKey) {
-                  Map<String, int>? activityTimes =
-                      heatmapData[hourKey]?[dayKey];
+                  Map<String, int>? activityTimes = heatmapData[hourKey]?[dayKey];
 
                   if (activityTimes == null || activityTimes.isEmpty) {
                     return Container(
@@ -176,44 +185,35 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
                       margin: const EdgeInsets.all(1),
                     );
                   } else {
-                    String dominantActivityId = activityTimes.entries
-                        .reduce((a, b) => a.value >= b.value ? a : b)
-                        .key;
+                    String dominantActivityId = activityTimes.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
                     int dominantMinutes = activityTimes[dominantActivityId]!;
 
-                    Color baseColor =
-                        activityColorMap[dominantActivityId] ?? Colors.blue;
+                    Color baseColor = activityColorMap[dominantActivityId] ?? Colors.blue;
                     double intensity = (dominantMinutes / 60.0).clamp(0.2, 1.0);
                     Color color = baseColor.withOpacity(intensity);
 
-                    String activityName =
-                        activityNames[dominantActivityId] ?? '알 수 없는 활동';
+                    String activityName = activityNames[dominantActivityId] ?? '알 수 없는 활동';
 
                     return Container(
                       width: 40,
                       height: 20,
-                      decoration: BoxDecoration(
-                          color: color,
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(6))),
+                      decoration: BoxDecoration(color: color, borderRadius: const BorderRadius.all(Radius.circular(6))),
                       margin: const EdgeInsets.all(1),
                       child: Tooltip(
-                        message:
-                            '$dayKey $hourKey\n$activityName\n$dominantMinutes분',
+                        message: '$dayKey $hourKey\n$activityName\n$dominantMinutes분',
                         child: Center(
                           child: Text(
                             dominantMinutes > 0 ? '$dominantMinutes' : '',
-                            style: const TextStyle(
-                                fontSize: 8, color: Colors.white),
+                            style: const TextStyle(fontSize: 8, color: Colors.white),
                           ),
                         ),
                       ),
                     );
                   }
-                }).toList(),
+                }),
               ],
             );
-          }).toList(),
+          }),
         ],
       ),
     );

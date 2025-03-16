@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:project1/screens/login_page.dart';
 import 'package:project1/utils/auth_provider.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:provider/provider.dart';
@@ -22,14 +21,12 @@ class _SettingPageState extends State<SettingPage> {
   bool keepScreenOn = false; // 화면 켜기 상태 변수
 
   int selectedValue = 100; // 기본값 (시간 단위)
-  final List<int> values =
-      List.generate(13, (index) => index * 5 + 40); // 40부터 100까지의 숫자 목록 생성
+  final List<int> values = List.generate(13, (index) => index * 5 + 40); // 40부터 100까지의 숫자 목록 생성
 
   @override
   void initState() {
     super.initState();
-    _dbService = Provider.of<DatabaseService>(context,
-        listen: false); // DatabaseService 주입
+    _dbService = Provider.of<DatabaseService>(context, listen: false); // DatabaseService 주입
 
     _loadUserTotalSeconds();
   }
@@ -39,8 +36,7 @@ class _SettingPageState extends State<SettingPage> {
     Map<String, dynamic>? userData = await authProvider.getUserData();
     if (userData != null) {
       setState(() {
-        selectedValue =
-            (userData['total_seconds'] ?? 360000) ~/ 3600; // 초를 시간으로 변환
+        selectedValue = (userData['total_seconds'] ?? 360000) ~/ 3600; // 초를 시간으로 변환
       });
     }
   }
@@ -64,8 +60,7 @@ class _SettingPageState extends State<SettingPage> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final isDarkMode =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     final List<Map<String, dynamic>> generalItems = [
       {
@@ -162,8 +157,7 @@ class _SettingPageState extends State<SettingPage> {
             );
           } else {
             const snackBar = SnackBar(
-              content:
-                  Text('구글 폼을 열 수 없습니다. 링크: https://forms.gle/your-form-id'),
+              content: Text('구글 폼을 열 수 없습니다. 링크: https://forms.gle/your-form-id'),
             );
             ScaffoldMessenger.of(context).showSnackBar(snackBar);
           }
@@ -196,7 +190,7 @@ class _SettingPageState extends State<SettingPage> {
         'trailing': null,
       },
     ];
-    Widget _buildCategory(String title, List<Map<String, dynamic>> items) {
+    Widget buildCategory(String title, List<Map<String, dynamic>> items) {
       return Container(
         margin: const EdgeInsets.only(top: 16.0, bottom: 4.0),
         child: Column(
@@ -233,23 +227,19 @@ class _SettingPageState extends State<SettingPage> {
                           }
                         },
                         borderRadius: i == 0
-                            ? const BorderRadius.vertical(
-                                top: Radius.circular(16.0))
+                            ? const BorderRadius.vertical(top: Radius.circular(16.0))
                             : i == items.length - 1
-                                ? const BorderRadius.vertical(
-                                    bottom: Radius.circular(16.0))
+                                ? const BorderRadius.vertical(bottom: Radius.circular(16.0))
                                 : BorderRadius.zero,
                         child: ListTile(
                           leading: Icon(items[i]['icon']),
                           title: Text(
                             items[i]['title'],
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w600),
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                           ),
                           subtitle: Text(
                             items[i]['description'],
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.grey),
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
                           ),
                           trailing: items[i]['trailing'],
                         ),
@@ -283,11 +273,11 @@ class _SettingPageState extends State<SettingPage> {
       body: ListView(
         padding: const EdgeInsets.all(18), // 화면의 좌우 여백 설정
         children: [
-          _buildCategory('일반 설정', generalItems),
-          _buildCategory('유틸리티', utilityItems),
-          _buildCategory('앱 설정', appSettingsItems),
-          _buildCategory('계정', accountItems),
-          _buildCategory('정보', informationItems),
+          buildCategory('일반 설정', generalItems),
+          buildCategory('유틸리티', utilityItems),
+          buildCategory('앱 설정', appSettingsItems),
+          buildCategory('계정', accountItems),
+          buildCategory('정보', informationItems),
         ],
       ),
     );
@@ -306,8 +296,7 @@ class _SettingPageState extends State<SettingPage> {
             children: [
               Expanded(
                 child: CupertinoPicker(
-                  scrollController: FixedExtentScrollController(
-                      initialItem: selectedValue ~/ 5),
+                  scrollController: FixedExtentScrollController(initialItem: selectedValue ~/ 5),
                   itemExtent: 40,
                   onSelectedItemChanged: (int index) {
                     setState(() {
@@ -318,8 +307,7 @@ class _SettingPageState extends State<SettingPage> {
                     return Center(
                       child: Text(
                         '$value 시간',
-                        style:
-                            const TextStyle(fontSize: 24, color: Colors.black),
+                        style: const TextStyle(fontSize: 24, color: Colors.black),
                       ),
                     );
                   }).toList(),
@@ -351,18 +339,13 @@ class _SettingPageState extends State<SettingPage> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.white, // 배경색 하얀색으로 변경
-          title: const Text('어트리뷰션',
-              style: TextStyle(color: Colors.black)), // 글씨 색상 변경
+          title: const Text('어트리뷰션', style: TextStyle(color: Colors.black)), // 글씨 색상 변경
           content: const SingleChildScrollView(
             child: ListBody(
               children: [
-                Text('• 아바타 출처: diceBear, flaticon',
-                    style: TextStyle(color: Colors.black)),
-                Text(
-                    '• 아이콘 출처: flaticon, https://www.flaticon.com/free-icons/dinosaur',
-                    style: TextStyle(color: Colors.black)),
-                Text('• 라이브러리: Flutter, Provider',
-                    style: TextStyle(color: Colors.black)),
+                Text('• 아바타 출처: diceBear, flaticon', style: TextStyle(color: Colors.black)),
+                Text('• 아이콘 출처: flaticon, https://www.flaticon.com/free-icons/dinosaur', style: TextStyle(color: Colors.black)),
+                Text('• 라이브러리: Flutter, Provider', style: TextStyle(color: Colors.black)),
                 // 추가적인 어트리뷰션 내용
               ],
             ),

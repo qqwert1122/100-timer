@@ -1,27 +1,16 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path/path.dart';
-import 'package:project1/utils/auth_provider.dart';
-import 'package:project1/utils/device_info_service.dart';
-import 'package:project1/utils/timer_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:project1/utils/error_service.dart';
 import 'package:uuid/uuid.dart';
 
 class DatabaseService {
   Database? _database;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final ErrorService _errorService;
-  final DeviceInfoService _deviceInfoService;
 
-  DatabaseService({
-    required DeviceInfoService deviceInfoService,
-    required ErrorService errorService,
-  })  : _errorService = errorService,
-        _deviceInfoService = deviceInfoService;
+  DatabaseService();
   /*
 
       @DATABASE
@@ -72,8 +61,7 @@ class DatabaseService {
         last_ended_at TEXT,
         last_updated_at TEXT,
         is_deleted INTEGER DEFAULT 0,
-        timezone TEXT,
-        UNIQUE (uid, week_start)
+        timezone TEXT
       )
     ''');
 
@@ -100,8 +88,7 @@ class DatabaseService {
         is_deleted INTEGER DEFAULT 0,
         is_ended INTEGER DEFAULT 0,
         timezone TEXT,
-        long_session_flag INTEGER,
-        user_agent TEXT
+        long_session_flag INTEGER
       ) 
     ''');
 
@@ -186,13 +173,14 @@ class DatabaseService {
       );
 
       if (existingTimers.isNotEmpty) {
-        // error log
-
         return;
       }
 
-      await db.insert('timers', timerData,
-          conflictAlgorithm: ConflictAlgorithm.replace); // 충돌할 경우 대체
+      await db.insert(
+        'timers',
+        timerData,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      ); // 충돌할 경우 대체
     } catch (e) {
       // error log
     }
@@ -220,8 +208,7 @@ class DatabaseService {
   }
 
   // 타이머 업데이트
-  Future<void> updateTimer(
-      String timerId, Map<String, dynamic> updatedData) async {
+  Future<void> updateTimer(String timerId, Map<String, dynamic> updatedData) async {
     final db = await database;
     String now = DateTime.now().toUtc().toIso8601String();
 
@@ -311,8 +298,7 @@ class DatabaseService {
     };
 
     try {
-      await db.insert('activities', activity,
-          conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.insert('activities', activity, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       // error log
     }
@@ -502,11 +488,7 @@ class DatabaseService {
 
     await db.update(
       'todos',
-      {
-        'is_deleted': 1,
-        'deleted_at': DateTime.now().toIso8601String(),
-        'last_updated_at': DateTime.now().toIso8601String()
-      },
+      {'is_deleted': 1, 'deleted_at': DateTime.now().toIso8601String(), 'last_updated_at': DateTime.now().toIso8601String()},
       where: 'todo_id = ?',
       whereArgs: [todoId],
     );
@@ -518,10 +500,7 @@ class DatabaseService {
 
     await db.update(
       'todos',
-      {
-        'is_completed': isCompleted ? 1 : 0,
-        'last_updated_at': DateTime.now().toIso8601String()
-      },
+      {'is_completed': isCompleted ? 1 : 0, 'last_updated_at': DateTime.now().toIso8601String()},
       where: 'todo_id = ?',
       whereArgs: [todoId],
     );
@@ -573,7 +552,6 @@ class DatabaseService {
       required String mode,
       required int targetDuration}) async {
     final db = await database;
-    final deviceInfo = await _deviceInfoService.getDeviceInfo();
 
     final now = DateTime.now().toUtc().toIso8601String();
     final timezone = DateTime.now().timeZoneName;
@@ -601,7 +579,6 @@ class DatabaseService {
         'is_ended': 0,
         'timezone': timezone,
         'long_session_flag': 0,
-        'user_agent': deviceInfo['deviceInfo'] ?? '',
       };
 
       await db.insert('sessions', session);
@@ -653,42 +630,57 @@ class DatabaseService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getWeeklySessions({
-    required String weekStart,
-  }) async {
-    try {
-      final db = await database;
-      final results = await db.query(
-        'sessions',
-        where: 'week_start = ? AND is_deleted = 0',
-        whereArgs: [weekStart],
-      );
-
-      return results;
-    } catch (e) {
-      // error log
-      return [];
-    }
-  }
-
   Future<List<Map<String, dynamic>>> getSessionsWithinDateRange({
     required DateTime startDate,
     required DateTime endDate,
   }) async {
     try {
       final db = await database;
+      // ISO 문자열 생성 (UTC 기준)
+      String startStr = startDate.toIso8601String();
+      String endStr = endDate.toIso8601String();
+      print("Query range: $startStr to $endStr");
+
       final List<Map<String, dynamic>> results = await db.rawQuery('''
       SELECT *      
       FROM sessions
       WHERE start_time >= ? 
         AND start_time < ?
         AND is_deleted = 0
-        AND session_duration > 60
-    ''', [startDate.toIso8601String(), endDate.toIso8601String()]);
+    ''', [startStr, endStr]);
+
+      print("getSessionsWithinDateRange returned ${results.length} sessions");
+      return results;
+    } catch (e) {
+      print("Error in getSessionsWithinDateRange: $e");
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getSessionsWithinDateRangeAndActivityId({
+    required DateTime startDate,
+    required DateTime endDate,
+    required String activityId,
+  }) async {
+    try {
+      final db = await database;
+      // ISO 문자열 생성 (UTC 기준)
+      String startStr = startDate.toIso8601String();
+      String endStr = endDate.toIso8601String();
+      print("Query range: $startStr to $endStr");
+
+      final List<Map<String, dynamic>> results = await db.rawQuery('''
+      SELECT *      
+      FROM sessions
+      WHERE start_time >= ? 
+        AND start_time < ?
+        AND is_deleted = 0
+        AND activity_id = ?
+    ''', [startStr, endStr, activityId]);
 
       return results;
     } catch (e) {
-      // error log
+      print("Error in getSessionsWithinDateRangeAndActivityId: $e");
       return [];
     }
   }
@@ -707,8 +699,9 @@ class DatabaseService {
           'last_updated_at': now.toIso8601String(),
           'long_session_flag': duration >= 3600 ? 1 : 0,
           'end_time': endTime,
-          'session_duration': duration,
-          'previous_session_duration': duration,
+          'duration': duration,
+          'original_duration': duration,
+          'session_state': 'ENDED',
         };
 
         await txn.update(
@@ -742,17 +735,15 @@ class DatabaseService {
         final now = DateTime.now().toUtc().toIso8601String();
 
         // 기존 데이터 가져오기
-        final existingDuration =
-            (session.first['session_duration'] ?? 0) as int;
+        final existingDuration = (session.first['duration'] ?? 0) as int;
 
         // 새로운 duration 계산
-        final newDuration =
-            min(86400, max(0, existingDuration + additionalDurationSeconds));
+        final newDuration = min(86400, max(0, existingDuration + additionalDurationSeconds));
 
         // 세션 업데이트
         final sessionUpdateData = {
-          'session_duration': newDuration,
-          'previous_session_duration': existingDuration,
+          'duration': newDuration,
+          'original_duration': existingDuration,
           'last_updated_at': now,
           'is_modified': 1,
         };

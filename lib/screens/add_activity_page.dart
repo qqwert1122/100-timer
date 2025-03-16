@@ -14,13 +14,13 @@ class AddActivityPage extends StatefulWidget {
   final String? activityColor; // The existing activity color when editing
 
   const AddActivityPage({
-    Key? key,
+    super.key,
     this.isEdit = false,
     this.activityId,
     this.activityName,
     this.activityIcon,
     this.activityColor,
-  }) : super(key: key);
+  });
 
   @override
   _AddActivityPageState createState() => _AddActivityPageState();
@@ -474,28 +474,28 @@ class _AddActivityPageState extends State<AddActivityPage> {
         children: [
           Row(
             children: [
-              Text(
+              const Text(
                 "선택된 색상",
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
               ),
-              SizedBox(
+              const SizedBox(
                 width: 10,
               ),
               AnimatedContainer(
-                duration: Duration(milliseconds: 300),
+                duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
                 width: 30,
                 height: 30,
                 margin: const EdgeInsets.symmetric(vertical: 2.0),
-                child: Container(),
                 decoration: BoxDecoration(
                   color: ColorService.hexToColor(selectedBaseColor.toString()),
                   borderRadius: BorderRadius.circular(8.0),
                 ),
+                child: Container(),
               ),
             ],
           ),
-          SizedBox(
+          const SizedBox(
             height: 10,
           ),
           SingleChildScrollView(
@@ -537,7 +537,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
               }).toList(),
             ),
           ),
-          SizedBox(
+          const SizedBox(
             height: 30,
           ),
           InkWell(
@@ -547,7 +547,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 borderRadius: BorderRadius.circular(16.0),
               ),
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: ListTile(
                   leading: Icon(
                     Icons.info_outlined,
@@ -562,7 +562,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                     ),
                   ),
                   subtitle: Padding(
-                    padding: EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       '활동을 오래할수록 색상이 점점 진해집니다.\n위에서 색상의 변화를 미리보고 마음에 드는 베이스 컬러를 선택해주세요.',
                       style: TextStyle(

@@ -69,7 +69,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                 return const Center(child: Text('활동 기록을 찾을 수 없습니다.'));
               } else {
                 final session = snapshot.data!;
-                final sessionDuration = session['session_duration'] ?? 0;
+                final sessionDuration = session['duration'] ?? 0;
                 final restTime = session['rest_time'] ?? 0;
                 final activityTime = sessionDuration - restTime;
 

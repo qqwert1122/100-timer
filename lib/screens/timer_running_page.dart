@@ -1,78 +1,119 @@
 import 'dart:async';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:project1/screens/timer_page.dart';
 import 'package:project1/screens/timer_result_page.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/logger_config.dart';
+import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
 
+/// 타이머 실행 화면 위젯
+/// 사용자가 선택한 활동에 대한 타이머를 실행하고 시각적으로 표시함
 class TimerRunningPage extends StatefulWidget {
+  /// 타이머 페이지 초기화에 필요한 타이머 데이터
   final Map<String, dynamic> timerData;
+  final bool isNewSession;
 
-  const TimerRunningPage({super.key, required this.timerData});
+  const TimerRunningPage({
+    super.key,
+    required this.timerData,
+    required this.isNewSession,
+  });
 
   @override
   State<TimerRunningPage> createState() => _TimerRunningPageState();
 }
 
-class _TimerRunningPageState extends State<TimerRunningPage> with TickerProviderStateMixin {
+class _TimerRunningPageState extends State<TimerRunningPage> with TickerProviderStateMixin, WidgetsBindingObserver {
+  // 애니메이션 컨트롤러 및 애니메이션 객체
   late AnimationController _messageAnimationController;
   late Animation<Offset> _messageAnimation;
   late Animation<double> _messageOpacityAnimation;
-  late final DatabaseService _dbService; // 주입받을 DatabaseService
-  late final TimerProvider timerProvider;
 
-  bool _isProviderInitialized = false;
-  bool _isTimerInitialized = false;
-  bool _isAnimationInitialized = false;
-  bool _isListenerAdded = false;
-  bool _isNavigating = false; // 네비게이션 상태 추적
+  // 서비스 객체 (의존성 주입)
+  late final DatabaseService _dbService; // 데이터베이스 서비스
+  late final TimerProvider timerProvider; // 타이머 상태 관리 Provider
+  late final StatsProvider statsProvider; // 통계 관리 provider
 
-  List<Wave> waves = [];
-  bool _showInitialMessage = true;
-  bool _isNewSession = true;
-  bool _isDarkMode = false;
-  final GlobalKey _circleKey = GlobalKey();
+  // 상태 플래그
+  bool _isTimerInitialized = false; // 타이머 초기화 여부
+  bool _isAnimationInitialized = false; // 애니메이션 초기화 여부
+  bool _isListenerAdded = false; // 리스너 등록 여부
+  bool _isNavigating = false; // 화면 전환 중 여부 (중복 방지용)
+  bool _isDarkMode = false; // 다크 모드 여부
+  bool _isPendingStateChange = false; // 즉시 버튼 상태 업데이트
 
-  late Timer _messageTimer;
-  int currentMessageIndex = 0;
-  final List<String> messages = [];
-  bool _hasShownCompletionDialog = false;
+  // 설정 관련 변수
+  final bool _isMusicOn = false; // 음악 설정
+  final bool _isLightOn = false; // 조명 설정
+  final bool _isAlarmOn = false; // 알림 설정
 
-  bool _isMusicOn = false;
-  bool _isLightOn = false;
-  bool _isAlarmOn = false;
+  // 원형 프로그레스 및 파동 애니메이션션 관련
+  List<Wave> waves = []; // 파동 애니메이션 객체 목록
+  final GlobalKey _circleKey = GlobalKey(); // 원형 프로그레스 참조용 키
+
+  // 메시지 관련 변수
+  late Timer _messageTimer; //  메시지 전환 타이머
+  int currentMessageIndex = 0; // 현재 표시 중인 메시지 인덱스
+  final List<String> messages = []; // 표시할 메시지 목록
+  bool _hasShownCompletionDialog = false; // 완료 다이얼로그 표시 여부
 
   @override
   void initState() {
     super.initState();
 
+    // 서비스 객체 초기화
     _dbService = Provider.of<DatabaseService>(context, listen: false);
     timerProvider = Provider.of<TimerProvider>(context, listen: false);
+    statsProvider = Provider.of<StatsProvider>(context, listen: false);
 
+    // 타이머 상태 변경 리스너 등록
     if (!_isListenerAdded) {
       timerProvider.addListener(_handleTimerStateChange);
       _isListenerAdded = true;
     }
 
+    // 앱 라이프사이클 옵저버 등록 (백그라운드 처리용)
+    WidgetsBinding.instance.addObserver(this);
+
+    // 타이머, 애니메이션, 메시지 초기화
     _initTimer();
     _initMessageAnimation();
     _startMessageTimer();
   }
 
-  /// 초기 타이머 실행 흐름
+  @override
+  void dispose() {
+    if (_isListenerAdded) {
+      timerProvider.removeListener(_handleTimerStateChange);
+      _isListenerAdded = false;
+    }
+    WidgetsBinding.instance.removeObserver(this);
+
+    _messageTimer.cancel();
+    _messageAnimationController.dispose();
+    _disposeAnimations();
+
+    super.dispose();
+  }
+
+  // 초기 타이머 실행 흐름
+  // 새 세션 시작 또는 기존 세션 복원 처리
   Future<void> _initTimer() async {
-    if (_isTimerInitialized) return;
+    logger.i('Timer init');
+    if (_isTimerInitialized) return; // 이미 초기화됐으면 중복 실행 방지
     try {
-      if (timerProvider.currentState == 'STOP') {
+      if (widget.isNewSession) {
+        // 새 세션 시작
         await _startNewSession();
       } else {
+        // 기존 세션 복원
         await _handleExistingSession();
       }
       _isTimerInitialized = true;
@@ -82,7 +123,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   }
 
   Future<void> _startNewSession() async {
-    print('Starting new session');
+    logger.d('Create new session');
+    // 새 타이머 시작
     await timerProvider.startTimer(
       activityId: timerProvider.currentActivityId!,
       mode: timerProvider.currentSessionMode!,
@@ -91,28 +133,69 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   }
 
   Future<void> _handleExistingSession() async {
-    print('Handling existing session');
-    final sessionId = widget.timerData['session_id'];
-    final currentSession = await _dbService.getSession(sessionId);
+    logger.d('Handling existing session');
+    try {
+      // 타이머 객체에서 session_id
+      final sessionId = widget.timerData['current_session_id'];
+      final currentSession = await _dbService.getSession(sessionId);
 
-    if (currentSession != null) {
-      final startTime = DateTime.parse(currentSession['start_time']);
-      final currentDuration = DateTime.now().difference(startTime).inSeconds;
+      if (currentSession == null) {
+        logger.d('Session data not found, starting new session');
+        await _startNewSession();
+        return;
+      }
+
+      // 이미 기록된 누적 시간 (단위: 초)
+      final previousDuration = currentSession['duration'] as int? ?? 0;
+
+      // 마지막 업데이트 시각
+      final lastUpdatedAt = DateTime.parse(currentSession['last_updated_at']);
+
+      // 마지막 업데이트 이후 경과 시간(초)
+      final elapsedSinceLastUpdate = DateTime.now().difference(lastUpdatedAt).inSeconds;
+
+      // 최종적으로 현재 세션에서 경과한 시간 = (이전까지 누적된 시간) + (마지막 업데이트 이후 추가로 흐른 시간)
+      final currentDuration = previousDuration + elapsedSinceLastUpdate;
+
       final targetDuration = currentSession['target_duration'];
 
-      print('Session details:');
-      print('Start Time: $startTime');
-      print('Current Duration: $currentDuration');
-      print('Target Duration: $targetDuration');
+      logger.d('Session details:');
+      logger.d('Session ID: $sessionId');
+      logger.d('lastUpdatedAt: $lastUpdatedAt');
+      logger.d('Current Duration: $currentDuration');
+      logger.d('Target Duration: $targetDuration');
 
       if (currentDuration >= targetDuration) {
-        print('Session exceeded target duration');
+        // targetDuration을 초과했을 경우
+        logger.i('Session exceeded target duration');
         await _handleStop(isExceeded: true, targetDuration: targetDuration);
       } else {
-        if (timerProvider.currentState == "RUNNING") {
+        if (widget.timerData['timer_state'] == "PAUSED") {
+          // 앱이 재시작되었을 때 기본적으로 일시정지 상태로
+          logger.d('Restoring paused session');
+
+          // ※ 여기에 "화면에 그려줄 활동 정보"를 TimerProvider에 적용
+          // 이미 currentSession을 가져왔으므로, 여기에 활동 정보가 들어 있음
+          timerProvider.setCurrentActivity(
+            currentSession['activity_id'] ?? '',
+            currentSession['activity_name'] ?? '',
+            currentSession['activity_icon'] ?? 'category_rounded',
+            currentSession['activity_color'] ?? '#B7B7B7',
+          );
+
+          // 혹시 필요하다면, mode / targetDuration / currentDuration 값을 강제로 세팅해줄 수도 있음:
+          timerProvider.setSessionModeAndTargetDuration(
+            mode: currentSession['mode'] ?? 'NORMAL',
+            targetDuration: currentSession['target_duration'] ?? 360000,
+          );
+        } else {
+          logger.i('Restarting running session');
           await timerProvider.restartTimer(sessionId: sessionId);
         }
       }
+    } catch (e) {
+      logger.d('Error handling existing session: $e');
+      await _startNewSession();
     }
   }
 
@@ -123,32 +206,29 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     final isExceeded = timerProvider.isExceeded;
     final currentState = timerProvider.currentState;
 
-    print('===== Timer State Changed =====');
-    print('Is Running: $isRunning');
-    print('Is Exceeded: $isExceeded');
+    logger.d('===== Timer State Changed =====');
+    logger.d('Is Running: $isRunning');
+    logger.d('Is Exceeded: $isExceeded');
+    logger.d('Current State: $currentState');
 
-    // Handle exceeding case first
+    // 애니메이션 상태 업데이트
+    _updateAnimationState(currentState);
+
+    // 타이머 초과 케이스 처리
     if (isExceeded && !_hasShownCompletionDialog) {
-      _isNavigating = true;
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TimerResultPage(
-              timerData: timerProvider.timerData!,
-              sessionDuration: timerProvider.currentSessionDuration,
-              isExceeded: true,
-            ),
-          ),
-        ).then((_) {
-          _isNavigating = false;
-        });
-      }
-      _hasShownCompletionDialog = true;
+      _navigateToResultPage(isExceeded: true);
       return;
     }
 
-    if (currentState == 'RUNNING') {
+    // 타이머 중지 케이스 처리
+    if (!isRunning && !isExceeded && currentState == 'STOP') {
+      _navigateToResultPage(isExceeded: false);
+    }
+  }
+
+// 애니메이션 상태 관리를 위한 helper 메소드
+  void _updateAnimationState(String state) {
+    if (state == 'RUNNING') {
       setState(() {
         _isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
         if (waves.isEmpty) {
@@ -161,24 +241,30 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     } else {
       _stopWaveAnimation();
     }
+  }
 
-    // Handle normal stop case
-    if (!isRunning && !isExceeded) {
-      _isNavigating = true;
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TimerResultPage(
-              timerData: timerProvider.timerData!,
-              sessionDuration: timerProvider.currentSessionDuration,
-              isExceeded: false,
-            ),
+// 결과 페이지로 이동하는 helper 메소드
+  void _navigateToResultPage({required bool isExceeded}) {
+    if (_isNavigating) return;
+    _isNavigating = true;
+
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TimerResultPage(
+            timerData: timerProvider.timerData!,
+            sessionDuration: timerProvider.currentSessionDuration,
+            isExceeded: isExceeded,
           ),
-        ).then((_) {
-          _isNavigating = false;
-        });
-      }
+        ),
+      ).then((_) {
+        _isNavigating = false;
+      });
+    }
+
+    if (isExceeded) {
+      _hasShownCompletionDialog = true;
     }
   }
 
@@ -261,7 +347,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
       _messageTimer.cancel();
 
       // 세션 종료
-      await timerProvider.stopTimer(isExceeded: isExceeded, sessionId: timer['session_id']);
+      await timerProvider.stopTimer(isExceeded: isExceeded, sessionId: timer['current_session_id']);
 
       // 애니메이션 중지
       for (var wave in waves) {
@@ -369,65 +455,87 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   }
 
   Widget _buildActivityMessage(TimerProvider timerProvider) {
-    // 현재 활동 이름과 시간을 포함한 메시지 생성
+    // 현재 활동 이름
     final currentActivityName = timerProvider.currentActivityName;
-    final currentSessionDuration = Duration(seconds: timerProvider.currentSessionDuration);
-    final minutes = currentSessionDuration.inMinutes;
 
-    messages
-      ..clear()
-      ..add(_isNewSession ? "새로운 활동을 시작했어요" : "이어서 활동해요")
-      ..add(
-          "이번주에 ${(currentActivityName ?? '전체').length > 6 ? '${(currentActivityName ?? '전체').substring(0, 6)}...' : currentActivityName ?? '전체'} 활동을 ${_formatDurationMessage(minutes)} 했어요");
-    // 현재 메시지
-    final message = messages[currentMessageIndex];
+    // FutureBuilder를 사용하여 비동기 데이터를 로드
+    return FutureBuilder<int>(
+      // 활동 ID가 null이 아닌 경우에만 통계 데이터를 가져옴
+      future: timerProvider.currentActivityId != null
+          ? statsProvider.getWeeklyDurationByActivity(timerProvider.currentActivityId!)
+          : Future.value(0),
+      builder: (context, snapshot) {
+        // 데이터 로딩 중이거나 오류가 발생한 경우 로딩 표시
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 500),
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          // 슬라이드 애니메이션
-          final slideIn = Tween<Offset>(
-            begin: const Offset(0, -1), // 위에서 내려오는 애니메이션
-            end: Offset.zero,
-          ).animate(animation);
+        logger.d(snapshot.data);
+        if (!snapshot.hasData) {
+          messages
+            ..clear()
+            ..add(widget.isNewSession ? "새로운 활동을 시작했어요" : "이어서 활동해요")
+            ..add("이번주 통계를 불러오는 중...");
+        } else {
+          // 데이터가 로드된 경우 메시지 업데이트
+          final seconds = snapshot.data ?? 0;
+          // 초를 분으로 변환
+          final minutes = seconds ~/ 60;
+          messages
+            ..clear()
+            ..add(widget.isNewSession ? "새로운 활동을 시작했어요" : "이어서 활동해요")
+            ..add(
+                "이번주에 ${(currentActivityName ?? '전체').length > 6 ? '${(currentActivityName ?? '전체').substring(0, 6)}...' : currentActivityName ?? '전체'} 활동을 ${_formatDurationMessage(minutes)} 했어요");
+        }
 
-          final slideOut = Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero, // 아래로 사라지는 애니메이션
-          ).animate(animation);
+        // 현재 메시지
+        final message = messages[currentMessageIndex];
 
-          // 투명도 애니메이션
-          final fade = Tween<double>(
-            begin: 0.0,
-            end: 1.0,
-          ).animate(animation);
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 500),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              // 슬라이드 애니메이션
+              final slideIn = Tween<Offset>(
+                begin: const Offset(0, -1), // 위에서 내려오는 애니메이션
+                end: Offset.zero,
+              ).animate(animation);
 
-          if (child.key == ValueKey<int>(currentMessageIndex)) {
-            // 신규 메시지 애니메이션: 위에서 내려오면서 투명도 증가
-            return FadeTransition(
-              opacity: fade,
-              child: SlideTransition(position: slideIn, child: child),
-            );
-          } else {
-            // 기존 메시지 애니메이션: 아래로 사라지면서 투명도 감소
-            return FadeTransition(
-              opacity: fade,
-              child: SlideTransition(position: slideOut, child: child),
-            );
-          }
-        },
-        child: Text(
-          message,
-          key: ValueKey<int>(currentMessageIndex), // 고유 키를 사용하여 메시지 변경 감지
-          style: TextStyle(
-            fontSize: 18,
-            color: _isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+              final slideOut = Tween<Offset>(
+                begin: const Offset(0, 1),
+                end: Offset.zero, // 아래로 사라지는 애니메이션
+              ).animate(animation);
+
+              // 투명도 애니메이션
+              final fade = Tween<double>(
+                begin: 0.0,
+                end: 1.0,
+              ).animate(animation);
+
+              if (child.key == ValueKey<int>(currentMessageIndex)) {
+                // 신규 메시지 애니메이션: 위에서 내려오면서 투명도 증가
+                return FadeTransition(
+                  opacity: fade,
+                  child: SlideTransition(position: slideIn, child: child),
+                );
+              } else {
+                // 기존 메시지 애니메이션: 아래로 사라지면서 투명도 감소
+                return FadeTransition(
+                  opacity: fade,
+                  child: SlideTransition(position: slideOut, child: child),
+                );
+              }
+            },
+            child: Text(
+              message,
+              key: ValueKey<int>(currentMessageIndex), // 고유 키를 사용하여 메시지 변경 감지
+              style: TextStyle(
+                fontSize: 18,
+                color: _isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ),
-          textAlign: TextAlign.center,
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -439,8 +547,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     final isStateRunning = timerProvider.currentState == 'RUNNING';
 
     return SizedBox(
-      width: 150,
-      height: 150,
+      width: context.wp(50),
+      height: context.hp(20),
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -451,7 +559,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                   waves: waves,
                   baseColor: activityColor,
                 ),
-                size: const Size(150, 150),
+                size: Size(context.wp(50), context.hp(20)),
               ),
             ),
           Transform.scale(
@@ -492,7 +600,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   Widget _buildTimeDisplay(TimerProvider timerProvider) {
     final Duration duration;
 
-    if (timerProvider.currentSessionMode == "SESSIONPMDR") {
+    if (timerProvider.currentSessionMode == "PMDR") {
       // 뽀모도로 모드: 남은 시간 표시
       final remainingSeconds = timerProvider.currentSessionTargetDuration! - timerProvider.currentSessionDuration;
       duration = Duration(seconds: remainingSeconds.clamp(0, timerProvider.currentSessionTargetDuration!));
@@ -515,21 +623,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
         fontFamily: 'chab',
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    if (_isListenerAdded) {
-      timerProvider.removeListener(_handleTimerStateChange);
-      _isListenerAdded = false;
-    }
-    _messageTimer.cancel();
-    _messageAnimationController.dispose();
-
-    // Safely dispose animations
-    _disposeAnimations();
-
-    super.dispose();
   }
 
   @override
@@ -557,9 +650,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                   ],
                 ),
               ),
-              Text('state: ${widget.timerData['state']}'),
-              Text('state: ${timerProvider.currentState}'),
-              Text('session_duration: ${timerProvider.currentSessionDuration}'),
               _buildCountIndicator(3, 2),
               const SizedBox(height: 16),
               _buildPauseButton(), // 휴식 버튼
@@ -620,7 +710,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                provider.currentSessionMode == "SESSIONPMDR" ? "집중 모드" : "일반 모드",
+                provider.currentSessionMode == "PMDR" ? "집중 모드" : "일반 모드",
                 style: AppTextStyles.getHeadline(context),
               ),
               Row(
@@ -749,14 +839,43 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     final buttonText = currentState == 'RUNNING' ? '잠깐 휴식' : '다시 시작';
 
     // 상태에 따른 버튼 색상
-    final backgroundColor = currentState == 'RUNNING' ? Colors.grey : Colors.blueAccent;
+    final backgroundColor = currentState == 'RUNNING' ? Colors.grey[200] : Colors.blueAccent;
+
+    final fontColor = currentState == 'RUNNING' ? Colors.grey : Colors.white;
 
     // 상태에 따른 버튼 동작
     void onPressed() {
-      if (currentState == 'RUNNING') {
-        timerProvider.pauseTimer();
-      } else if (currentState == 'PAUSED') {
-        timerProvider.resumeTimer(sessionId: widget.timerData['session_id']);
+      HapticFeedback.lightImpact();
+      final bool isCurrentlyRunning = currentState == 'RUNNING';
+
+      // 1. 즉시 UI 상태 변경 (버튼 색상 및 텍스트)
+      setState(() {
+        // 즉시 버튼 상태 업데이트
+        _isPendingStateChange = true;
+      });
+
+      // 2. 백그라운드에서 상태 변경 작업 처리
+      if (isCurrentlyRunning) {
+        // 일시 정지 로직
+        timerProvider.pauseTimer(updateUIImmediately: true).then((_) {
+          if (mounted) {
+            setState(() {
+              _isPendingStateChange = false;
+            });
+          }
+        });
+      } else {
+        // 재개 로직
+        final sessionId = timerProvider.timerData?['current_session_id'];
+        if (sessionId != null) {
+          timerProvider.resumeTimer(sessionId: sessionId, updateUIImmediately: true).then((_) {
+            if (mounted) {
+              setState(() {
+                _isPendingStateChange = false;
+              });
+            }
+          });
+        }
       }
     }
 
@@ -776,9 +895,10 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
           onPressed: onPressed,
           child: Text(
             buttonText,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
+              color: fontColor,
             ),
           ),
         ),
@@ -841,10 +961,10 @@ class AnimatedNumber extends StatelessWidget {
   final TextStyle? style;
 
   const AnimatedNumber({
-    Key? key,
+    super.key,
     required this.number,
     this.style,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -927,12 +1047,12 @@ class SlidingTimer extends StatelessWidget {
   final TextStyle? style;
 
   const SlidingTimer({
-    Key? key,
+    super.key,
     required this.hours,
     required this.minutes,
     required this.seconds,
     this.style,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

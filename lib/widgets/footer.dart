@@ -17,15 +17,6 @@ class Footer extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text('Copyright 2024.', style: AppTextStyles.getCaption(context)),
-              SizedBox(
-                width: context.wp(10),
-                height: context.hp(5),
-                child: ClipRRect(
-                  child: Image.asset(
-                    'assets/images/logo_3.png',
-                  ),
-                ),
-              ),
               Text('Burning All rights reserved.', style: AppTextStyles.getCaption(context)),
             ],
           ),

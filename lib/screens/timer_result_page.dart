@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:project1/screens/timer_page.dart';
-import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
@@ -12,12 +11,13 @@ class TimerResultPage extends StatelessWidget {
   final bool isExceeded;
 
   const TimerResultPage({
-    Key? key,
+    super.key,
     required this.timerData,
     required this.sessionDuration,
     required this.isExceeded,
-  }) : super(key: key);
+  });
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -145,17 +145,17 @@ class TimerResultPage extends StatelessWidget {
     final timerProvider = Provider.of<TimerProvider>(context);
     final activityColor = ColorService.hexToColor(timerProvider.currentActivityColor);
 
-    String _formatDuration(int seconds) {
+    String formatDuration(int seconds) {
       final Duration duration = Duration(seconds: seconds);
       final hours = duration.inHours;
       final minutes = duration.inMinutes.remainder(60);
       final remainingSeconds = duration.inSeconds.remainder(60);
 
-      return '${hours}시간 ${minutes}분 ${remainingSeconds}초';
+      return '$hours시간 $minutes분 $remainingSeconds초';
     }
 
-    String _formatTargetDuration() {
-      return _formatDuration(timerProvider.currentSessionTargetDuration!);
+    String formatTargetDuration() {
+      return formatDuration(timerProvider.currentSessionTargetDuration!);
     }
 
     return Container(
@@ -194,7 +194,7 @@ class TimerResultPage extends StatelessWidget {
           ),
           SizedBox(height: context.hp(2)),
           Text(
-            _formatDuration(sessionDuration),
+            formatDuration(sessionDuration),
             style: TextStyle(
               color: Colors.white,
               fontSize: context.xl,

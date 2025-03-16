@@ -8,7 +8,6 @@ import 'package:project1/screens/member_page.dart'; // MemberPage import 추가
 import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
-import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
@@ -34,29 +33,29 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
   late Animation<Alignment> _shimmerAnimation;
   List<Map<String, dynamic>> pomodoroItems = [
     {
-      'title': '10초',
-      'value': 10,
+      'title': '10',
+      'value': 600,
       'maxCount': 3,
       'currentCount': 0,
       'gradientColors': [Colors.greenAccent, Colors.yellow],
+    },
+    {
+      'title': '30',
+      'value': 1800,
+      'maxCount': 3,
+      'currentCount': 0,
+      'gradientColors': [Colors.yellowAccent, Colors.pink],
     },
     {
       'title': '1',
       'value': 3600,
       'maxCount': 3,
       'currentCount': 0,
-      'gradientColors': [Colors.yellowAccent, Colors.pink],
+      'gradientColors': [Colors.blueAccent, Colors.lime],
     },
     {
       'title': '2',
       'value': 7200,
-      'maxCount': 3,
-      'currentCount': 0,
-      'gradientColors': [Colors.blueAccent, Colors.lime],
-    },
-    {
-      'title': '4',
-      'value': 14400,
       'maxCount': 3,
       'currentCount': 0,
       'gradientColors': [Colors.amber, Colors.red],
@@ -158,10 +157,10 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: context.hp(3)),
+            SizedBox(height: context.hp(1)),
             Text(
-              '집중 모드',
-              style: AppTextStyles.getHeadline(context),
+              '집중 모드는 어때요?',
+              style: AppTextStyles.getTitle(context),
             ),
             SizedBox(height: context.hp(1)),
             Text(
@@ -169,12 +168,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
               style: AppTextStyles.getCaption(context),
             ),
             _buildPomodoroMenu(timerProvider),
-            SizedBox(height: context.hp(10)),
-            // const SizedBox(height: 40),
-            // _buildFriendsSection(),
-            // const SizedBox(height: 40),
-            // const ContentSection(),
-            // const SizedBox(height: 100),
+            SizedBox(height: context.hp(20)),
           ],
         ),
       ),
@@ -215,7 +209,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
   }
 
   Widget _buildPomodoroMenu(TimerProvider timerProvider) {
-    Widget _buildCountIndicator(int maxCount, int currentCount) {
+    Widget buildCountIndicator(int maxCount, int currentCount) {
       return Row(
         children: List.generate(
           maxCount,
@@ -226,7 +220,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
               height: 12,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: index < currentCount ? Colors.white : Colors.white.withOpacity(0.3),
+                color: index < currentCount ? AppColors.background(context) : AppColors.background(context).withOpacity(0.3),
                 border: Border.all(
                   color: Colors.white.withOpacity(0.5),
                   width: 1,
@@ -241,50 +235,6 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: context.hp(3)),
-        GestureDetector(
-          onTap: () => _showActivityModal(timerProvider),
-          child: Container(
-            padding: context.paddingXS,
-            decoration: BoxDecoration(
-              color: AppColors.backgroundSecondary(context),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      getIconData(timerProvider.currentActivityIcon),
-                    ),
-                    SizedBox(width: context.wp(5)),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '선택된 활동',
-                          style: AppTextStyles.getCaption(
-                            context,
-                          ).copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        Text(
-                          timerProvider.currentActivityName,
-                          style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
-                        ),
-                      ],
-                    )
-                  ],
-                ),
-                SizedBox(width: context.wp(10)),
-                Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  size: context.xl,
-                ),
-              ],
-            ),
-          ),
-        ),
         SizedBox(height: context.hp(3)),
         GridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -302,10 +252,13 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
             return GestureDetector(
               onTap: () async {
                 await Future.delayed(const Duration(milliseconds: 100));
-                timerProvider.setSessionModeAndTargetDuration(mode: 'SESSIONPMDR', targetDuration: item['value']);
+                timerProvider.setSessionModeAndTargetDuration(mode: 'PMDR', targetDuration: item['value']);
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
-                    builder: (context) => TimerRunningPage(timerData: widget.timerData),
+                    builder: (context) => TimerRunningPage(
+                      timerData: widget.timerData,
+                      isNewSession: true,
+                    ),
                   ),
                 );
               },
@@ -333,23 +286,23 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                                 style: TextStyle(
                                   fontSize: context.lg * 2,
                                   fontWeight: FontWeight.w400,
-                                  color: Colors.white,
+                                  color: AppColors.background(context),
                                   fontFamily: 'chab',
                                 ),
                               ),
                               SizedBox(width: context.wp(1)),
                               Text(
-                                index == 0 ? '분' : '시간',
+                                index <= 1 ? '분' : '시간',
                                 style: TextStyle(
                                   fontSize: context.sm,
                                   fontWeight: FontWeight.w200,
-                                  color: Colors.white,
+                                  color: AppColors.background(context),
                                 ),
                               ),
                             ],
                           ),
                           SizedBox(height: context.hp(2)),
-                          _buildCountIndicator(
+                          buildCountIndicator(
                             item['maxCount'],
                             item['currentCount'],
                           ),

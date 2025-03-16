@@ -1,4 +1,3 @@
-import 'package:project1/utils/auth_provider.dart';
 import 'package:project1/utils/device_info_service.dart';
 
 class ErrorService {
