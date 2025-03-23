@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:lottie/lottie.dart';
 import 'package:project1/theme/app_color.dart';
@@ -442,10 +441,23 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                                                                   ),
                                                                   child: Row(
                                                                     children: [
-                                                                      Icon(
-                                                                        getIconData(todo['activity_icon']),
-                                                                        size: context.sm,
-                                                                        color: Colors.white,
+                                                                      Image.asset(
+                                                                        getIconImage(todo['activity_icon']),
+                                                                        width: context.xl,
+                                                                        height: context.xl,
+                                                                        errorBuilder: (context, error, stackTrace) {
+                                                                          // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                                                                          return Container(
+                                                                            width: context.xl,
+                                                                            height: context.xl,
+                                                                            color: Colors.grey.withOpacity(0.2),
+                                                                            child: Icon(
+                                                                              Icons.broken_image,
+                                                                              size: context.xl,
+                                                                              color: Colors.grey,
+                                                                            ),
+                                                                          );
+                                                                        },
                                                                       ),
                                                                       SizedBox(width: context.wp(1)),
                                                                       Text(

@@ -345,10 +345,23 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   SizedBox(width: context.wp(1)),
-                                  Icon(
-                                    getIconData(activity['activity_icon']),
-                                    size: context.md,
-                                    color: isSelected ? Colors.white : Colors.grey,
+                                  Image.asset(
+                                    getIconImage(activity['activity_icon']),
+                                    width: context.xl,
+                                    height: context.xl,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                                      return Container(
+                                        width: context.xl,
+                                        height: context.xl,
+                                        color: Colors.grey.withOpacity(0.2),
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          size: context.xl,
+                                          color: Colors.grey,
+                                        ),
+                                      );
+                                    },
                                   ),
                                   SizedBox(width: context.wp(2)),
                                   Text(

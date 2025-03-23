@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -217,7 +219,7 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
                               ),
                               _buildDragHandle(context),
                               _buildHeader(context),
-                              SizedBox(height: context.hp(2)),
+                              SizedBox(height: context.hp(1)),
                               // offset section 고정될 때는 안 보이게 처리
                               Visibility(
                                 visible: !_isOffsetSectionPinned,
@@ -227,16 +229,13 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
                                 child: _buildOffsetSection(context),
                               ),
                               // offset section의 높이만큼 공간 추가
-                              SizedBox(height: _isOffsetSectionPinned ? 0 : context.hp(2)),
+                              SizedBox(height: _isOffsetSectionPinned ? 0 : context.hp(1)),
                             ],
                           ),
                         ),
 
                         // SliverList 대신 SliverToBoxAdapter의 리스트 사용
                         // 각 섹션을 개별 SliverToBoxAdapter로 분리하여 높이 제한 없이 콘텐츠 표시
-                        SliverToBoxAdapter(
-                          child: SizedBox(height: context.hp(2)),
-                        ),
 
                         // 대시보드 섹션
                         SliverToBoxAdapter(
@@ -244,7 +243,7 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
                         ),
 
                         SliverToBoxAdapter(
-                          child: SizedBox(height: context.hp(5)),
+                          child: SizedBox(height: context.hp(2)),
                         ),
 
                         // 주간 세션 상태 섹션
@@ -253,7 +252,7 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
                         ),
 
                         SliverToBoxAdapter(
-                          child: SizedBox(height: context.hp(5)),
+                          child: SizedBox(height: context.hp(2)),
                         ),
 
                         // 히트맵 섹션
@@ -298,8 +297,8 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
                       child: Visibility(
                         visible: _isOffsetSectionPinned,
                         child: Container(
-                          color: isDarkMode ? const Color(0xff181C14) : Colors.white,
-                          margin: EdgeInsets.only(top: context.hp(1), bottom: context.hp(1)),
+                          // 배경색을 완전히 투명하게 설정하여 BlurEffect만 보이게 함
+                          color: Colors.transparent,
                           child: _buildOffsetSection(context),
                         ),
                       ),
@@ -443,86 +442,82 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
     return Consumer<StatsProvider>(
       builder: (context, stats, child) {
         final bool isCurrentWeek = stats.weekOffset == 0;
-        return Container(
-          margin: EdgeInsets.symmetric(horizontal: context.hp(2)),
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(16.0),
-            boxShadow: _isOffsetSectionPinned
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 3,
-                      offset: const Offset(0, 1),
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+            child: Container(
+              margin: EdgeInsets.symmetric(horizontal: context.hp(2)),
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              decoration: BoxDecoration(
+                color: AppColors.background(context).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+
+                      // 현재 스크롤 위치 저장
+                      double currentScrollPosition = 0;
+                      if (_scrollController?.hasClients == true) {
+                        currentScrollPosition = _scrollController!.offset;
+                      }
+
+                      // 데이터 다시 로드 전에 로딩 상태 변경
+                      setState(() {
+                        _lineChartDataLoaded = false;
+                      });
+
+                      // 주 변경
+                      stats.moveToPreviousWeek();
+
+                      // 데이터 로드 및 스크롤 위치 복원
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _preloadDataAndRestoreScroll(currentScrollPosition);
+                      });
+                    },
+                  ),
+                  Text(
+                    stats.getCurrentWeekLabel(),
+                    style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.chevron_right,
+                      color: isCurrentWeek ? Colors.grey[300] : null,
                     ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left),
-                onPressed: () {
-                  HapticFeedback.lightImpact();
+                    onPressed: isCurrentWeek
+                        ? null
+                        : () {
+                            HapticFeedback.lightImpact();
 
-                  // 현재 스크롤 위치 저장
-                  double currentScrollPosition = 0;
-                  if (_scrollController?.hasClients == true) {
-                    currentScrollPosition = _scrollController!.offset;
-                  }
+                            // 현재 스크롤 위치 저장
+                            double currentScrollPosition = 0;
+                            if (_scrollController?.hasClients == true) {
+                              currentScrollPosition = _scrollController!.offset;
+                            }
 
-                  // 데이터 다시 로드 전에 로딩 상태 변경
-                  setState(() {
-                    _lineChartDataLoaded = false;
-                  });
+                            // 데이터 다시 로드 전에 로딩 상태 변경
+                            setState(() {
+                              _lineChartDataLoaded = false;
+                            });
 
-                  // 주 변경
-                  stats.moveToPreviousWeek();
+                            // 주 변경
+                            stats.moveToNextWeek();
 
-                  // 데이터 로드 및 스크롤 위치 복원
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _preloadDataAndRestoreScroll(currentScrollPosition);
-                  });
-                },
+                            // 데이터 로드 및 스크롤 위치 복원
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _preloadDataAndRestoreScroll(currentScrollPosition);
+                            });
+                          },
+                  ),
+                ],
               ),
-              Text(
-                stats.getCurrentWeekLabel(),
-                style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.chevron_right,
-                  color: isCurrentWeek ? Colors.grey[300] : null,
-                ),
-                onPressed: isCurrentWeek
-                    ? null
-                    : () {
-                        HapticFeedback.lightImpact();
-
-                        // 현재 스크롤 위치 저장
-                        double currentScrollPosition = 0;
-                        if (_scrollController?.hasClients == true) {
-                          currentScrollPosition = _scrollController!.offset;
-                        }
-
-                        // 데이터 다시 로드 전에 로딩 상태 변경
-                        setState(() {
-                          _lineChartDataLoaded = false;
-                        });
-
-                        // 주 변경
-                        stats.moveToNextWeek();
-
-                        // 데이터 로드 및 스크롤 위치 복원
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _preloadDataAndRestoreScroll(currentScrollPosition);
-                        });
-                      },
-              ),
-            ],
+            ),
           ),
         );
       },

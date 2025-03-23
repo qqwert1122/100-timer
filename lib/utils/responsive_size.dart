@@ -15,7 +15,8 @@ extension ResponsiveSize on BuildContext {
   double get md => width * 0.04; // 중간 텍스트
   double get lg => width * 0.05; // 큰 텍스트
   double get xl => width * 0.06; // 아주 큰 텍스트
-  double get xxl => width * 0.14; // 아주아주 큰 텍스트
+  double get xxl => width * 0.10;
+  double get xxxl => width * 0.14; // 아주아주 큰 텍스트
 
   // 여백 사이즈
   double get spacing_xs => width * 0.02; // 아주 작은 여백

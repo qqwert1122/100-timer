@@ -24,11 +24,10 @@ class TestDataGenerator {
   /// 테스트용 활동 데이터 생성 및 주입
   Future<void> _insertTestActivities() async {
     List<Map<String, dynamic>> activities = [
-      _createActivity('공부', 'book', '#FF5733', isDefault: true),
-      _createActivity('운동', 'fitness_center', '#33FF57'),
-      _createActivity('독서', 'menu_book', '#3357FF'),
-      _createActivity('코딩', 'code', '#F3FF33'),
-      _createActivity('명상', 'self_improvement', '#FF33F6'),
+      _createActivity('전체', 'category', '#FF5733', isDefault: true),
+      _createActivity('업무', 'business', '#F3FF33'),
+      _createActivity('피트니스', 'fitness', '#33FF57'),
+      _createActivity('독서', 'open_book', '#3357FF'),
     ];
 
     for (var activity in activities) {

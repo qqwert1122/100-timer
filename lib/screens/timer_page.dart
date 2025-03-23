@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/screens/activity_picker.dart';
-import 'package:project1/screens/notice_page.dart';
 import 'package:project1/screens/session_history_sheet.dart';
-import 'package:project1/screens/setting_page.dart';
 import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
@@ -14,7 +12,6 @@ import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/widgets/focus_mode.dart';
 import 'package:project1/widgets/text_indicator.dart';
-import 'package:project1/widgets/todo.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/utils/responsive_size.dart';
@@ -49,8 +46,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
   double _sheetSize = 0.1; // 초기 크기
   double minSheetHeight = 0.1;
   double maxSheetHeight = 1.0;
-  double _circleWidth = 40;
-  double _circleHeight = 40;
+  double _circleWidth = 30;
+  double _circleHeight = 30;
   bool _isDarkMode = false;
 
   // 상단 바 숨기기 애니메이션
@@ -69,6 +66,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
     Future.delayed(Duration.zero, () async {
       _timerProvider!.initializeWeeklyActivityData();
       _timerProvider!.initializeHeatMapData();
+      _statsProvider!.updateCurrentSessions();
       _timerProvider!.refreshRemainingSeconds();
     });
 
@@ -98,6 +96,16 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
     _headerAnimation.dispose();
 
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.resumed) {
+      // 앱이 다시 포그라운드로 돌아왔을 때
+      _timerProvider?.refreshRemainingSeconds();
+    }
   }
 
   void _initAnimations() {
@@ -171,14 +179,14 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
   void _animateCircle(int index) {
     setState(() {
       // 애니메이션 상태 변경
-      _circleWidth = 60;
-      _circleHeight = 10;
+      _circleWidth = 30;
+      _circleHeight = 5;
     });
 
     Future.delayed(const Duration(milliseconds: 150), () {
       setState(() {
-        _circleWidth = 40;
-        _circleHeight = 40;
+        _circleWidth = 30;
+        _circleHeight = 30;
         _currentPageIndex = index;
       });
     });
@@ -264,8 +272,11 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
   Widget build(BuildContext context) {
     final timerProvider = Provider.of<TimerProvider>(context);
 
-    final double containerWidth = context.wp(60); // 네비게이션 바 가로 길이
-    final double itemWidth = containerWidth / 3; // 버튼 하나의 너비
+    final double containerWidth = context.wp(30); // 네비게이션 바 가로 길이
+    final double itemWidth = containerWidth / 2; // 버튼 하나의 너비
+
+    DateTime now = DateTime.now();
+    String formattedDate = '${now.month}월 ${now.day}일';
 
     return PopScope(
       canPop: _canPop,
@@ -319,16 +330,6 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            _statsProvider!.getCurrentWeekLabel().toString(),
-            style: AppTextStyles.getHeadline(context),
-          ), // 실제로는 timerProvider에서 주차 정보를 받아와 사용
-          centerTitle: false,
-          elevation: 0,
-          backgroundColor: AppColors.background(context),
-          foregroundColor: AppColors.textPrimary(context),
-        ),
         body: Stack(
           children: [
             if (_isHeaderHidden && _currentPageIndex == 2)
@@ -365,6 +366,22 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                 // ---------------------------
                 // 상단 헤더(이번주 남은시간, 선택된 Activity)
                 // ---------------------------
+                SizedBox(
+                  height: context.hp(8),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _statsProvider!.getCurrentWeekLabel().toString(),
+                      style: AppTextStyles.getHeadline(context).copyWith(
+                        fontFamily: 'Neo',
+                      ),
+                    ),
+                  ),
+                ),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   height: _isHeaderHidden ? 0 : null, // 높이를 0으로 만들어 숨김
@@ -390,68 +407,206 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '이번 주, 아직 얼마나 남았을까요?',
+                            '이번 주 얼마나 남았을까요?',
                             style: AppTextStyles.getTitle(context).copyWith(fontWeight: FontWeight.w900),
                           ),
-                          Text(
-                            timerProvider.formattedTime,
-                            style: AppTextStyles.getTimeDisplay(context).copyWith(
-                              color: AppColors.primary(context),
-                              fontFamily: 'chab',
-                            ),
+                          Consumer<TimerProvider>(
+                            builder: (context, provider, child) {
+                              // 여기서 provider가 ChangeNotifierProxyProvider2에서 반환된
+                              // TimerProvider 인스턴스와 동일한지 확인
+                              // 디버그용 print 추가
+                              print("remainingSeconds: ${provider.remainingSeconds}, formattedTime: ${provider.formattedTime}");
+
+                              return Text(
+                                provider.formattedTime,
+                                style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                  color: AppColors.primary(context),
+                                  fontFamily: 'chab',
+                                ),
+                              );
+                            },
                           ),
                           SizedBox(height: context.hp(1)),
                           GestureDetector(
-                            onTap: () => _showActivityModal(timerProvider),
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              _showActivityModal(timerProvider);
+                            },
                             child: Container(
-                              padding: context.paddingXS,
-                              decoration: BoxDecoration(
-                                color: AppColors.backgroundSecondary(context),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  // 왼쪽: 아이콘 + 현재 활동명
-                                  Row(
-                                    children: [
-                                      SizedBox(width: context.wp(2)),
-                                      Icon(
-                                        getIconData(timerProvider.currentActivityIcon),
-                                      ),
-                                      SizedBox(width: context.wp(5)),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '내가 고른 활동,',
-                                            style: AppTextStyles.getBody(context)
-                                                .copyWith(fontWeight: FontWeight.w600)
-                                                .copyWith(color: AppColors.textSecondary(context)),
+                                padding: EdgeInsets.symmetric(horizontal: context.xs, vertical: context.sm),
+                                decoration: BoxDecoration(
+                                  color: AppColors.backgroundSecondary(context),
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.textSecondary(context).withOpacity(0.3),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    // 왼쪽: "무엇을 하실 건가요?" 텍스트 (flex: 2)
+                                    Expanded(
+                                      flex: 3,
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: context.sm),
+                                        child: Text(
+                                          '활동 선택',
+                                          style: AppTextStyles.getBody(context).copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textSecondary(context),
                                           ),
-                                          Text(
-                                            timerProvider.currentActivityName,
-                                            style: AppTextStyles.getTitle(context).copyWith(fontWeight: FontWeight.w900),
+                                        ),
+                                      ),
+                                    ),
+
+                                    // 가운데: 아이콘 + 현재 활동명 (flex: 3)
+                                    Expanded(
+                                      flex: 6,
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          Image.asset(
+                                            getIconImage(timerProvider.currentActivityIcon),
+                                            width: context.xl,
+                                            height: context.xl,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                                              return Container(
+                                                width: context.xl,
+                                                height: context.xl,
+                                                color: Colors.grey.withOpacity(0.2),
+                                                child: Icon(
+                                                  Icons.broken_image,
+                                                  size: context.xl,
+                                                  color: Colors.grey,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                          SizedBox(width: context.wp(2)),
+                                          Flexible(
+                                            child: Builder(
+                                              builder: (context) {
+                                                final activityName = timerProvider.currentActivityName;
+                                                final displayText =
+                                                    activityName.length > 10 ? activityName.substring(0, 10) + '...' : activityName;
+
+                                                return Text(
+                                                  displayText,
+                                                  style: AppTextStyles.getTitle(context).copyWith(fontWeight: FontWeight.w900),
+                                                );
+                                              },
+                                            ),
                                           ),
                                         ],
                                       ),
-                                    ],
-                                  ),
-                                  // 오른쪽: 화살표 아이콘
-                                  Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    size: context.xl,
-                                  ),
-                                ],
-                              ),
-                            ),
+                                    ),
+
+                                    // 오른쪽: 화살표 아이콘 (flex: 1)
+                                    Expanded(
+                                      flex: 1,
+                                      child: Align(
+                                        alignment: Alignment.centerRight,
+                                        child: Transform(
+                                          // 중심을 기준으로 좌우 대칭(수평 반전)하기
+                                          alignment: Alignment.center,
+                                          transform: Matrix4.identity()..scale(-1.0, 1.0),
+                                          child: Icon(Icons.arrow_back_ios_new_rounded, size: context.lg),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )),
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-
+                SizedBox(height: context.hp(2)),
+                SizedBox(
+                  height: context.hp(5),
+                  width: double.infinity,
+                  child: Stack(
+                    children: [
+                      AnimatedAlign(
+                        // 왼쪽 페이지가 활성화되면(center)에 위치하여 텍스트 포함,
+                        // 오른쪽 페이지가 활성화되면(left) 구석에 아이콘만 표시
+                        alignment: _currentPageIndex == 1 ? Alignment.centerLeft : Alignment.center,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        // 아래 AnimatedSwitcher는 “아이콘만” ↔ “아이콘+텍스트” 전환용
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          switchInCurve: Curves.easeInOut,
+                          switchOutCurve: Curves.easeInOut,
+                          // child가 바뀔 때마다(아이콘만 → 아이콘+텍스트) 애니메이션
+                          child: _currentPageIndex == 1
+                              ? GestureDetector(
+                                  onTap: () => _onIconTap(0),
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: context.lg),
+                                    child: Icon(Icons.arrow_back_ios_rounded, size: context.lg),
+                                  ),
+                                )
+                              : Row(
+                                  key: const ValueKey<String>("LeftWithText"),
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.timelapse_sharp, size: context.lg),
+                                    SizedBox(width: context.wp(2)),
+                                    Text(
+                                      "집중 모드",
+                                      style: AppTextStyles.getTitle(context),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                      AnimatedAlign(
+                        // 오른쪽 페이지가 활성화되면(center)에 위치하여 텍스트 포함,
+                        // 왼쪽 페이지가 활성화되면(right) 구석에 아이콘만 표시
+                        alignment: _currentPageIndex == 1 ? Alignment.center : Alignment.centerRight,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          switchInCurve: Curves.easeInOut,
+                          switchOutCurve: Curves.easeInOut,
+                          child: _currentPageIndex == 1
+                              ? Row(
+                                  key: const ValueKey<String>("RightWithText"),
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.timer_rounded, size: context.lg),
+                                    SizedBox(width: context.wp(2)),
+                                    Text(
+                                      "일반 모드",
+                                      style: AppTextStyles.getTitle(context),
+                                    ),
+                                  ],
+                                )
+                              : Transform(
+                                  // 중심을 기준으로 좌우 대칭(수평 반전)하기
+                                  alignment: Alignment.center,
+                                  transform: Matrix4.identity()..scale(-1.0, 1.0),
+                                  child: GestureDetector(
+                                    onTap: () => _onIconTap(1),
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: context.lg),
+                                      child: Icon(Icons.arrow_back_ios_rounded, size: context.lg),
+                                    ),
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 // ---------------------------
                 // PageView (뽀모도로, 일반모드, 투두)
                 // ---------------------------
@@ -471,7 +626,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(height: context.hp(20)),
+                              SizedBox(height: context.hp(15)),
                               // 시간 표시 인디케이터
                               Center(
                                 child: TextIndicator(timerProvider: timerProvider),
@@ -553,18 +708,18 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                         ),
                       ),
 
-                      Todo(
-                        onHeaderVisibilityChanged: (bool isHidden) {
-                          setState(() {
-                            _isHeaderHidden = isHidden;
-                          });
-                          if (isHidden) {
-                            _headerAnimation.forward();
-                          } else {
-                            _headerAnimation.reverse();
-                          }
-                        },
-                      ),
+                      // Todo(
+                      //   onHeaderVisibilityChanged: (bool isHidden) {
+                      //     setState(() {
+                      //       _isHeaderHidden = isHidden;
+                      //     });
+                      //     if (isHidden) {
+                      //       _headerAnimation.forward();
+                      //     } else {
+                      //       _headerAnimation.reverse();
+                      //     }
+                      //   },
+                      // ),
                     ],
                   ),
                 ),
@@ -579,16 +734,16 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
               child: Align(
                 alignment: Alignment.center,
                 child: Container(
-                  width: context.wp(60),
+                  width: context.wp(30),
                   height: 50,
                   decoration: BoxDecoration(
-                    color: _isDarkMode ? Colors.black : Colors.white,
+                    color: AppColors.background(context),
                     borderRadius: BorderRadius.circular(35),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: AppColors.textPrimary(context).withOpacity(0.3),
                         blurRadius: 5,
-                        offset: const Offset(0, 5),
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
@@ -614,7 +769,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                       // 아이콘 3개
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: List.generate(3, (index) {
+                        children: List.generate(2, (index) {
                           return GestureDetector(
                             onTap: () {
                               _onIconTap(index);

@@ -28,4 +28,32 @@ class ColorService {
       return Colors.grey.shade400;
     }
   }
+
+  // 배경색에 따라 적절한 텍스트 색상을 반환하는 함수
+  static Color getTextColorForBackground(Color backgroundColor) {
+    // 색상의 밝기 계산 (YIQ 공식 사용)
+    // YIQ 공식: Y = 0.299*R + 0.587*G + 0.114*B
+    // 이 공식은 인간의 눈이 색상을 인식하는 방식에 기반한 공식으로,
+    // 녹색에 더 민감하고 파란색에 덜 민감하다는 특성을 반영합니다.
+
+    double yiq = ((backgroundColor.red * 299) + (backgroundColor.green * 587) + (backgroundColor.blue * 114)) / 1000;
+
+    // YIQ 값이 128보다 크면 배경이 밝은 것으로 간주
+    // 밝은 배경에는 어두운 텍스트(검정색)
+    // 어두운 배경에는 밝은 텍스트(흰색)
+    if (yiq >= 128) {
+      return Colors.black;
+    } else {
+      return Colors.white;
+    }
+  }
+
+  // 헥스 문자열 배경색에 따라 적절한 텍스트 색상을 반환하는 함수
+  static Color getTextColorForBackgroundHex(String? hexString) {
+    // 헥스 문자열을 Color로 변환
+    Color backgroundColor = hexToColor(hexString);
+
+    // 위에서 정의한 함수 사용
+    return getTextColorForBackground(backgroundColor);
+  }
 }

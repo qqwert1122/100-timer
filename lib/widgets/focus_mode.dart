@@ -6,9 +6,6 @@ import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/member_page.dart'; // MemberPage import 추가
 import 'package:project1/screens/timer_running_page.dart';
-import 'package:project1/theme/app_color.dart';
-import 'package:project1/theme/app_text_style.dart';
-import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
@@ -34,7 +31,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
   List<Map<String, dynamic>> pomodoroItems = [
     {
       'title': '10',
-      'value': 600,
+      'value': 15,
       'maxCount': 3,
       'currentCount': 0,
       'gradientColors': [Colors.greenAccent, Colors.yellow],
@@ -157,18 +154,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: context.hp(1)),
-            Text(
-              '집중 모드는 어때요?',
-              style: AppTextStyles.getTitle(context),
-            ),
-            SizedBox(height: context.hp(1)),
-            Text(
-              '정해진 시간 동안 멈추지 않고 집중을 달성하세요',
-              style: AppTextStyles.getCaption(context),
-            ),
             _buildPomodoroMenu(timerProvider),
-            SizedBox(height: context.hp(20)),
           ],
         ),
       ),
@@ -216,11 +202,11 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
           (index) => Padding(
             padding: EdgeInsets.only(right: context.wp(1)),
             child: Container(
-              width: 12,
-              height: 12,
+              width: context.wp(2),
+              height: context.wp(2),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: index < currentCount ? AppColors.background(context) : AppColors.background(context).withOpacity(0.3),
+                color: index < currentCount ? Colors.white : Colors.white.withOpacity(0.3),
                 border: Border.all(
                   color: Colors.white.withOpacity(0.5),
                   width: 1,
@@ -235,7 +221,6 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: context.hp(3)),
         GridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
@@ -270,6 +255,13 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Stack(
                   children: [
@@ -286,7 +278,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                                 style: TextStyle(
                                   fontSize: context.lg * 2,
                                   fontWeight: FontWeight.w400,
-                                  color: AppColors.background(context),
+                                  color: Colors.white,
                                   fontFamily: 'chab',
                                 ),
                               ),
@@ -296,7 +288,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                                 style: TextStyle(
                                   fontSize: context.sm,
                                   fontWeight: FontWeight.w200,
-                                  color: AppColors.background(context),
+                                  color: Colors.white,
                                 ),
                               ),
                             ],
@@ -309,6 +301,54 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
+                    // Positioned(
+                    //   bottom: 0,
+                    //   right: 0,
+                    //   child: AnimatedBuilder(
+                    //     animation: _shimmerAnimationController,
+                    //     builder: (context, child) {
+                    //       // 각 그리드 아이템의 그라데이션 색상을 가져옴
+                    //       List<Color> itemColors = item['gradientColors'];
+
+                    //       // 그라데이션 색상의 중간 색상 계산 (더 밝게 만들기)
+                    //       Color middleColor = Color.lerp(itemColors[0], Colors.white, 0.7)!;
+
+                    //       return Stack(
+                    //         alignment: Alignment.center,
+                    //         children: [
+                    //           Icon(
+                    //             Icons.play_arrow_rounded,
+                    //             color: Colors.white.withOpacity(0.8), // 원하는 내부 색상 (그라데이션 없음)
+                    //             size: context.wp(22), // 내부 아이콘 사이즈
+                    //           ),
+                    //           // 바깥쪽 테두리 아이콘에만 ShaderMask 적용
+                    //           ShaderMask(
+                    //             shaderCallback: (Rect bounds) {
+                    //               return LinearGradient(
+                    //                 colors: [
+                    //                   itemColors[0].withOpacity(0.3),
+                    //                   middleColor.withOpacity(0.9),
+                    //                   itemColors[1].withOpacity(0.3),
+                    //                 ],
+                    //                 stops: const [0.0, 0.5, 1.0],
+                    //                 begin: _shimmerAnimation.value,
+                    //                 end: Alignment(-_shimmerAnimation.value.x, -_shimmerAnimation.value.y),
+                    //                 tileMode: TileMode.clamp,
+                    //               ).createShader(bounds);
+                    //             },
+                    //             blendMode: BlendMode.srcIn,
+                    //             child: Icon(
+                    //               Icons.play_arrow_rounded,
+                    //               color: Colors.white,
+                    //               size: context.wp(20), // 더 큰 사이즈
+                    //             ),
+                    //           ),
+                    //           // 안쪽 아이콘은 ShaderMask 밖에 두어 그라데이션 효과를 받지 않게 함
+                    //         ],
+                    //       );
+                    //     },
+                    //   ),
+                    // ),
                   ],
                 ),
               ),

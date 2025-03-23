@@ -576,10 +576,23 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                getIconData(activityIcon),
-                color: activityColor,
-                size: 28,
+              Image.asset(
+                getIconImage(activityIcon),
+                width: context.xxxl,
+                height: context.xxxl,
+                errorBuilder: (context, error, stackTrace) {
+                  // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                  return Container(
+                    width: 24,
+                    height: 24,
+                    color: Colors.grey.withOpacity(0.2),
+                    child: const Icon(
+                      Icons.broken_image,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                  );
+                },
               ),
               const SizedBox(width: 10),
               Text(

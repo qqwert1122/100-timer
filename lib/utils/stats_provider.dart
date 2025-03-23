@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:project1/utils/database_service.dart';
-import 'package:project1/widgets/weekly_activity_chart.dart';
 
 class StatsProvider extends ChangeNotifier {
   DatabaseService _dbService;

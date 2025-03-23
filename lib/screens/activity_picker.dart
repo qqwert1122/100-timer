@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/screens/add_activity_page.dart';
@@ -196,7 +197,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
                     }
                     final activity = activities[index];
                     final iconName = activity['activity_icon'];
-                    final iconData = getIconData(iconName);
+                    final iconData = getIconImage(iconName);
 
                     return Slidable(
                       key: Key(activity['activity_id']),
@@ -238,8 +239,24 @@ class _ActivityPickerState extends State<ActivityPicker> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 0),
                         child: ListTile(
-                          leading: Icon(iconData,
-                              color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
+                          leading: Image.asset(
+                            iconData,
+                            width: context.xl,
+                            height: context.xl,
+                            errorBuilder: (context, error, stackTrace) {
+                              // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                              return Container(
+                                width: context.xl,
+                                height: context.xl,
+                                color: Colors.grey.withOpacity(0.2),
+                                child: Icon(
+                                  Icons.broken_image,
+                                  size: context.xl,
+                                  color: Colors.grey,
+                                ),
+                              );
+                            },
+                          ),
                           title: Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
@@ -264,6 +281,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
                             ],
                           ),
                           onTap: () {
+                            HapticFeedback.lightImpact();
                             widget.onSelectActivity(
                               activity['activity_id'],
                               activity['activity_name'],

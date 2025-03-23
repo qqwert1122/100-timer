@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:project1/screens/timer_page.dart';
+import 'package:project1/theme/app_color.dart';
+import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
+import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
+import 'package:project1/widgets/shimmer_text.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
 
-class TimerResultPage extends StatelessWidget {
+// StatelessWidget에서 StatefulWidget으로 변경
+class TimerResultPage extends StatefulWidget {
   final Map<String, dynamic> timerData;
   final int sessionDuration;
   final bool isExceeded;
@@ -18,26 +25,66 @@ class TimerResultPage extends StatelessWidget {
   });
 
   @override
+  State<TimerResultPage> createState() => _TimerResultPageState();
+}
+
+// State 클래스에 TickerProviderStateMixin 추가
+class _TimerResultPageState extends State<TimerResultPage> with TickerProviderStateMixin {
+  // 애니메이션 컨트롤러 선언
+  late AnimationController _trophyController;
+  late AnimationController _checkController;
+  late AnimationController _congratulationsController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 트로피 애니메이션 컨트롤러 초기화
+    _trophyController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    // 체크 애니메이션 컨트롤러 초기화
+    _checkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    // 축하 애니메이션 컨트롤러 초기화
+    _congratulationsController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    );
+
+    // 애니메이션 시작
+    if (widget.isExceeded) {
+      _trophyController.forward();
+    } else {
+      _checkController.forward();
+    }
+    _congratulationsController.repeat();
+  }
+
+  @override
+  void dispose() {
+    // 컨트롤러 해제
+    _trophyController.dispose();
+    _checkController.dispose();
+    _congratulationsController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background(context),
       body: Stack(
+        alignment: Alignment.center,
         children: [
-          SafeArea(
+          Center(
             child: Column(
               children: [
-                SizedBox(height: context.hp(2)),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.arrow_back_ios,
-                      color: Colors.black54,
-                      size: context.md,
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -58,7 +105,7 @@ class TimerResultPage extends StatelessWidget {
                             top: -context.hp(1.5),
                             child: Transform.rotate(
                               angle: -0.05,
-                              child: _buildCard(context, Colors.orange.shade100, 0.5),
+                              child: _buildCard(context, Colors.deepPurple.shade100, 0.5),
                             ),
                           ),
                           _buildMainCard(context),
@@ -81,16 +128,6 @@ class TimerResultPage extends StatelessWidget {
                 right: context.spacing_sm,
                 bottom: context.spacing_sm,
               ),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: context.wp(2),
-                    offset: Offset(0, -context.hp(0.5)),
-                  ),
-                ],
-              ),
               child: SafeArea(
                 top: false,
                 child: SizedBox(
@@ -98,12 +135,21 @@ class TimerResultPage extends StatelessWidget {
                   height: context.hp(7),
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => TimerPage(timerData: timerData),
-                        ),
-                      );
+                      // 타이머 데이터 갱신 로직 추가
+                      final timerProvider = Provider.of<TimerProvider>(context, listen: false);
+                      final statsProvider = Provider.of<StatsProvider>(context, listen: false);
+
+                      statsProvider.updateCurrentSessions();
+                      // 남은 시간 갱신 및 상태 업데이트
+                      timerProvider.refreshRemainingSeconds().then((_) {
+                        // 갱신이 완료된 후 페이지 이동
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TimerPage(timerData: widget.timerData),
+                          ),
+                        );
+                      });
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
@@ -133,7 +179,7 @@ class TimerResultPage extends StatelessWidget {
   Widget _buildCard(BuildContext context, Color color, double opacity) {
     return Container(
       width: context.wp(90),
-      height: context.hp(30),
+      height: context.hp(50),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(context.wp(5)),
         color: color.withOpacity(opacity),
@@ -151,7 +197,13 @@ class TimerResultPage extends StatelessWidget {
       final minutes = duration.inMinutes.remainder(60);
       final remainingSeconds = duration.inSeconds.remainder(60);
 
-      return '$hours시간 $minutes분 $remainingSeconds초';
+      if (hours > 0) {
+        return '$hours시간 $minutes분 $remainingSeconds초';
+      } else if (minutes > 0) {
+        return '$minutes분 $remainingSeconds초';
+      } else {
+        return '$remainingSeconds초';
+      }
     }
 
     String formatTargetDuration() {
@@ -160,54 +212,148 @@ class TimerResultPage extends StatelessWidget {
 
     return Container(
       width: context.wp(90),
-      height: context.hp(30),
+      height: context.hp(50),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(context.wp(5)),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            activityColor.withOpacity(0.8),
-            activityColor.withOpacity(0.6),
+            activityColor.withOpacity(0.9),
+            activityColor.withOpacity(0.7),
+            activityColor.withOpacity(0.5),
           ],
+          stops: const [0.0, 0.6, 1.0],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
-            spreadRadius: context.wp(0.5),
-            blurRadius: context.wp(2.5),
-            offset: Offset(0, context.hp(0.4)),
+            color: activityColor.withOpacity(0.4),
+            spreadRadius: context.wp(1),
+            blurRadius: context.wp(4),
+            offset: Offset(0, context.hp(0.5)),
           ),
         ],
       ),
-      padding: context.paddingMD,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: context.paddingLG,
+      child: Stack(
         children: [
-          Text(
-            '활동을 완료했습니다',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: context.md,
-              fontWeight: FontWeight.bold,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Image.asset(
+                getIconImage(timerProvider.currentActivityIcon),
+                width: context.xxxl,
+                height: context.xxxl,
+              ),
+              SizedBox(height: context.hp(2)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.end,
+                    children: [
+                      Builder(
+                        builder: (context) {
+                          final activityName = timerProvider.currentActivityName;
+                          final displayText = activityName.length > 6 ? activityName.substring(0, 6) + '...' : activityName;
+
+                          return Text(
+                            displayText,
+                            style: AppTextStyles.getHeadline(context).copyWith(
+                              color: ColorService.getTextColorForBackground(activityColor),
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Neo',
+                            ),
+                          );
+                        },
+                      ),
+                      SizedBox(width: context.wp(2)),
+                      Builder(
+                        builder: (context) {
+                          final activityName = timerProvider.currentActivityName;
+                          final displayText = activityName.length > 6 ? '활동 완료' : '활동을 완료했습니다 !';
+
+                          return Text(
+                            displayText,
+                            style: AppTextStyles.getTitle(context).copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: ColorService.getTextColorForBackground(activityColor),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              SizedBox(height: context.hp(4)),
+              Align(
+                alignment: Alignment.center,
+                child: ShimmerText(
+                  text: formatDuration(widget.sessionDuration),
+                  style: AppTextStyles.getHeadline(context).copyWith(
+                    color: ColorService.getTextColorForBackground(activityColor),
+                    fontFamily: 'Neo',
+                    fontSize: context.xxl,
+                  ),
+                ),
+              ),
+              SizedBox(height: context.hp(2)),
+              Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    widget.isExceeded
+                        ? Lottie.asset(
+                            'assets/images/trophy.json',
+                            repeat: true,
+                            width: context.wp(30),
+                            height: context.wp(30),
+                            fit: BoxFit.contain,
+                            controller: _trophyController,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.error,
+                                color: Colors.red,
+                                size: 24,
+                              );
+                            },
+                          )
+                        : Lottie.asset(
+                            'assets/images/check_3.json',
+                            repeat: true,
+                            width: context.wp(20),
+                            height: context.wp(20),
+                            fit: BoxFit.contain,
+                            controller: _checkController,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.error,
+                                color: Colors.red,
+                                size: 24,
+                              );
+                            },
+                          ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: context.hp(2)),
-          Text(
-            formatDuration(sessionDuration),
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: context.xl,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const Spacer(),
-          Center(
-            child: Icon(
-              isExceeded ? Icons.emoji_events_rounded : Icons.check_circle_outline,
-              size: context.xxl,
-              color: Colors.white,
-            ),
+          Lottie.asset(
+            'assets/images/congraturations.json',
+            repeat: true,
+            width: context.wp(100),
+            height: context.wp(100),
+            fit: BoxFit.contain,
+            controller: _congratulationsController,
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(
+                Icons.error,
+                color: Colors.red,
+                size: 24,
+              );
+            },
           ),
         ],
       ),

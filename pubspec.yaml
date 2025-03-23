@@ -70,6 +70,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/logo.png
+    - assets/images/emoji/
 
   fonts:
     - family: NanumHuman
@@ -82,6 +83,11 @@ flutter:
     - family: chab
       fonts:
         - asset: assets/fonts/chab.ttf
+          weight: 400
+
+    - family: neo
+      fonts:
+        - asset: assets/fonts/Neo.ttf
           weight: 400
 
 dev_dependencies:

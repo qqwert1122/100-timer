@@ -75,8 +75,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   int _remainingSeconds = 360000; // 기본값 100시간 (초 단위)
   int get remainingSeconds => _remainingSeconds.clamp(0, _totalSeconds);
 
-  String get formattedTime => _formatTime(remainingSeconds);
-  String get formattedHour => _formatHour(remainingSeconds);
+  String get formattedTime => _formatTime(_remainingSeconds);
+  String get formattedHour => _formatHour(_remainingSeconds);
   String get formattedActivityTime => _formatTime(_currentSessionDuration.clamp(0, _totalSeconds));
   String get formattedTotalSessionDuration => _formatTime(_totalSessionDuration);
   String get formattedTotalSessionHour => _formatHour(_totalSessionDuration);
@@ -222,13 +222,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       // 세션의 duration 합 계산
       _totalSessionDuration = await _statsProvider.getTotalDurationForWeek(weekStart);
 
-      // 남은 시간 계산 - 여기가 문제일 수 있음
-      _remainingSeconds = (_totalSeconds - _totalSessionDuration).clamp(0, _totalSeconds);
-
-      print('Total seconds: $_totalSeconds');
-      print('Total session duration: $_totalSessionDuration');
-      print('Remaining seconds: $_remainingSeconds');
-
       // 세션 정보 확인
       if (_isRunning) {
         String lastSessionId = _timerData?['current_session_id'] ?? '';
@@ -255,6 +248,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       } else {
         _setDefaultActivity();
       }
+
+      _updateRemainingSeconds();
 
       notifyListeners();
     } catch (e) {
@@ -437,16 +432,29 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   /*
 
-      @refrest
+      @refresh
 
     */
 
-  void refreshRemainingSeconds() async {
+  void _updateRemainingSeconds() {
+    _remainingSeconds = (_totalSeconds - _totalSessionDuration).clamp(0, _totalSeconds);
+    notifyListeners();
+  }
+
+  Future<void> refreshRemainingSeconds() async {
     String weekStart = getWeekStart(DateTime.now());
     final totalSeconds = timerData!['total_seconds'];
 
+    print("📅 Week start: $weekStart");
+    print("🔄 기존 remainingSeconds: $_remainingSeconds");
+
     _totalSessionDuration = await _statsProvider.getTotalDurationForWeek(weekStart);
-    _remainingSeconds = (totalSeconds - _totalSessionDuration).clamp(0, totalSeconds);
+    print("🕓 새 totalSessionDuration: $_totalSessionDuration");
+
+    _updateRemainingSeconds();
+    print("🟢 새 remainingSeconds: $_remainingSeconds");
+
+    notifyListeners();
   }
 
   /*
@@ -658,7 +666,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   void _onTimerTick({required String sessionId}) async {
     try {
       _currentSessionDuration++;
-      _remainingSeconds--;
+      _updateRemainingSeconds();
 
       _dbService.updateSession(sessionId: sessionId, seconds: _currentSessionDuration);
 
@@ -674,8 +682,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
         return;
       }
-
-      notifyListeners();
     } catch (e) {
       rethrow;
     }
@@ -734,6 +740,10 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       _currentState = 'STOP';
       _timerData = await _dbService.getTimer(getWeekStart(DateTime.now()));
       _isExceeded = false;
+
+      String weekStart = getWeekStart(DateTime.now());
+      _totalSessionDuration = await _statsProvider.getTotalDurationForWeek(weekStart);
+      _updateRemainingSeconds();
 
       notifyListeners();
     } catch (e) {
@@ -902,16 +912,12 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         startDate: monthStart,
         endDate: monthEnd,
       );
-      debugPrint("initializeHeatMapData: Retrieved ${logs.length} logs from DB");
-
       _heatMapDataSet = {};
 
-      debugPrint("데이터 로드 완료: $_heatMapDataSet");
       for (var log in logs) {
         try {
           String? startTimeString = log['start_time'];
           int duration = log['duration'] ?? 0;
-          debugPrint("Processing log: start_time = $startTimeString, duration = $duration (seconds)");
 
           if (startTimeString != null && startTimeString.isNotEmpty) {
             DateTime date = DateTime.parse(startTimeString).toLocal();
@@ -919,41 +925,26 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
             DateTime dateOnly = DateTime(date.year, date.month, date.day);
             int effectiveDuration = max(0, duration);
 
-            debugPrint("Date: $dateOnly, Duration: $effectiveDuration seconds (${effectiveDuration / 3600} hours)");
-
             _heatMapDataSet.update(
               dateOnly,
               (existing) {
                 int newValue = existing + effectiveDuration;
-                debugPrint("Updating $dateOnly: existing = $existing, new = $newValue seconds");
                 return newValue;
               },
               ifAbsent: () {
-                debugPrint("Adding new entry for $dateOnly: $effectiveDuration seconds");
                 return effectiveDuration;
               },
             );
-          } else {
-            debugPrint("Skipping log due to missing start_time: $log");
-          }
-        } catch (e) {
-          debugPrint("Error processing log: $e");
-        }
+          } else {}
+        } catch (e) {}
       }
 
       if (_heatMapDataSet.isEmpty) {
-        debugPrint("WARNING: HeatMap dataset is empty after processing!");
       } else {
-        debugPrint("Final heatMapDataSet (${_heatMapDataSet.length} entries):");
-        _heatMapDataSet.forEach((date, seconds) {
-          debugPrint("  $date: $seconds seconds (${seconds / 3600} hours)");
-        });
+        _heatMapDataSet.forEach((date, seconds) {});
       }
-      debugPrint("데이터 로드 완료: $_heatMapDataSet");
 
       notifyListeners();
-    } catch (e) {
-      debugPrint("Exception in initializeHeatMapData: $e");
-    }
+    } catch (e) {}
   }
 }
