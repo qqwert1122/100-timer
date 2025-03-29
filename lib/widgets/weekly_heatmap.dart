@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:project1/theme/app_color.dart';
 import 'package:project1/utils/color_service.dart';
+import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 class WeeklyHeatmap extends StatefulWidget {
   final bool showAllHours;
@@ -48,16 +51,6 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
     generateWeeklyHeatmap();
   }
 
-  Future<void> initializeActivityColors() async {
-    List<Map<String, dynamic>> activities = await _statsProvider.getActivities();
-    for (var activity in activities) {
-      String activityId = activity['activity_id'];
-      Color color = ColorService.hexToColor(activity['activity_color']);
-      activityColorMap[activityId] = color;
-      activityNames[activityId] = activity['activity_name'];
-    }
-  }
-
   Future<void> generateWeeklyHeatmap() async {
     try {
       setState(() {
@@ -65,7 +58,9 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
         errorMessage = null;
       });
 
-      await initializeActivityColors();
+      // 과거 legend 값이 있었다면 초기화
+      activityColorMap.clear();
+      activityNames.clear();
 
       // offset를 반영하여 해당 주의 세션 데이터 로드
       List<Map<String, dynamic>> sessions = await _statsProvider.getSessionsForWeek(_statsProvider.weekOffset);
@@ -78,7 +73,9 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
         String activityId = session['activity_id'];
         DateTime startTime = DateTime.parse(session['start_time']).toLocal();
         DateTime endTime = session['end_time'] != null ? DateTime.parse(session['end_time']).toLocal() : DateTime.now();
-
+        Color color = ColorService.hexToColor(session['activity_color']);
+        activityColorMap[session['activity_id']] = color;
+        activityNames[session['activity_id']] = session['activity_name'];
         // session_duration 활용 (초 단위)
         int sessionDuration = session['duration'] ?? 0;
         int totalSeconds = endTime.difference(startTime).inSeconds;
@@ -168,7 +165,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
               children: [
                 Container(
                   width: 60,
-                  height: 20,
+                  height: 15,
                   alignment: Alignment.center,
                   child: Text(
                     hourKey,
@@ -181,7 +178,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
                   if (activityTimes == null || activityTimes.isEmpty) {
                     return Container(
                       width: 40,
-                      height: 20,
+                      height: 15,
                       margin: const EdgeInsets.all(1),
                     );
                   } else {
@@ -196,7 +193,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
 
                     return Container(
                       width: 40,
-                      height: 20,
+                      height: 15,
                       decoration: BoxDecoration(color: color, borderRadius: const BorderRadius.all(Radius.circular(6))),
                       margin: const EdgeInsets.all(1),
                       child: Tooltip(
@@ -256,7 +253,18 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Shimmer.fromColors(
+        baseColor: Colors.grey.shade300.withOpacity(0.2),
+        highlightColor: Colors.grey.shade100.withOpacity(0.2),
+        child: Container(
+          width: context.wp(90),
+          height: context.hp(68),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: AppColors.background(context),
+          ),
+        ),
+      );
     } else if (errorMessage != null) {
       return Center(child: Text(errorMessage!));
     } else {

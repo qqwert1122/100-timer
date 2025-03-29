@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
+import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
+import 'package:shimmer/shimmer.dart';
 
 class WeeklySessionStatus extends StatefulWidget {
-  final bool isSimple;
-
-  const WeeklySessionStatus({super.key, required this.isSimple});
+  const WeeklySessionStatus({super.key});
 
   @override
   State<WeeklySessionStatus> createState() => _WeeklySessionStatusState();
@@ -28,7 +28,50 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
           future: statsProvider.getWeeklySessionFlags(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return Container(
+                padding: context.paddingSM,
+                decoration: BoxDecoration(
+                  color: AppColors.background(context),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('집중 달성한 날', style: AppTextStyles.getTitle(context)),
+                            Text(
+                              '1시간 이상 이어서 집중한 날은 달성 표시가 돼요',
+                              style: AppTextStyles.getCaption(context),
+                            ),
+                          ],
+                        ),
+                        Image.asset(
+                          getIconImage('rocket'),
+                          width: context.xxxl,
+                          height: context.xxxl,
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: context.hp(3)),
+                    Shimmer.fromColors(
+                      baseColor: Colors.grey.shade300.withOpacity(0.2),
+                      highlightColor: Colors.grey.shade100.withOpacity(0.2),
+                      child: Container(
+                        width: context.wp(90),
+                        height: context.hp(9),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: AppColors.background(context),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
             }
 
             if (snapshot.hasError) {
@@ -54,83 +97,55 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
 
             return Container(
               padding: context.paddingSM,
+              decoration: BoxDecoration(
+                color: AppColors.background(context),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  widget.isSimple
-                      ? Container()
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('집중 달성한 날', style: AppTextStyles.getTitle(context)),
-                            IconButton(
-                              icon: Icon(Icons.refresh, size: context.xl),
-                              onPressed: () {
-                                // Future를 새로 가져오도록 setState 호출
-                                setState(() {});
-                              },
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('집중 달성한 날', style: AppTextStyles.getTitle(context)),
+                          Text(
+                            '1시간 이상 이어서 집중한 날은 달성 표시가 돼요',
+                            style: AppTextStyles.getCaption(context),
+                          ),
+                        ],
+                      ),
+                      Image.asset(
+                        getIconImage('rocket'),
+                        width: context.xxxl,
+                        height: context.xxxl,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: context.hp(3)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: dayStatuses.map((status) {
+                      return Column(
+                        children: [
+                          Text(status.weekday, style: AppTextStyles.getCaption(context)),
+                          SizedBox(height: context.hp(1)),
+                          Container(
+                            width: context.xxl,
+                            height: context.xxl,
+                            decoration: BoxDecoration(
+                              color: isDarkMode ? Colors.grey.shade700 : Colors.white,
+                              shape: BoxShape.circle,
                             ),
-                          ],
-                        ),
-                  widget.isSimple
-                      ? Container()
-                      : Text(
-                          '1시간 이상 집중한 날은 달성 표시가 돼요',
-                          style: AppTextStyles.getCaption(context),
-                        ),
-                  SizedBox(height: context.hp(widget.isSimple ? 0 : 3)),
-                  Container(
-                    padding: context.paddingSM,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: AppColors.backgroundSecondary(context),
-                      boxShadow: [
-                        BoxShadow(
-                          blurRadius: 2,
-                          spreadRadius: 3,
-                          color: Colors.grey.shade200,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: dayStatuses.map((status) {
-                        return Column(
-                          children: [
-                            Text(status.weekday, style: AppTextStyles.getCaption(context)),
-                            SizedBox(height: context.hp(1)),
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: isDarkMode ? Colors.grey.shade700 : Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: _buildStatusIcon(status.status),
-                              ),
+                            child: Center(
+                              child: _buildStatusIcon(status.status),
                             ),
-                            const SizedBox(height: 4),
-                            widget.isSimple
-                                ? Container()
-                                : Text(
-                                    '${status.date}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: status.status == DayStatusType.upcoming
-                                          ? isDarkMode
-                                              ? Colors.grey.shade700
-                                              : Colors.grey.shade400
-                                          : isDarkMode
-                                              ? Colors.white
-                                              : Colors.black,
-                                    ),
-                                  ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
+                          ),
+                          SizedBox(height: context.hp(1)),
+                        ],
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
@@ -239,8 +254,9 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
         return Container(
           width: containerSize,
           height: containerSize,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
+            color: AppColors.backgroundSecondary(context),
           ),
         );
     }

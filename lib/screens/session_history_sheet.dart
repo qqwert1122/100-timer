@@ -6,9 +6,10 @@ import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:project1/screens/activity_log_page.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
+import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
-import 'package:project1/widgets/weekly_linechart.dart';
+import 'package:project1/widgets/dahboard_section.dart';
 import 'package:project1/widgets/weekly_session_status.dart';
 import 'package:project1/widgets/weekly_heatmap.dart';
 import 'package:project1/widgets/weekly_activity_chart.dart';
@@ -17,6 +18,7 @@ import 'package:project1/widgets/footer.dart';
 import 'package:project1/widgets/toggle_total_view_swtich.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/timer_provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 class SessionHistorySheet extends StatefulWidget {
   final DraggableScrollableController controller;
@@ -108,7 +110,7 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
     });
 
     // 스탯 데이터 미리 로드
-    await statsProvider?.getWeeklyLineChart();
+    await statsProvider?.getWeeklyActivityChart();
     if (mounted) {
       setState(() {
         _lineChartDataLoaded = true;
@@ -185,11 +187,11 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
                   color: currentExtent >= 0.2
-                      ? (isDarkMode ? const Color(0xff181C14) : Colors.white)
-                      : (isDarkMode ? Colors.black : Colors.redAccent.shade200),
+                      ? AppColors.backgroundSecondary(context)
+                      : (isDarkMode ? AppColors.backgroundSecondary(context) : Colors.redAccent.shade200),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: AppColors.textSecondary(context).withOpacity(0.3),
                       spreadRadius: 4,
                       blurRadius: 10,
                       offset: const Offset(0, -1),
@@ -238,8 +240,8 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
                         // 각 섹션을 개별 SliverToBoxAdapter로 분리하여 높이 제한 없이 콘텐츠 표시
 
                         // 대시보드 섹션
-                        SliverToBoxAdapter(
-                          child: _buildDashboardSection(context),
+                        const SliverToBoxAdapter(
+                          child: DashboardSection(),
                         ),
 
                         SliverToBoxAdapter(
@@ -248,7 +250,7 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
 
                         // 주간 세션 상태 섹션
                         const SliverToBoxAdapter(
-                          child: WeeklySessionStatus(isSimple: false),
+                          child: WeeklySessionStatus(),
                         ),
 
                         SliverToBoxAdapter(
@@ -261,7 +263,7 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
                         ),
 
                         SliverToBoxAdapter(
-                          child: SizedBox(height: context.hp(5)),
+                          child: SizedBox(height: context.hp(2)),
                         ),
 
                         // 활동 시간 섹션
@@ -270,7 +272,7 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
                         ),
 
                         SliverToBoxAdapter(
-                          child: SizedBox(height: context.hp(5)),
+                          child: SizedBox(height: context.hp(2)),
                         ),
 
                         // 활동 캘린더 섹션
@@ -364,15 +366,6 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
     );
   }
 
-  // 높이가 고정된 섹션을 만들어주는 헬퍼 함수
-  Widget _buildHeightPreservedSection(Widget child, {required double height}) {
-    return SizedBox(
-      height: height,
-      width: double.infinity,
-      child: child,
-    );
-  }
-
   double _buildOffsetSectionPosition() {
     // 현재 extent에 따라 위치 조정
     if (currentExtent >= 0.9) {
@@ -418,6 +411,7 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
           padding: context.paddingSM,
           child: AnimatedDefaultTextStyle(
             style: TextStyle(
+              fontFamily: 'Neo',
               fontWeight: FontWeight.w900,
               fontSize: currentExtent >= 0.2 ? context.xl : context.md,
               color: currentExtent >= 0.2 ? AppColors.textPrimary(context) : Colors.white,
@@ -482,7 +476,7 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
                     },
                   ),
                   Text(
-                    stats.getCurrentWeekLabel(),
+                    stats.getSelectedWeekLabel(),
                     style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
                   ),
                   IconButton(
@@ -525,8 +519,10 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
   }
 
   Widget _buildDashboardSection(BuildContext context) {
-    double percent = (1 - timerProvider!.remainingSeconds / timerProvider!.totalSeconds);
-    String percentText = (percent * 100).toStringAsFixed(0);
+    String formatHour(int seconds) {
+      final hours = seconds ~/ 3600;
+      return '$hours';
+    }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -534,82 +530,135 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
         Expanded(
           flex: 1,
           child: Container(
-            margin: context.paddingSM,
             decoration: BoxDecoration(
-              color: AppColors.backgroundSecondary(context),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.shade200,
-                  offset: const Offset(0, 2),
-                  blurRadius: 2,
-                  spreadRadius: 3,
-                ),
-              ],
+              color: AppColors.background(context),
             ),
             child: Padding(
               padding: context.paddingSM,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("남은 시간", style: AppTextStyles.getTitle(context)),
-                      SizedBox(height: context.hp(1)),
-                      Row(
-                        children: [
-                          Text(
-                            timerProvider?.formattedHour ?? '0h',
-                            style: AppTextStyles.getTimeDisplay(context).copyWith(
-                              fontFamily: 'chab',
-                              color: Colors.redAccent,
+              child: FutureBuilder<List<int>>(
+                future: Future.wait([
+                  statsProvider!.getTotalDurationForWeek(),
+                  statsProvider!.getTotalSecondsForWeek(),
+                ]),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("활동 완료 시간", style: AppTextStyles.getTitle(context)),
+                            SizedBox(height: context.hp(1)),
+                            Shimmer.fromColors(
+                              baseColor: Colors.grey.shade300.withOpacity(0.2),
+                              highlightColor: Colors.grey.shade100.withOpacity(0.2),
+                              child: Container(
+                                width: context.wp(50),
+                                height: context.hp(7),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  color: AppColors.background(context),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Shimmer.fromColors(
+                          baseColor: Colors.grey.shade300.withOpacity(0.2),
+                          highlightColor: Colors.grey.shade100,
+                          child: Container(
+                            width: context.wp(24), // diameter = 2 * radius
+                            height: context.wp(24),
+                            decoration: BoxDecoration(
+                              color: AppColors.background(context),
+                              shape: BoxShape.circle,
                             ),
                           ),
-                          SizedBox(width: context.wp(1)),
-                          Container(
-                            width: 1, // 선의 두께
-                            height: context.hp(2), // 선의 높이
-                            color: Colors.grey.shade400, // 선의 색상
-                            margin: EdgeInsets.symmetric(horizontal: context.wp(1)), // 양쪽 여백
-                          ),
-                          SizedBox(width: context.wp(1)),
-                          Text(
-                            '100',
-                            style: AppTextStyles.getTimeDisplay(context).copyWith(fontFamily: 'chab', color: Colors.grey.shade300),
+                        ),
+                      ],
+                    );
+                    // 로딩 하나만
+                  }
+
+                  if (snapshot.hasError) {
+                    return const Text('에러 발생');
+                  }
+
+                  final totalDuration = snapshot.data![0]; // 첫 번째 Future 결과
+                  final totalSeconds = snapshot.data![1]; // 두 번째 Future 결과
+
+                  final formattedDuration = formatHour(totalDuration);
+                  final tagetDuration = formatHour(totalSeconds);
+
+                  double percent = (totalDuration / totalSeconds);
+                  String percentText = (percent * 100).toStringAsFixed(0);
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("활동 완료 시간", style: AppTextStyles.getTitle(context)),
+                          SizedBox(height: context.hp(1)),
+                          Row(
+                            children: [
+                              Text(
+                                formattedDuration,
+                                style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                  fontFamily: 'chab',
+                                  color: Colors.redAccent,
+                                ),
+                              ),
+                              SizedBox(width: context.wp(1)),
+                              Container(
+                                width: 1,
+                                height: context.hp(2),
+                                color: Colors.grey.shade400,
+                                margin: EdgeInsets.symmetric(horizontal: context.wp(1)),
+                              ),
+                              SizedBox(width: context.wp(1)),
+                              Text(
+                                '${tagetDuration}h',
+                                style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                  fontFamily: 'chab',
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
+                      CircularPercentIndicator(
+                        radius: context.wp(12),
+                        lineWidth: context.wp(5),
+                        animation: true,
+                        percent: percent.clamp(0.0, 1.0),
+                        center: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              percentText,
+                              style: AppTextStyles.getBody(context).copyWith(
+                                fontSize: context.xl,
+                                color: Colors.redAccent,
+                                fontFamily: 'chab',
+                              ),
+                            ),
+                            SizedBox(width: context.wp(0.5)),
+                            Text(
+                              '%',
+                              style: AppTextStyles.getCaption(context),
+                            ),
+                          ],
+                        ),
+                        circularStrokeCap: CircularStrokeCap.round,
+                        progressColor: Colors.redAccent,
+                        backgroundColor: AppColors.backgroundSecondary(context),
+                      ),
                     ],
-                  ),
-                  CircularPercentIndicator(
-                    radius: context.wp(12),
-                    lineWidth: context.wp(5),
-                    animation: true,
-                    percent: percent.clamp(0.0, 1.0),
-                    center: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          percentText,
-                          style: AppTextStyles.getBody(context).copyWith(
-                            fontSize: context.xl,
-                            color: Colors.redAccent,
-                            fontFamily: 'chab',
-                          ),
-                        ),
-                        SizedBox(width: context.wp(0.5)),
-                        Text(
-                          '%',
-                          style: AppTextStyles.getCaption(context),
-                        ),
-                      ],
-                    ),
-                    circularStrokeCap: CircularStrokeCap.round,
-                    progressColor: Colors.redAccent,
-                    backgroundColor: AppColors.background(context),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ),
@@ -640,124 +689,145 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
   }
 
   Widget _buildHeatmapSection(BuildContext context, TimerProvider timerProvider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: context.paddingHorizSM,
-          child: Row(
+    return Container(
+      padding: context.paddingSM,
+      decoration: BoxDecoration(
+        color: AppColors.background(context),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('히트맵', style: AppTextStyles.getTitle(context)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text('히트맵', style: AppTextStyles.getTitle(context)),
+                    ],
+                  ),
+                  Text(
+                    '시간대별 활동을 색깔로 확인해요',
+                    style: AppTextStyles.getCaption(context),
+                  ),
+                ],
+              ),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   ToggleTotalViewSwtich(value: showAllHours, onChanged: _toggleShowAllHours),
-                  IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: () {
-                      timerProvider.initializeHeatMapData();
-                      rerenderingHeatmap();
-                    },
-                  ),
+                  SizedBox(width: context.wp(4)),
+                  SizedBox(
+                    width: 25,
+                    height: 25,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        shape: const CircleBorder(),
+                        padding: EdgeInsets.zero,
+                        backgroundColor: AppColors.backgroundSecondary(context),
+                      ),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        timerProvider.initializeHeatMapData();
+                        rerenderingHeatmap();
+                      },
+                      child: Icon(Icons.refresh, color: AppColors.textPrimary(context), size: 18),
+                    ),
+                  )
                 ],
               ),
             ],
           ),
-        ),
-        Padding(
-          padding: context.paddingHorizSM,
-          child: Text(
-            '시간대별 활동을 색깔로 확인해요',
-            style: AppTextStyles.getCaption(context),
-          ),
-        ),
-        SizedBox(height: context.hp(3)),
-        // 높이 제한 없이 콘텐츠 전체 표시
-        _heatmapDataLoaded
-            ? WeeklyHeatmap(
-                key: ValueKey(refreshKey),
-                showAllHours: showAllHours,
-              )
-            : const Center(child: CircularProgressIndicator()),
-        SizedBox(height: context.hp(3)), // 하단 여백 추가
-      ],
-    );
-  }
 
-  Widget _buildLineChartSection(BuildContext context) {
-    return Consumer<StatsProvider>(
-      builder: (context, stats, child) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: context.paddingSM,
-              child: Text('활동별 기록', style: AppTextStyles.getTitle(context)),
-            ),
-            Padding(
-              padding: context.paddingHorizSM,
-              child: Text(
-                '활동별 한 주의 기록을 살펴보세요',
-                style: AppTextStyles.getCaption(context),
-              ),
-            ),
-            SizedBox(height: context.hp(3)),
-            // 높이 제한 없이 콘텐츠 표시
-            _lineChartDataLoaded
-                ? FutureBuilder<List<Map<String, dynamic>>>(
-                    key: ValueKey(stats.weekOffset),
-                    future: stats.getWeeklyLineChart(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      return Padding(
-                        padding: context.paddingSM,
-                        child: WeeklyLineChart(sessions: snapshot.data!),
-                      );
-                    },
-                  )
-                : const Center(child: CircularProgressIndicator()),
-            SizedBox(height: context.hp(3)), // 하단 여백 추가
-          ],
-        );
-      },
+          SizedBox(height: context.hp(3)),
+          // 높이 제한 없이 콘텐츠 전체 표시
+          _heatmapDataLoaded
+              ? WeeklyHeatmap(
+                  key: ValueKey(refreshKey),
+                  showAllHours: showAllHours,
+                )
+              : Shimmer.fromColors(
+                  baseColor: Colors.grey.shade300.withOpacity(0.2),
+                  highlightColor: Colors.grey.shade100.withOpacity(0.2),
+                  child: Container(
+                    width: context.wp(90),
+                    height: context.hp(68),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.background(context),
+                    ),
+                  ),
+                ),
+          SizedBox(height: context.hp(3)), // 하단 여백 추가
+        ],
+      ),
     );
   }
 
   Widget _buildActivityTimeSection(BuildContext context, TimerProvider timerProvider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _activityChartDataLoaded ? const WeeklyActivityChart() : const Center(child: CircularProgressIndicator()),
-        SizedBox(height: context.hp(3)), // 하단 여백 추가
-      ],
+    return Container(
+      padding: context.paddingSM,
+      decoration: BoxDecoration(
+        color: AppColors.background(context),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _activityChartDataLoaded
+              ? const WeeklyActivityChart()
+              : Shimmer.fromColors(
+                  baseColor: Colors.grey.shade300.withOpacity(0.2),
+                  highlightColor: Colors.grey.shade100.withOpacity(0.2),
+                  child: Container(
+                    width: context.wp(90),
+                    height: context.hp(30),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.background(context),
+                    ),
+                  ),
+                ),
+          SizedBox(height: context.hp(3)), // 하단 여백 추가
+        ],
+      ),
     );
   }
 
   Widget _buildActivityCalendarSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: context.paddingSM,
-          child: Text('잔디심기', style: AppTextStyles.getTitle(context)),
-        ),
-        Padding(
-          padding: context.paddingHorizSM,
-          child: Text(
-            '활동을 하면 달력에 잔디가 심어져요',
-            style: AppTextStyles.getCaption(context),
+    return Container(
+      padding: context.paddingSM,
+      decoration: BoxDecoration(color: AppColors.background(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('잔디심기', style: AppTextStyles.getTitle(context)),
+                  Text(
+                    '활동을 하면 달력에 잔디가 심어져요',
+                    style: AppTextStyles.getCaption(context),
+                  ),
+                ],
+              ),
+              Image.asset(
+                getIconImage('seedling'),
+                width: context.xxxl,
+                height: context.xxxl,
+              ),
+            ],
           ),
-        ),
-        SizedBox(height: context.hp(3)),
-        // 높이 제한 없이 콘텐츠 표시
-        const Padding(
-          padding: EdgeInsets.all(16.0),
-          child: ActivityHeatMap(),
-        ),
-        SizedBox(height: context.hp(3)), // 하단 여백 추가
-      ],
+          SizedBox(height: context.hp(1)),
+          // 높이 제한 없이 콘텐츠 표시
+          const ActivityHeatMap(),
+          SizedBox(height: context.hp(1)), // 하단 여백 추가
+        ],
+      ),
     );
   }
 }

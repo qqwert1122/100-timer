@@ -6,21 +6,58 @@ import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/theme/app_theme.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/logger_config.dart';
+import 'package:project1/utils/notification_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:uuid/uuid.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+Future<void> initializeAppSettings() async {
+  // 화면 켜짐 유지
   WakelockPlus.enable();
+
+  // SharedPreferences 초기화 및 기본값 설정
+  final prefs = await SharedPreferences.getInstance();
+
+  // 1. totalSeconds 초기화 (처음 실행 시에만)
+  if (!prefs.containsKey('totalSeconds')) {
+    logger.d('앱 최초 실행: totalSeconds 초기화');
+    await prefs.setInt('totalSeconds', 360000); // 100시간 (초 단위)
+  }
+
+  // 2. 온보딩 상태 초기화 (처음 실행 시에만)
+  if (!prefs.containsKey('hasCompletedOnboarding')) {
+    logger.d('앱 최초 실행: 온보딩 상태 초기화');
+    await prefs.setBool('hasCompletedOnboarding', false);
+  }
+
+  // 3. 화면 켜짐 유지 설정 초기화 (처음 실행 시에만)
+  if (!prefs.containsKey('keepScreenOn')) {
+    logger.d('앱 최초 실행: 화면 켜짐 유지 설정 초기화');
+    await prefs.setBool('keepScreenOn', false);
+  }
+
+  if (!prefs.containsKey('alarmFlag')) {
+    logger.d('앱 최초 실행 : 알람 설정 초기화');
+    await prefs.setBool('alarmFlag', true);
+  }
 
   await initializeDateFormatting('ko_KR', null);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.android);
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await initializeAppSettings();
+
+  await NotificationService().initialize();
+
   // 데이터베이스 초기화
-  // final dbService = DatabaseService();
+  // final dbService = DatabaseService() ;
   // await insertTestData(dbService);
 
   runApp(
@@ -60,6 +97,7 @@ void main() async {
       child: const MyApp(),
     ),
   );
+  // 앱 설정 초기화 함수
 }
 
 class MyApp extends StatefulWidget {
@@ -71,11 +109,13 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late Future<Map<String, dynamic>> _initializationFuture;
   late DatabaseService _dbService;
+  late SharedPreferences prefs;
 
   @override
   void initState() {
     super.initState();
     _initializationFuture = _initializeProviders();
+    _initPrefs();
   }
 
   Future<Map<String, dynamic>> _initializeProviders() async {
@@ -96,6 +136,11 @@ class _MyAppState extends State<MyApp> {
     // 기본 타이머 초기화
     Map<String, dynamic> timerData = await _initializeApp();
     return timerData;
+  }
+
+  // SharedPreferences 초기화
+  Future<void> _initPrefs() async {
+    prefs = await SharedPreferences.getInstance();
   }
 
   Future<void> _insertDefaultActivities() async {
@@ -207,7 +252,7 @@ class _MyAppState extends State<MyApp> {
       final now = DateTime.now();
       final weekStart = getWeekStart(now);
       final timerId = const Uuid().v4();
-      int userTotalSeconds = 360000; // 기본값: 100시간
+      final userTotalSeconds = prefs.getInt('total_seconds') ?? 360000; // 기본값: 100시간
 
       logger.i('새 타이머 생성: ID=$timerId, 주 시작일=$weekStart');
 
@@ -269,11 +314,14 @@ class _MyAppState extends State<MyApp> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
-              body: SizedBox(
-                width: 60, // 원하는 크기로 조절
-                height: 60, // 원하는 크기로 조절
-                child: CircularProgressIndicator(
-                  strokeWidth: 6, // 선 두께도 조절 가능
+              body: Center(
+                child: SizedBox(
+                  width: 60, // 원하는 크기로 조절
+                  height: 60, // 원하는 크기로 조절
+                  child: CircularProgressIndicator(
+                    strokeWidth: 6, // 선 두께도 조절 가능
+                    color: Colors.grey,
+                  ),
                 ),
               ),
             );

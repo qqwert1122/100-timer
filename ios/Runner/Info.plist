@@ -47,5 +47,31 @@
 	<true/>
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<false/>
+
+	<!-- 알림을 위한 추가 설정 -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+		<string>processing</string>
+	</array>
+	<!-- 알림 권한 요청 시 표시되는 설명 -->
+	<key>NSUserNotificationUsageDescription</key>
+	<string>타이머 진행 상황을 알려드리기 위해 알림 권한이 필요합니다.</string>
+
+	<!-- 소리 권한 설명 -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>이 앱은 알림음을 위해 마이크 권한이 필요합니다</string>
+
+	<!-- 알림 센터 권한 설명 -->
+	<key>NSNotificationCenterUsageDescription</key>
+	<string>타이머 진행 상황과 완료를 알려드리기 위해 알림 센터 권한이 필요합니다</string>
+
+	<!-- url 링크 권한 설명 -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+  		<string>https</string>
+	</array>
+
 </dict>
 </plist>

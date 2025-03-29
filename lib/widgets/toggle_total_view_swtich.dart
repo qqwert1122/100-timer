@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ToggleTotalViewSwtich extends StatefulWidget {
   final bool value;
@@ -55,6 +56,7 @@ class _ToggleTotalViewSwtich extends State<ToggleTotalViewSwtich> with SingleTic
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        HapticFeedback.lightImpact();
         widget.onChanged(!widget.value);
       },
       child: AnimatedContainer(

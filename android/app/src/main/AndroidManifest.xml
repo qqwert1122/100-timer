@@ -1,4 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:label="100-Timer"
         android:name="${applicationName}"
@@ -45,7 +53,25 @@
                     android:scheme="kakaoe61da8880887bcab5a697b74091d0b84"/> <!-- 네이티브 앱 키 입력 -->
             </intent-filter>
         </activity>
-
+         <!-- Awesome Notifications Broadcast Receivers -->
+        <receiver android:name="me.carda.awesome_notifications.notifications.broadcastReceivers.DismissedNotificationReceiver"
+            android:exported="false"/>
+        
+        <receiver android:name="me.carda.awesome_notifications.notifications.broadcastReceivers.ScheduledNotificationReceiver"
+            android:exported="false"/>
+        
+        <receiver android:name="me.carda.awesome_notifications.notifications.broadcastReceivers.KeepOnTopNotificationReceiver"
+            android:exported="false"/>
+        
+        <receiver android:name="me.carda.awesome_notifications.notifications.broadcastReceivers.ActionButtonsReceiver"
+            android:exported="false"/>
+        
+        <receiver android:name="me.carda.awesome_notifications.notifications.broadcastReceivers.AwesomeNotificationsReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            </intent-filter>
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
@@ -56,6 +82,10 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+          <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
         </intent>
     </queries>
 </manifest>

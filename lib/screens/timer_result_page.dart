@@ -5,11 +5,12 @@ import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/notification_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
-import 'package:project1/widgets/shimmer_text.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
+import 'package:shimmer/shimmer.dart';
 
 // StatelessWidget에서 StatefulWidget으로 변경
 class TimerResultPage extends StatefulWidget {
@@ -30,6 +31,8 @@ class TimerResultPage extends StatefulWidget {
 
 // State 클래스에 TickerProviderStateMixin 추가
 class _TimerResultPageState extends State<TimerResultPage> with TickerProviderStateMixin {
+  final NotificationService _notificationService = NotificationService();
+
   // 애니메이션 컨트롤러 선언
   late AnimationController _trophyController;
   late AnimationController _checkController;
@@ -38,6 +41,8 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
   @override
   void initState() {
     super.initState();
+
+    _notificationService.showActivityCompletedNotification(title: '활동 완료', body: '활동을 완료했습니다');
 
     // 트로피 애니메이션 컨트롤러 초기화
     _trophyController = AnimationController(
@@ -198,7 +203,7 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
       final remainingSeconds = duration.inSeconds.remainder(60);
 
       if (hours > 0) {
-        return '$hours시간 $minutes분 $remainingSeconds초';
+        return '$hours시간 $minutes분';
       } else if (minutes > 0) {
         return '$minutes분 $remainingSeconds초';
       } else {
@@ -251,12 +256,12 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                 children: [
                   Wrap(
                     alignment: WrapAlignment.end,
-                    crossAxisAlignment: WrapCrossAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Builder(
                         builder: (context) {
                           final activityName = timerProvider.currentActivityName;
-                          final displayText = activityName.length > 6 ? activityName.substring(0, 6) + '...' : activityName;
+                          final displayText = activityName.length > 6 ? '${activityName.substring(0, 6)}...' : activityName;
 
                           return Text(
                             displayText,
@@ -290,12 +295,16 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
               SizedBox(height: context.hp(4)),
               Align(
                 alignment: Alignment.center,
-                child: ShimmerText(
-                  text: formatDuration(widget.sessionDuration),
-                  style: AppTextStyles.getHeadline(context).copyWith(
-                    color: ColorService.getTextColorForBackground(activityColor),
-                    fontFamily: 'Neo',
-                    fontSize: context.xxl,
+                child: Shimmer.fromColors(
+                  baseColor: AppColors.textPrimary(context),
+                  highlightColor: Colors.grey.shade100.withOpacity(0.2),
+                  child: Text(
+                    formatDuration(widget.sessionDuration),
+                    style: AppTextStyles.getHeadline(context).copyWith(
+                      color: ColorService.getTextColorForBackground(activityColor),
+                      fontFamily: 'Neo',
+                      fontSize: context.xxl,
+                    ),
                   ),
                 ),
               ),

@@ -220,7 +220,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       }
 
       // 세션의 duration 합 계산
-      _totalSessionDuration = await _statsProvider.getTotalDurationForWeek(weekStart);
+      _totalSessionDuration = await _statsProvider.getTotalDurationForCurrentWeek();
 
       // 세션 정보 확인
       if (_isRunning) {
@@ -448,7 +448,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     print("📅 Week start: $weekStart");
     print("🔄 기존 remainingSeconds: $_remainingSeconds");
 
-    _totalSessionDuration = await _statsProvider.getTotalDurationForWeek(weekStart);
+    _totalSessionDuration = await _statsProvider.getTotalDurationForCurrentWeek();
     print("🕓 새 totalSessionDuration: $_totalSessionDuration");
 
     _updateRemainingSeconds();
@@ -742,7 +742,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       _isExceeded = false;
 
       String weekStart = getWeekStart(DateTime.now());
-      _totalSessionDuration = await _statsProvider.getTotalDurationForWeek(weekStart);
+      _totalSessionDuration = await _statsProvider.getTotalDurationForCurrentWeek();
       _updateRemainingSeconds();
 
       notifyListeners();
@@ -790,7 +790,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   String _formatHour(int seconds) {
     final hours = seconds ~/ 3600;
-    return '${hours}h';
+    return '$hours';
   }
 
   String getWeekStart(DateTime date) {

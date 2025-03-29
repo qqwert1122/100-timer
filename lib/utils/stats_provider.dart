@@ -38,8 +38,8 @@ class StatsProvider extends ChangeNotifier {
 
   Future<void> updateCurrentSessions() async {
     final weeklyRange = DateUtils.getWeeklyRange(weekOffset: _weekOffset);
-    final startOfWeek = weeklyRange['startOfWeek']!;
-    final endOfWeek = weeklyRange['endOfWeek']!;
+    final startOfWeek = weeklyRange['startOfWeek']!.toUtc();
+    final endOfWeek = weeklyRange['endOfWeek']!.toUtc();
 
     try {
       _currentSessions = await _dbService.getSessionsWithinDateRange(
@@ -71,6 +71,13 @@ class StatsProvider extends ChangeNotifier {
   }
 
   String getCurrentWeekLabel() {
+    final range = DateUtils.getWeeklyRange(weekOffset: 0);
+    final monday = range['startOfWeek']!;
+
+    return DateUtils().formatToMonthWeek(monday);
+  }
+
+  String getSelectedWeekLabel() {
     final range = DateUtils.getWeeklyRange(weekOffset: _weekOffset);
     final monday = range['startOfWeek']!;
 
@@ -210,7 +217,7 @@ class StatsProvider extends ChangeNotifier {
     }
   }
 
-  Future<int> getTotalDurationForWeek(String weekStart) async {
+  Future<int> getTotalDurationForWeek() async {
     try {
       final totalDuration = _currentSessions.fold<int>(
         0,
@@ -220,6 +227,42 @@ class StatsProvider extends ChangeNotifier {
       return totalDuration;
     } catch (e) {
       // error log
+      return 0;
+    }
+  }
+
+  Future<int> getTotalDurationForCurrentWeek() async {
+    try {
+      final weeklyRange = DateUtils.getWeeklyRange(weekOffset: 0);
+      DateTime startUtc = weeklyRange['startOfWeek']!.toUtc();
+      DateTime endUtc = weeklyRange['endOfWeek']!.toUtc();
+
+      // 해당 주에 속하는 세션들을 데이터베이스에서 조회
+      final sessions = await _dbService.getSessionsWithinDateRange(
+        startDate: startUtc,
+        endDate: endUtc,
+      );
+
+      // 조회한 세션들의 duration(사용 시간)을 모두 합산
+      final totalDuration = sessions.fold<int>(
+        0,
+        (sum, session) => sum + (session['duration'] as int? ?? 0),
+      );
+
+      return totalDuration;
+    } catch (e) {
+      // error log
+      return 0;
+    }
+  }
+
+  Future<int> getTotalSecondsForWeek() async {
+    try {
+      final weeklyRange = DateUtils.getWeeklyRange(weekOffset: _weekOffset);
+      String weekStart = weeklyRange['startOfWeek']!.toIso8601String().split('T').first;
+      final timerData = await _dbService.getTimer(weekStart);
+      return timerData!['total_seconds'];
+    } catch (e) {
       return 0;
     }
   }
@@ -287,7 +330,7 @@ class StatsProvider extends ChangeNotifier {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getWeeklyLineChart() async {
+  Future<List<Map<String, dynamic>>> getWeeklyActivityChart() async {
     try {
       final sessions = _currentSessions;
 
@@ -299,6 +342,7 @@ class StatsProvider extends ChangeNotifier {
         final weekday = startTime.weekday; // 1 (월요일) ~ 7 (일요일)
         final activityName = session['activity_name'];
         final activityColor = session['activity_color'];
+        final activityIcon = session['activity_icon'];
         final durationMinutes = (session['duration'] as int) / 60.0;
 
         final key = '$activityName-$activityColor-$weekday';
@@ -307,6 +351,7 @@ class StatsProvider extends ChangeNotifier {
           aggregatedData[key] = {
             'activity_name': activityName,
             'activity_color': activityColor,
+            'activity_icon': activityIcon,
             'weekday': weekday,
             'minutes': 0.0,
           };

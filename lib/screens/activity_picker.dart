@@ -236,59 +236,65 @@ class _ActivityPickerState extends State<ActivityPicker> {
                               ],
                             )
                           : null,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 0),
-                        child: ListTile(
-                          leading: Image.asset(
-                            iconData,
-                            width: context.xl,
-                            height: context.xl,
-                            errorBuilder: (context, error, stackTrace) {
-                              // 이미지를 로드하는 데 실패한 경우의 대체 표시
-                              return Container(
-                                width: context.xl,
-                                height: context.xl,
-                                color: Colors.grey.withOpacity(0.2),
-                                child: Icon(
-                                  Icons.broken_image,
-                                  size: context.xl,
-                                  color: Colors.grey,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: activity['activity_name'] == widget.selectedActivity ? Colors.red[50] : null,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 0),
+                          child: ListTile(
+                            leading: Image.asset(
+                              iconData,
+                              width: context.xl,
+                              height: context.xl,
+                              errorBuilder: (context, error, stackTrace) {
+                                // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                                return Container(
+                                  width: context.xl,
+                                  height: context.xl,
+                                  color: Colors.grey.withOpacity(0.2),
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    size: context.xl,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
+                            ),
+                            title: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Text(
+                                  activity['activity_name'],
+                                  style: AppTextStyles.getBody(context).copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
                                 ),
+                                SizedBox(
+                                  width: context.wp(4),
+                                ),
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  margin: const EdgeInsets.symmetric(vertical: 2.0),
+                                  decoration: BoxDecoration(
+                                    color: ColorService.hexToColor(activity['activity_color']),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              widget.onSelectActivity(
+                                activity['activity_id'],
+                                activity['activity_name'],
+                                activity['activity_icon'],
+                                activity['activity_color'],
                               );
                             },
                           ),
-                          title: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Text(
-                                activity['activity_name'],
-                                style: AppTextStyles.getBody(context).copyWith(
-                                    fontWeight: FontWeight.w900,
-                                    color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null),
-                              ),
-                              SizedBox(
-                                width: context.wp(4),
-                              ),
-                              Container(
-                                width: 12,
-                                height: 12,
-                                margin: const EdgeInsets.symmetric(vertical: 2.0),
-                                decoration: BoxDecoration(
-                                  color: ColorService.hexToColor(activity['activity_color']),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ],
-                          ),
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            widget.onSelectActivity(
-                              activity['activity_id'],
-                              activity['activity_name'],
-                              activity['activity_icon'],
-                              activity['activity_color'],
-                            );
-                          },
                         ),
                       ),
                     );

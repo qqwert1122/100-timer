@@ -2,12 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:project1/screens/music_bottom_sheet.dart';
 import 'package:project1/screens/timer_result_page.dart';
+import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/logger_config.dart';
+import 'package:project1/utils/music_player.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
@@ -31,6 +34,9 @@ class TimerRunningPage extends StatefulWidget {
 }
 
 class _TimerRunningPageState extends State<TimerRunningPage> with TickerProviderStateMixin, WidgetsBindingObserver {
+  // 배경음악 플레이어 객체
+  final musicPlayer = MusicPlayer();
+
   // 애니메이션 컨트롤러 및 애니메이션 객체
   late AnimationController _messageAnimationController;
   late Animation<Offset> _messageAnimation;
@@ -51,7 +57,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
   // 설정 관련 변수
   final bool _isMusicOn = false; // 음악 설정
-  final bool _isLightOn = false; // 조명 설정
   final bool _isAlarmOn = false; // 알림 설정
 
   // 원형 프로그레스 및 파동 애니메이션션 관련
@@ -159,12 +164,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
       final targetDuration = currentSession['target_duration'];
 
-      logger.d('Session details:');
-      logger.d('Session ID: $sessionId');
-      logger.d('lastUpdatedAt: $lastUpdatedAt');
-      logger.d('Current Duration: $currentDuration');
-      logger.d('Target Duration: $targetDuration');
-
       if (currentDuration >= targetDuration) {
         // targetDuration을 초과했을 경우
         logger.i('Session exceeded target duration');
@@ -205,11 +204,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     final isRunning = timerProvider.isRunning;
     final isExceeded = timerProvider.isExceeded;
     final currentState = timerProvider.currentState;
-
-    logger.d('===== Timer State Changed =====');
-    logger.d('Is Running: $isRunning');
-    logger.d('Is Exceeded: $isExceeded');
-    logger.d('Current State: $currentState');
 
     // 애니메이션 상태 업데이트
     _updateAnimationState(currentState);
@@ -454,6 +448,21 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     return "$minutes분";
   }
 
+  void _showMusicBottomSheet() {
+    showMusicBottomSheet(
+      context: context,
+      currentMusic: musicPlayer.currentMusic,
+      onMusicSelected: (music) {
+        musicPlayer.playMusic(music);
+        setState(() {}); // UI 업데이트
+      },
+      onStopMusic: () {
+        musicPlayer.stopMusic();
+        setState(() {}); // UI 업데이트
+      },
+    );
+  }
+
   Widget _buildActivityMessage(TimerProvider timerProvider) {
     // 현재 활동 이름
     final currentActivityName = timerProvider.currentActivityName;
@@ -594,7 +603,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                   );
                 },
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: context.hp(1)),
               Text(
                 (activityName).length > 6 ? '${(activityName).substring(0, 6)}...' : (activityName),
                 style: TextStyle(
@@ -729,12 +738,30 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
               Row(
                 children: [
                   IconButton(
-                    onPressed: () {},
-                    icon: Icon(
-                      Icons.music_note_rounded,
-                      size: context.xl,
+                    onPressed: () {
+                      _showMusicBottomSheet();
+                      HapticFeedback.lightImpact();
+                    },
+                    icon: Image.asset(
+                      getIconImage('music'),
+                      width: context.xl,
+                      height: context.xl,
+                      errorBuilder: (context, error, stackTrace) {
+                        // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                        return Container(
+                          width: context.xl,
+                          height: context.xl,
+                          color: Colors.grey.withOpacity(0.2),
+                          child: Icon(
+                            Icons.broken_image,
+                            size: context.xl,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
                     ),
                   ),
+                  SizedBox(width: context.wp(5)),
                   IconButton(
                     onPressed: () {
                       Fluttertoast.showToast(
@@ -746,9 +773,23 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                         fontSize: context.md,
                       );
                     },
-                    icon: Icon(
-                      Icons.notifications_active_rounded,
-                      size: context.xl,
+                    icon: Image.asset(
+                      getIconImage('bell'),
+                      width: context.xl,
+                      height: context.xl,
+                      errorBuilder: (context, error, stackTrace) {
+                        // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                        return Container(
+                          width: context.xl,
+                          height: context.xl,
+                          color: Colors.grey.withOpacity(0.2),
+                          child: Icon(
+                            Icons.broken_image,
+                            size: context.xl,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
