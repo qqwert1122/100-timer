@@ -602,13 +602,19 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
             ),
           Transform.scale(
             scale: 5,
-            child: CircularProgressIndicator(
-              key: _circleKey,
-              value: progress,
-              backgroundColor: _isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
-              valueColor: AlwaysStoppedAnimation<Color>(activityColor),
-              strokeWidth: 8,
-              strokeCap: StrokeCap.round,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0, end: progress),
+              duration: const Duration(milliseconds: 500),
+              builder: (context, animatedProgress, child) {
+                return CircularProgressIndicator(
+                  key: _circleKey,
+                  value: animatedProgress,
+                  backgroundColor: _isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                  valueColor: AlwaysStoppedAnimation<Color>(activityColor),
+                  strokeWidth: 8,
+                  strokeCap: StrokeCap.round,
+                );
+              },
             ),
           ),
           Column(

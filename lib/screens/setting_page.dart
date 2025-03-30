@@ -1,11 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
+import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
-import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/responsive_size.dart';
+import 'package:project1/utils/stats_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -19,6 +22,9 @@ class SettingPage extends StatefulWidget {
 
 class _SettingPageState extends State<SettingPage> {
   late SharedPreferences prefs;
+  late final StatsProvider statsProvider;
+  late final DatabaseService dbService;
+
   bool keepScreenOn = false; // 화면 켜기 상태 변수
   bool alarmFlag = true; // 알람 관련 초기 변수수
   int selectedValue = 100; // 기본값 (시간 단위)
@@ -27,6 +33,8 @@ class _SettingPageState extends State<SettingPage> {
   @override
   void initState() {
     super.initState();
+    statsProvider = Provider.of<StatsProvider>(context, listen: false);
+    dbService = Provider.of<DatabaseService>(context, listen: false);
     _initPrefs();
   }
 
@@ -104,7 +112,7 @@ class _SettingPageState extends State<SettingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> generalItems = [
+    final List<Map<String, dynamic>> timerItems = [
       {
         'title': '도전 시간을 변경해요',
         'icon': 'bullseye',
@@ -132,16 +140,76 @@ class _SettingPageState extends State<SettingPage> {
           ),
         ),
       },
-    ];
-
-    final List<Map<String, dynamic>> utilityItems = [
       {
         'title': '타이머를 초기화해요',
         'icon': 'magic_wand',
         'description': '이번 주차의 타이머를 초기화해요',
-        'onTap': () {},
+        'onTap': () {
+          showDialog(
+            context: context,
+            builder: (ctx) {
+              return AlertDialog(
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.0),
+                ),
+                title: const Text("정말 이번 주 타이머를 초기화 하시겠어요?"),
+                content: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("이번주 활동 내역이 모두 삭제돼요."),
+                    Text(
+                      "삭제는 되돌릴 수 없어요.",
+                      style: TextStyle(
+                        color: Colors.redAccent,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                    },
+                    child: const Text(
+                      "취소",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      // 현재 주(weekOffset 0)의 세션들 가져오기
+                      final sessions = await statsProvider.getSessionsForWeek(0);
+
+                      // 모든 세션에 대해 소프트 딜리션 실행 (동시에 처리)
+                      await Future.wait(
+                        sessions.map((session) => dbService.deleteSession(session['session_id'])),
+                      );
+
+                      // 작업 완료 후 다이얼로그 닫기
+                      Navigator.of(ctx).pop();
+
+                      // 선택 사항: 삭제 완료 후 사용자에게 알림 메시지 표시
+                      Fluttertoast.showToast(
+                        msg: "이번 주 타이머가 초기화되었습니다.",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.BOTTOM,
+                      );
+                    },
+                    child: const Text("삭제해요", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
+                  ),
+                ],
+              );
+            },
+          );
+        },
         'trailing': null,
       },
+    ];
+
+    final List<Map<String, dynamic>> utilityItems = [
       {
         'title': '동기화해요',
         'icon': 'counter_clockwise',
@@ -233,7 +301,7 @@ class _SettingPageState extends State<SettingPage> {
       {
         'title': '버전',
         'icon': 'info',
-        'description': '현재 버전: 0.0.1\n2024-11-16',
+        'description': '현재 버전: 0.0.1\n2025-03-30',
         'onTap': () {},
         'trailing': null,
       },
@@ -340,9 +408,9 @@ class _SettingPageState extends State<SettingPage> {
       body: ListView(
         padding: const EdgeInsets.all(18), // 화면의 좌우 여백 설정
         children: [
-          buildCategory('일반 설정', generalItems),
-          buildCategory('유틸리티', utilityItems),
+          buildCategory('타이머 설정', timerItems),
           buildCategory('앱 설정', appSettingsItems),
+          buildCategory('유틸리티', utilityItems),
           buildCategory('정보', informationItems),
         ],
       ),
