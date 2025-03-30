@@ -24,7 +24,7 @@ class _MusicBottomSheetState extends State<MusicBottomSheet> {
   late String currentMusic;
 
   // 음악 목록
-  final List<String> musicList = ['새가 지저귀는 소리', '파도 소리', '천둥 소리', '키보드 타이핑 소리'];
+  final List<String> musicList = ['지저귀는 새', '파도', '비 내리는 날', '도시', '보리밭에 부는 바람'];
 
   @override
   void initState() {
@@ -34,9 +34,13 @@ class _MusicBottomSheetState extends State<MusicBottomSheet> {
 
   void selectMusic(String music) {
     setState(() {
-      currentMusic = music;
+      if (currentMusic == music) {
+        stopMusic();
+      } else {
+        currentMusic = music;
+        widget.onMusicSelected(music);
+      }
     });
-    widget.onMusicSelected(music);
   }
 
   void stopMusic() {

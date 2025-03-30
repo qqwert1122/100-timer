@@ -15,6 +15,7 @@ import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
+import 'package:shimmer/shimmer.dart';
 
 /// 타이머 실행 화면 위젯
 /// 사용자가 선택한 활동에 대한 타이머를 실행하고 시각적으로 표시함
@@ -34,6 +35,11 @@ class TimerRunningPage extends StatefulWidget {
 }
 
 class _TimerRunningPageState extends State<TimerRunningPage> with TickerProviderStateMixin, WidgetsBindingObserver {
+  // 서비스 객체 (의존성 주입)
+  late final DatabaseService _dbService; // 데이터베이스 서비스
+  late final TimerProvider timerProvider; // 타이머 상태 관리 Provider
+  late final StatsProvider statsProvider; // 통계 관리 provider
+
   // 배경음악 플레이어 객체
   final musicPlayer = MusicPlayer();
 
@@ -41,11 +47,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   late AnimationController _messageAnimationController;
   late Animation<Offset> _messageAnimation;
   late Animation<double> _messageOpacityAnimation;
-
-  // 서비스 객체 (의존성 주입)
-  late final DatabaseService _dbService; // 데이터베이스 서비스
-  late final TimerProvider timerProvider; // 타이머 상태 관리 Provider
-  late final StatsProvider statsProvider; // 통계 관리 provider
 
   // 상태 플래그
   bool _isTimerInitialized = false; // 타이머 초기화 여부
@@ -56,8 +57,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   bool _isPendingStateChange = false; // 즉시 버튼 상태 업데이트
 
   // 설정 관련 변수
-  final bool _isMusicOn = false; // 음악 설정
-  final bool _isAlarmOn = false; // 알림 설정
+  bool _isMusicOn = false; // 음악 설정
+  bool _isAlarmOn = false; // 알림 설정
 
   // 원형 프로그레스 및 파동 애니메이션션 관련
   List<Wave> waves = []; // 파동 애니메이션 객체 목록
@@ -266,9 +267,11 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     if (!mounted) return;
 
     for (var wave in waves) {
-      if (wave.controller.isAnimating) continue;
-      if (!wave.controller.isDismissed) continue;
-      wave.controller.repeat();
+      if (!wave.controller.isAnimating) {
+        // 애니메이션 상태를 초기화한 후 반복 실행
+        wave.controller.reset();
+        wave.controller.repeat();
+      }
     }
   }
 
@@ -339,6 +342,9 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     try {
       // 메시지 Timer 정리
       _messageTimer.cancel();
+
+      // 음악 종료
+      musicPlayer.stopMusic();
 
       // 세션 종료
       await timerProvider.stopTimer(isExceeded: isExceeded, sessionId: timer['current_session_id']);
@@ -454,13 +460,34 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
       currentMusic: musicPlayer.currentMusic,
       onMusicSelected: (music) {
         musicPlayer.playMusic(music);
-        setState(() {}); // UI 업데이트
+        setState(() {
+          _isMusicOn = true;
+        }); // UI 업데이트
       },
       onStopMusic: () {
         musicPlayer.stopMusic();
-        setState(() {}); // UI 업데이트
+        setState(() {
+          _isMusicOn = false;
+        }); // UI 업데이트
       },
     );
+  }
+
+  void _toggleAlarm() {
+    print("토글 전: $_isAlarmOn");
+    setState(() {
+      _isAlarmOn = !_isAlarmOn;
+    });
+    print("토글 후: $_isAlarmOn");
+    Fluttertoast.showToast(
+      msg: "알림이 설정되었습니다",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.TOP,
+      backgroundColor: Colors.redAccent.shade200,
+      textColor: Colors.white,
+      fontSize: context.md,
+    );
+    HapticFeedback.lightImpact();
   }
 
   Widget _buildActivityMessage(TimerProvider timerProvider) {
@@ -549,7 +576,9 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   }
 
   Widget _buildProgressCircle(TimerProvider timerProvider) {
-    final progress = timerProvider.remainingSeconds / timerProvider.totalSeconds;
+    final progress = timerProvider.currentSessionTargetDuration != null
+        ? (1 - timerProvider.currentSessionDuration / timerProvider.currentSessionTargetDuration!)
+        : 0.0;
     final activityColor = ColorService.hexToColor(timerProvider.currentActivityColor);
     final activityName = timerProvider.currentActivityName;
     final activityIcon = timerProvider.currentActivityIcon;
@@ -672,8 +701,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                   ],
                 ),
               ),
-              _buildCountIndicator(3, 2),
-              const SizedBox(height: 16),
               _buildPauseButton(), // 휴식 버튼
               _buildStopButton(),
             ],
@@ -737,44 +764,41 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
               ),
               Row(
                 children: [
-                  IconButton(
-                    onPressed: () {
-                      _showMusicBottomSheet();
-                      HapticFeedback.lightImpact();
-                    },
-                    icon: Image.asset(
-                      getIconImage('music'),
-                      width: context.xl,
-                      height: context.xl,
-                      errorBuilder: (context, error, stackTrace) {
-                        // 이미지를 로드하는 데 실패한 경우의 대체 표시
-                        return Container(
-                          width: context.xl,
-                          height: context.xl,
-                          color: Colors.grey.withOpacity(0.2),
-                          child: Icon(
-                            Icons.broken_image,
-                            size: context.xl,
-                            color: Colors.grey,
-                          ),
-                        );
+                  Shimmer.fromColors(
+                    baseColor: _isMusicOn ? Colors.redAccent : AppColors.textPrimary(context),
+                    highlightColor: _isMusicOn ? Colors.yellowAccent : AppColors.textPrimary(context),
+                    child: IconButton(
+                      onPressed: () {
+                        _showMusicBottomSheet();
+                        HapticFeedback.lightImpact();
                       },
+                      icon: Image.asset(
+                        getIconImage('music'),
+                        width: context.xl,
+                        height: context.xl,
+                        errorBuilder: (context, error, stackTrace) {
+                          // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                          return Container(
+                            width: context.xl,
+                            height: context.xl,
+                            color: Colors.grey.withOpacity(0.2),
+                            child: Icon(
+                              Icons.broken_image,
+                              size: context.xl,
+                              color: Colors.grey,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                   SizedBox(width: context.wp(5)),
                   IconButton(
                     onPressed: () {
-                      Fluttertoast.showToast(
-                        msg: "알림이 설정되었습니다",
-                        toastLength: Toast.LENGTH_SHORT,
-                        gravity: ToastGravity.TOP,
-                        backgroundColor: Colors.redAccent.shade200,
-                        textColor: Colors.white,
-                        fontSize: context.md,
-                      );
+                      _toggleAlarm();
                     },
                     icon: Image.asset(
-                      getIconImage('bell'),
+                      getIconImage(_isAlarmOn ? 'bell' : 'bell_muted'),
                       width: context.xl,
                       height: context.xl,
                       errorBuilder: (context, error, stackTrace) {
@@ -798,30 +822,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
           ),
         );
       },
-    );
-  }
-
-  Widget _buildCountIndicator(int maxCount, int currentCount) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        maxCount,
-        (index) => Padding(
-          padding: EdgeInsets.only(right: context.wp(1)),
-          child: Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: index < currentCount ? Colors.red : Colors.red.withOpacity(0.3),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.5),
-                width: 1,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 

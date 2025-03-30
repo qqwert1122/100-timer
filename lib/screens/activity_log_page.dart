@@ -75,7 +75,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         dayToIndexMap.clear();
         _hasMoreData = true;
       } else {
-        _currentWeekOffset += 1;
+        _currentWeekOffset -= 1;
       }
 
       // 빈 데이터가 반환될 경우, 최대 maxAttempts 번까지 weekOffset을 증가시켜 데이터를 찾음
@@ -373,28 +373,24 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       child: Row(
         children: List.generate(daysOfWeek.length, (index) {
           final isSelected = daysOfWeek[index] == selectedDay;
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2.0),
-            child: TextButton(
-              onPressed: dayToIndexMap.containsKey(daysOfWeek[index])
-                  ? () {
-                      setState(() {
-                        selectedDay = daysOfWeek[index];
-                      });
-                      _scrollToIndex(dayToIndexMap[selectedDay]!);
-                    }
-                  : null,
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 12),
-                minimumSize: const Size(0, 0),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: isSelected ? const BoxDecoration(shape: BoxShape.circle, color: Colors.redAccent) : null,
-                child: Text(
-                  daysOfWeek[index],
-                  style: TextStyle(fontSize: 16, color: isSelected ? Colors.white : Colors.grey),
-                ),
+          return TextButton(
+            onPressed: dayToIndexMap.containsKey(daysOfWeek[index])
+                ? () {
+                    setState(() {
+                      selectedDay = daysOfWeek[index];
+                    });
+                    _scrollToIndex(dayToIndexMap[selectedDay]!);
+                  }
+                : null,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(0, 0),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: isSelected ? const BoxDecoration(shape: BoxShape.circle, color: Colors.redAccent) : null,
+              child: Text(
+                daysOfWeek[index],
+                style: TextStyle(fontSize: 16, color: isSelected ? Colors.white : Colors.grey),
               ),
             ),
           );
@@ -595,13 +591,16 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
           )
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDayButtons(),
-            Expanded(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Align(
+            alignment: Alignment.center,
+            child: _buildDayButtons(),
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.all(context.spacing_sm),
               child: groupedLogs.isEmpty && !_isLoadingMore
                   ? const Center(child: Text('활동 로그가 없습니다.'))
                   : RefreshIndicator(
@@ -625,8 +624,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                       ),
                     ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

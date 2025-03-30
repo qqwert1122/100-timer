@@ -112,7 +112,7 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart> with SingleTi
                 baseColor: Colors.grey.shade300.withOpacity(0.2),
                 highlightColor: Colors.grey.shade100.withOpacity(0.2),
                 child: Container(
-                  width: context.wp(90),
+                  width: context.wp(100),
                   height: context.hp(30),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
@@ -169,137 +169,147 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart> with SingleTi
               ..sort((a, b) => (activityTotalMinutes[b] ?? 0).compareTo(activityTotalMinutes[a] ?? 0));
 
             return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 상단 타이틀
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '주간 활동 시간',
-                          style: AppTextStyles.getTitle(context),
-                        ),
-                        Text(
-                          '이번주 활동 시간을 막대그래프로 확인해 보세요',
-                          style: AppTextStyles.getCaption(context),
-                        ),
-                      ],
-                    ),
-                    Image.asset(
-                      getIconImage('bar_chart'),
-                      width: context.xxxl,
-                      height: context.xxxl,
-                    ),
-                  ],
-                ),
-
-                // 총 사용 시간
-                Text(
-                  totalUsageTime,
-                  style: AppTextStyles.getHeadline(context).copyWith(color: AppColors.textSecondary(context)),
-                ),
-
-                // 주간 막대 그래프
-                SizedBox(
-                  height: context.hp(20),
-                  child: CustomPaint(
-                    willChange: true, // 반드시 willChange를 true로 설정
-                    size: const Size(double.infinity, 250),
-                    painter: BarChartPainter(
-                      chartData: chartData,
-                      textColor: AppColors.textPrimary(context),
-                      selectedActivityName: selectedActivityName,
-                      animationValue: _animationController.value,
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: context.hp(2)),
-                // Legend (아이콘 + 색상 원만 표시)
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Wrap(
-                    spacing: 24.0,
-                    direction: Axis.horizontal,
-                    children: sortedActivities.map(
-                      (activityName) {
-                        final colorStr = activityColors[activityName] ?? '#CCCCCC';
-                        final iconStr = activityIcons[activityName] ?? 'default_icon';
-                        final color = ColorService.hexToColor(colorStr);
-
-                        // 활동별 총 시간 문자열
-                        final totalMinutes = activityTotalMinutes[activityName] ?? 0.0;
-                        final timeStr = _formatMinutes(totalMinutes);
-
-                        final isNothingSelected = selectedActivityName == "";
-                        final isSelected = selectedActivityName == activityName;
-                        final shouldPaint = isNothingSelected || isSelected;
-
-                        return GestureDetector(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            _updateSelectedActivity(activityName);
-                          },
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 상단 타이틀
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // 색상 원 + 아이콘
-                              Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Container(
-                                    width: context.xxl,
-                                    height: context.xxl,
-                                    decoration: BoxDecoration(
-                                      color: color.withOpacity(0.2),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: Image.asset(
-                                        getIconImage(iconStr),
-                                        width: context.xl,
-                                        height: context.xl,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    width: context.xxl,
-                                    height: context.xxl,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.background(context).withOpacity(shouldPaint ? 0 : 0.7),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              SizedBox(height: context.hp(1)),
-                              // 총 시간 표시
-
                               Text(
-                                activityName.length >= 6 ? '${activityName.substring(0, 6)}...' : activityName,
-                                style: TextStyle(
-                                  color: AppColors.textPrimary(context).withOpacity(shouldPaint ? 1 : 0.2),
-                                  fontSize: context.sm,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                '주간 활동 시간',
+                                style: AppTextStyles.getTitle(context),
                               ),
                               Text(
-                                timeStr,
-                                style: TextStyle(
-                                  color: AppColors.textPrimary(context).withOpacity(shouldPaint ? 1 : 0.2),
-                                  fontSize: context.sm,
-                                  fontWeight: FontWeight.w400,
-                                ),
+                                '이번주 활동 시간을 막대그래프로 확인해 보세요',
+                                style: AppTextStyles.getCaption(context),
                               ),
                             ],
                           ),
-                        );
-                      },
-                    ).toList(),
+                          Image.asset(
+                            getIconImage('bar_chart'),
+                            width: context.xxxl,
+                            height: context.xxxl,
+                          ),
+                        ],
+                      ),
+
+                      // 총 사용 시간
+                      Text(
+                        totalUsageTime,
+                        style: AppTextStyles.getHeadline(context).copyWith(color: AppColors.textSecondary(context)),
+                      ),
+
+                      // 주간 막대 그래프
+                      SizedBox(
+                        height: context.hp(20),
+                        child: CustomPaint(
+                          willChange: true, // 반드시 willChange를 true로 설정
+                          size: const Size(double.infinity, 250),
+                          painter: BarChartPainter(
+                            chartData: chartData,
+                            textColor: AppColors.textPrimary(context),
+                            selectedActivityName: selectedActivityName,
+                            animationValue: _animationController.value,
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(height: context.hp(2)),
+                    ],
+                  ),
+                ),
+                // Legend (아이콘 + 색상 원만 표시)
+                Padding(
+                  padding: EdgeInsets.only(left: 16),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Wrap(
+                      spacing: 24.0,
+                      direction: Axis.horizontal,
+                      children: sortedActivities.map(
+                        (activityName) {
+                          final colorStr = activityColors[activityName] ?? '#CCCCCC';
+                          final iconStr = activityIcons[activityName] ?? 'default_icon';
+                          final color = ColorService.hexToColor(colorStr);
+
+                          // 활동별 총 시간 문자열
+                          final totalMinutes = activityTotalMinutes[activityName] ?? 0.0;
+                          final timeStr = _formatMinutes(totalMinutes);
+
+                          final isNothingSelected = selectedActivityName == "";
+                          final isSelected = selectedActivityName == activityName;
+                          final shouldPaint = isNothingSelected || isSelected;
+
+                          return GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              _updateSelectedActivity(activityName);
+                            },
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // 색상 원 + 아이콘
+                                Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: context.xxl,
+                                      height: context.xxl,
+                                      decoration: BoxDecoration(
+                                        color: color.withOpacity(0.2),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Center(
+                                        child: Image.asset(
+                                          getIconImage(iconStr),
+                                          width: context.xl,
+                                          height: context.xl,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      width: context.xxl,
+                                      height: context.xxl,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.background(context).withOpacity(shouldPaint ? 0 : 0.7),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                SizedBox(height: context.hp(1)),
+                                // 총 시간 표시
+
+                                Text(
+                                  activityName.length >= 6 ? '${activityName.substring(0, 6)}...' : activityName,
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary(context).withOpacity(shouldPaint ? 1 : 0.2),
+                                    fontSize: context.sm,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  timeStr,
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary(context).withOpacity(shouldPaint ? 1 : 0.2),
+                                    fontSize: context.sm,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ).toList(),
+                    ),
                   ),
                 ),
               ],

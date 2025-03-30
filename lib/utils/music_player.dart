@@ -19,14 +19,16 @@ class MusicPlayer {
 
   String getMusic(String musicName) {
     switch (musicName) {
-      case '새가 지저귀는 소리':
-        return 'assets/sounds/birds_singing.wav';
-      case '파도 소리':
-        return 'assets/sounds/waves.wav';
-      case '천둥 소리':
-        return 'assets/sounds/thunder.ogg';
-      case '키보드 타이핑 소리':
-        return 'assets/sounds/keyboard.mp3';
+      case '지저귀는 새':
+        return 'assets/sounds/birds_singing.mp3';
+      case '파도':
+        return 'assets/sounds/waves.mp3';
+      case '비 내리는 날':
+        return 'assets/sounds/rain.mp3';
+      case '도시':
+        return 'assets/sounds/city.mp3';
+      case '보리밭에 부는 바람':
+        return 'assets/sounds/wheat_in_the_wind.mp3';
       default:
         return 'assets/sounds/waves.wav';
     }

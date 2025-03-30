@@ -338,7 +338,7 @@ class StatsProvider extends ChangeNotifier {
       final Map<String, Map<String, dynamic>> aggregatedData = {};
 
       for (final session in sessions) {
-        final startTime = DateTime.parse(session['start_time']);
+        final startTime = DateTime.parse(session['start_time']).toLocal();
         final weekday = startTime.weekday; // 1 (월요일) ~ 7 (일요일)
         final activityName = session['activity_name'];
         final activityColor = session['activity_color'];

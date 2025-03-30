@@ -768,27 +768,14 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
 
   Widget _buildActivityTimeSection(BuildContext context, TimerProvider timerProvider) {
     return Container(
-      padding: context.paddingSM,
+      // padding: context.paddingSM,
       decoration: BoxDecoration(
         color: AppColors.background(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _activityChartDataLoaded
-              ? const WeeklyActivityChart()
-              : Shimmer.fromColors(
-                  baseColor: Colors.grey.shade300.withOpacity(0.2),
-                  highlightColor: Colors.grey.shade100.withOpacity(0.2),
-                  child: Container(
-                    width: context.wp(90),
-                    height: context.hp(30),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: AppColors.background(context),
-                    ),
-                  ),
-                ),
+          const WeeklyActivityChart(),
           SizedBox(height: context.hp(3)), // 하단 여백 추가
         ],
       ),
