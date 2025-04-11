@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:project1/firebase_options.dart';
 import 'package:project1/screens/timer_page.dart';
@@ -56,6 +57,9 @@ void main() async {
   MobileAds.instance.initialize();
 
   await NotificationService().initialize();
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp, // 세로 위 방향만 허용
+  ]);
 
   // 데이터베이스 초기화
   // final dbService = DatabaseService() ;

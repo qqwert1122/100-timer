@@ -139,8 +139,8 @@ class _ActivityPickerState extends State<ActivityPicker> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: context.hp(60),
-      padding: context.paddingMD,
+      height: context.hp(90),
+      padding: context.paddingSM,
       decoration: BoxDecoration(
           color: AppColors.background(context),
           borderRadius: const BorderRadius.only(
@@ -156,7 +156,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
               width: context.wp(20),
               height: 5,
               decoration: BoxDecoration(
-                color: AppColors.buttonSecondary(context),
+                color: AppColors.textPrimary(context),
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
@@ -204,6 +204,34 @@ class _ActivityPickerState extends State<ActivityPicker> {
                       closeOnScroll: true,
                       enabled: activity['is_default'] != 1, // 기본 활동이면 슬라이드 비활성화
 
+                      startActionPane: ActionPane(
+                        motion: const DrawerMotion(),
+                        children: [
+                          SlidableAction(
+                            onPressed: (context) {
+                              HapticFeedback.selectionClick();
+                            },
+                            backgroundColor: Colors.amber,
+                            foregroundColor: Colors.black,
+                            icon: Icons.push_pin_rounded,
+                            label: '고정',
+                            flex: 1,
+                            autoClose: true,
+                          ),
+                          SlidableAction(
+                            onPressed: (context) {
+                              HapticFeedback.selectionClick();
+                            },
+                            backgroundColor: Colors.yellow,
+                            foregroundColor: Colors.black,
+                            icon: Icons.view_list_rounded,
+                            label: '순서',
+                            flex: 1,
+                            autoClose: true,
+                          ),
+                        ],
+                      ),
+
                       endActionPane: activity['is_default'] != 1
                           ? ActionPane(
                               motion: const DrawerMotion(),
@@ -221,6 +249,7 @@ class _ActivityPickerState extends State<ActivityPicker> {
                                   backgroundColor: Colors.blueAccent,
                                   foregroundColor: Colors.white,
                                   icon: Icons.edit,
+                                  label: '수정',
                                   flex: 1,
                                   autoClose: true,
                                 ),
@@ -228,9 +257,10 @@ class _ActivityPickerState extends State<ActivityPicker> {
                                   onPressed: (context) {
                                     _deleteActivity(context, activity['activity_id'], activity['activity_name']);
                                   },
-                                  backgroundColor: Colors.red,
+                                  backgroundColor: Colors.redAccent,
                                   foregroundColor: Colors.white,
                                   icon: Icons.delete,
+                                  label: '삭제',
                                   flex: 1,
                                 ),
                               ],

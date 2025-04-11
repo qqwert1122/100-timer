@@ -267,6 +267,17 @@ class StatsProvider extends ChangeNotifier {
     }
   }
 
+  Future<int> getTotalSecondsForCurrnetWeek() async {
+    try {
+      final weeklyRange = DateUtils.getWeeklyRange(weekOffset: 0);
+      String weekStart = weeklyRange['startOfWeek']!.toIso8601String().split('T').first;
+      final timerData = await _dbService.getTimer(weekStart);
+      return timerData!['total_seconds'];
+    } catch (e) {
+      return 0;
+    }
+  }
+
   Future<int> getSessionsOver1HourCount(String weekStart) async {
     try {
       final filteredSessions = _currentSessions.where((session) {
