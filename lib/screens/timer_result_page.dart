@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:lottie/lottie.dart';
 import 'package:project1/screens/timer_page.dart';
 import 'package:project1/theme/app_color.dart';
@@ -38,6 +39,10 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
   late AnimationController _checkController;
   late AnimationController _congratulationsController;
 
+  // admob 광고
+  BannerAd? _bannerAd1;
+  bool _isAdLoaded1 = false;
+
   @override
   void initState() {
     super.initState();
@@ -69,6 +74,26 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
       _checkController.forward();
     }
     _congratulationsController.repeat();
+
+    // admob 광고 초기화
+    _bannerAd1 = BannerAd(
+      // 이 광고 단위 ID는 Google에서 제공하는 테스트용 ID입니다.
+      adUnitId: 'ca-app-pub-9503898094962699/9890914412',
+      size: AdSize.fullBanner,
+      request: AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (Ad ad) {
+          setState(() {
+            _isAdLoaded1 = true;
+          });
+        },
+        onAdFailedToLoad: (Ad ad, LoadAdError error) {
+          ad.dispose();
+          print('BannerAd failed to load: $error');
+        },
+      ),
+    );
+    _bannerAd1!.load();
   }
 
   @override
@@ -90,6 +115,14 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
           Center(
             child: Column(
               children: [
+                SizedBox(height: context.hp(5)),
+                _isAdLoaded1
+                    ? Container(
+                        width: _bannerAd1!.size.width.toDouble(),
+                        height: _bannerAd1!.size.height.toDouble(),
+                        child: AdWidget(ad: _bannerAd1!),
+                      )
+                    : SizedBox.shrink(),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -296,7 +329,7 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
               Align(
                 alignment: Alignment.center,
                 child: Shimmer.fromColors(
-                  baseColor: AppColors.textPrimary(context),
+                  baseColor: ColorService.getTextColorForBackground(activityColor),
                   highlightColor: Colors.grey.shade100.withOpacity(0.2),
                   child: Text(
                     formatDuration(widget.sessionDuration),

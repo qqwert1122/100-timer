@@ -55,7 +55,12 @@ class _MusicBottomSheetState extends State<MusicBottomSheet> {
     return Container(
       height: context.hp(70),
       width: MediaQuery.of(context).size.width,
-      decoration: BoxDecoration(color: AppColors.background(context), borderRadius: const BorderRadius.vertical(top: Radius.circular(16))),
+      decoration: BoxDecoration(
+        color: AppColors.background(context),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(16),
+        ),
+      ),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

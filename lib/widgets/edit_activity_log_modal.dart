@@ -1,7 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:project1/theme/app_color.dart';
+import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:project1/utils/responsive_size.dart';
 import 'package:provider/provider.dart';
 
 class EditActivityLogModal extends StatefulWidget {
@@ -21,31 +24,199 @@ class EditActivityLogModal extends StatefulWidget {
 }
 
 class _EditActivityLogModalState extends State<EditActivityLogModal> {
-  int selectedValue = 0; // 선택된 시간 (분 단위)
-  final List<int> values = List.generate(25, (index) => index * 5); // 0부터 120까지의 숫자 목록 생성
   late Future<Map<String, dynamic>?> _sessionData;
   late final DatabaseService _dbService; // 주입받을 DatabaseService
+  int hours = 0;
+  int minutes = 0;
+  int seconds = 0;
+  TextEditingController timeController = TextEditingController(text: "00:00:00");
 
   @override
   void initState() {
     super.initState();
     _dbService = Provider.of<DatabaseService>(context, listen: false); // DatabaseService 주입
     _sessionData = _dbService.getSession(widget.sessionId);
+
+    // 세션 데이터를 가져온 후 초기 시간 설정
+    _sessionData.then(
+      (sessionData) {
+        if (sessionData != null) {
+          final sessionDuration = sessionData['duration'] ?? 0;
+
+          // 초 단위 시간을 시, 분, 초로 변환
+          setState(() {
+            hours = sessionDuration ~/ 3600;
+            minutes = (sessionDuration % 3600) ~/ 60;
+            seconds = sessionDuration % 60;
+
+            // 텍스트 컨트롤러 업데이트
+            timeController.text = formatTimeInput(hours, minutes, seconds);
+          });
+        }
+      },
+    );
   }
 
-  String formatTime(int? seconds) {
-    if (seconds == null || seconds == 0) return '-';
+  int getTimeInSeconds() {
+    return hours * 3600 + minutes * 60 + seconds;
+  }
 
-    final int hours = seconds ~/ 3600;
-    final int minutes = (seconds % 3600) ~/ 60;
-    final int remainingSeconds = seconds % 60;
+// 초 단위를 시:분:초 형식으로 포맷팅하는 함수
+  String formatTimeInput(int h, int m, int s) {
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
 
-    String formattedTime = '';
-    if (hours > 0) formattedTime += '$hours시간';
-    if (minutes > 0) formattedTime += ' $minutes분';
-    if (remainingSeconds > 0) formattedTime += ' $remainingSeconds초';
-
-    return formattedTime.trim();
+  void _showTimePicker(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 300,
+          color: AppColors.background(context),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    child: Text(
+                      '취소',
+                      style: TextStyle(color: AppColors.textPrimary(context)),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  CupertinoButton(
+                    child: Text(
+                      '확인',
+                      style: TextStyle(color: AppColors.textPrimary(context)),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        timeController.text = formatTimeInput(hours, minutes, seconds);
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              '시',
+                              style: AppTextStyles.getTitle(context),
+                            ),
+                          ),
+                          Expanded(
+                            child: CupertinoPicker(
+                              scrollController: FixedExtentScrollController(initialItem: hours),
+                              itemExtent: 40,
+                              onSelectedItemChanged: (int index) {
+                                setState(() {
+                                  hours = index;
+                                });
+                              },
+                              children: List<Widget>.generate(24, (int index) {
+                                return Center(
+                                  child: Text(
+                                    index.toString().padLeft(2, '0'),
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      color: AppColors.textPrimary(context),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              '분',
+                              style: AppTextStyles.getTitle(context),
+                            ),
+                          ),
+                          Expanded(
+                            child: CupertinoPicker(
+                              scrollController: FixedExtentScrollController(initialItem: minutes),
+                              itemExtent: 40,
+                              onSelectedItemChanged: (int index) {
+                                setState(() {
+                                  minutes = index;
+                                });
+                              },
+                              children: List<Widget>.generate(60, (int index) {
+                                return Center(
+                                  child: Text(
+                                    index.toString().padLeft(2, '0'),
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      color: AppColors.textPrimary(context),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              '초',
+                              style: AppTextStyles.getTitle(context),
+                            ),
+                          ),
+                          Expanded(
+                            child: CupertinoPicker(
+                              scrollController: FixedExtentScrollController(initialItem: seconds),
+                              itemExtent: 40,
+                              onSelectedItemChanged: (int index) {
+                                setState(() {
+                                  seconds = index;
+                                });
+                              },
+                              children: List<Widget>.generate(60, (int index) {
+                                return Center(
+                                  child: Text(
+                                    index.toString().padLeft(2, '0'),
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      color: AppColors.textPrimary(context),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -55,27 +226,30 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
     return StatefulBuilder(
       builder: (BuildContext context, StateSetter setModalState) {
         return Container(
-          height: 400,
+          height: context.hp(60),
           width: MediaQuery.of(context).size.width,
           padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: AppColors.background(context),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(16.0),
+            ),
+          ),
           child: FutureBuilder(
             future: _sessionData,
             builder: (BuildContext context, AsyncSnapshot<Map<String, dynamic>?> snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Center(child: Text('에러: ${snapshot.error}'));
-              } else if (!snapshot.hasData || snapshot.data == null) {
+                return Center(
+                    child: CircularProgressIndicator(
+                  color: AppColors.textPrimary(context),
+                ));
+              } else if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
                 return const Center(child: Text('활동 기록을 찾을 수 없습니다.'));
               } else {
-                final session = snapshot.data!;
-                final sessionDuration = session['duration'] ?? 0;
-                final restTime = session['rest_time'] ?? 0;
-                final activityTime = sessionDuration - restTime;
-
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    SizedBox(height: context.hp(1)),
                     Align(
                       alignment: Alignment.topCenter,
                       child: Container(
@@ -87,93 +261,40 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                         ),
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
-                      child: Text(
-                        '활동 기록 수정',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
+                    SizedBox(height: context.hp(2)),
+                    Text('활동 시간', style: AppTextStyles.getHeadline(context)),
                     const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.play_circle_fill_rounded,
-                                size: 28,
-                                color: Colors.grey,
+                    GestureDetector(
+                      onTap: () => _showTimePicker(context),
+                      child: AbsorbPointer(
+                        child: TextField(
+                          controller: timeController,
+                          decoration: InputDecoration(
+                            hintText: "00:00:00",
+                            hintStyle: TextStyle(
+                              color: AppColors.textSecondary(context),
+                              fontFamily: 'chab',
+                            ),
+                            border: UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                color: AppColors.textSecondary(context),
                               ),
-                              const SizedBox(width: 5),
-                              const Text(
-                                "활동시간",
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                color: AppColors.textSecondary(context),
                               ),
-                              const SizedBox(width: 10),
-                              Text(
-                                formatTime(activityTime),
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.pause_circle_filled_rounded,
-                                size: 28,
-                                color: Colors.grey,
-                              ),
-                              const SizedBox(width: 5),
-                              const Text(
-                                "휴식시간",
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                formatTime(restTime),
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 50),
-                          const Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              '기록보다',
-                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                            ),
+                            suffixIcon: Icon(
+                              Icons.access_time,
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
-                          // 시간 선택 및 조정
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              GestureDetector(
-                                onTap: () => _showPicker(context),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      '$selectedValue분',
-                                      style: const TextStyle(
-                                        fontSize: 48,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const Icon(
-                                      Icons.keyboard_arrow_down_rounded,
-                                      size: 36,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          style: AppTextStyles.getTimeDisplay(context).copyWith(
+                            fontFamily: 'chab',
+                            color: AppColors.textSecondary(context),
                           ),
-                        ],
+                        ),
                       ),
                     ),
                     const Spacer(),
@@ -183,46 +304,17 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () async {
-                              try {
-                                // 휴식 시간을 증가
-                                int additionalRestSeconds = selectedValue * 60;
-
-                                await _dbService.updateSessionDuration(
-                                  sessionId: widget.sessionId,
-                                  additionalDurationSeconds: additionalRestSeconds,
-                                );
-
-                                if (widget.onUpdate != null) widget.onUpdate!();
-                                Navigator.pop(context);
-                                Fluttertoast.showToast(
-                                  msg: "휴식 시간이 업데이트되었습니다.",
-                                  toastLength: Toast.LENGTH_SHORT,
-                                  gravity: ToastGravity.TOP,
-                                  backgroundColor: Colors.blueAccent.shade200,
-                                  textColor: Colors.white,
-                                  fontSize: 14.0,
-                                );
-                              } catch (e) {
-                                print('Error updating rest time: $e');
-                                Fluttertoast.showToast(
-                                  msg: "휴식 시간 업데이트 중 오류가 발생했습니다.",
-                                  toastLength: Toast.LENGTH_SHORT,
-                                  gravity: ToastGravity.TOP,
-                                  backgroundColor: Colors.redAccent.shade200,
-                                  textColor: Colors.white,
-                                  fontSize: 14.0,
-                                );
-                              }
+                              Navigator.pop(context);
                             },
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: Colors.blueAccent,
+                              backgroundColor: Colors.redAccent,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             child: const Text(
-                              '더 휴식했어요',
+                              '취소',
                               style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                             ),
                           ),
@@ -232,15 +324,15 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           child: ElevatedButton(
                             onPressed: () async {
                               try {
-                                // 활동 시간을 증가
-                                int additionalDurationSeconds = selectedValue * 60;
+                                // 선택한 시간을 초 단위로 변환하여 사용
+                                int additionalDurationSeconds = getTimeInSeconds();
 
                                 await _dbService.updateSessionDuration(
                                   sessionId: widget.sessionId,
                                   additionalDurationSeconds: additionalDurationSeconds,
                                 );
 
-                                if (widget.onDelete != null) widget.onDelete!();
+                                if (widget.onUpdate != null) widget.onUpdate!();
                                 Navigator.pop(context);
                                 Fluttertoast.showToast(
                                   msg: "활동 시간이 업데이트되었습니다.",
@@ -252,25 +344,18 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                 );
                               } catch (e) {
                                 print('Error updating activity time: $e');
-                                Fluttertoast.showToast(
-                                  msg: "활동 시간 업데이트 중 오류가 발생했습니다.",
-                                  toastLength: Toast.LENGTH_SHORT,
-                                  gravity: ToastGravity.TOP,
-                                  backgroundColor: Colors.redAccent.shade200,
-                                  textColor: Colors.white,
-                                  fontSize: 14.0,
-                                );
+                                // 에러 처리
                               }
                             },
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: Colors.redAccent,
+                              backgroundColor: Colors.blueAccent,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             child: const Text(
-                              '더 활동했어요',
+                              '수정',
                               style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                             ),
                           ),
@@ -281,50 +366,6 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                 );
               }
             },
-          ),
-        );
-      },
-    );
-  }
-
-  void _showPicker(BuildContext context) {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (BuildContext context) {
-        return Container(
-          height: 250,
-          color: Colors.white,
-          child: Column(
-            children: [
-              Expanded(
-                child: CupertinoPicker(
-                  scrollController: FixedExtentScrollController(initialItem: selectedValue ~/ 5),
-                  itemExtent: 40,
-                  onSelectedItemChanged: (int index) {
-                    setState(() {
-                      selectedValue = values[index];
-                    });
-                  },
-                  children: values.map((value) {
-                    return Center(
-                      child: Text(
-                        '$value 분',
-                        style: const TextStyle(fontSize: 24, color: Colors.black),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              CupertinoButton(
-                child: const Text(
-                  '확인',
-                  style: TextStyle(color: Colors.black),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-              ),
-            ],
           ),
         );
       },

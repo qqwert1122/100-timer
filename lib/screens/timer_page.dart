@@ -5,12 +5,14 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/session_history_sheet.dart';
 import 'package:project1/screens/setting_page.dart';
+import 'package:project1/screens/subscription_bottom_sheet.dart';
 import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/stats_provider.dart';
+import 'package:project1/widgets/fluid_gradient_background.dart';
 import 'package:project1/widgets/focus_mode.dart';
 import 'package:project1/widgets/text_indicator.dart';
 import 'package:provider/provider.dart';
@@ -216,6 +218,16 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
     }
   }
 
+  void _showSubscriptionPage() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return const SubscriptionBottomSheet();
+      },
+    );
+  }
+
   // 전체 시간대 표시 여부
   bool showAllHours = true;
 
@@ -308,15 +320,63 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                     children: [
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: Text(
-                          _statsProvider!.getCurrentWeekLabel().toString(),
-                          style: AppTextStyles.getHeadline(context).copyWith(
-                            fontFamily: 'Neo',
-                          ),
+                        child: Row(
+                          children: [
+                            Text(
+                              "100timer",
+                              // _statsProvider!.getCurrentWeekLabel().toString(),
+                              style: AppTextStyles.getTitle(context).copyWith(
+                                fontFamily: 'Neo',
+                              ),
+                            ),
+                            Image.asset(
+                              getIconImage('fire'),
+                              width: context.xl,
+                              height: context.xl,
+                              errorBuilder: (context, error, stackTrace) {
+                                // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                                return Container(
+                                  width: context.xl,
+                                  height: context.xl,
+                                  color: Colors.grey.withOpacity(0.2),
+                                  child: Icon(
+                                    Icons.local_fire_department_rounded,
+                                    size: context.xl,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
+                            )
+                          ],
                         ),
                       ),
                       Row(
                         children: [
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              _showSubscriptionPage();
+                            },
+                            child: Image.asset(
+                              getIconImage('crown'),
+                              width: context.wp(8),
+                              height: context.wp(8),
+                              errorBuilder: (context, error, stackTrace) {
+                                // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                                return Container(
+                                  width: context.xl,
+                                  height: context.xl,
+                                  color: Colors.grey.withOpacity(0.2),
+                                  child: Icon(
+                                    Icons.settings,
+                                    size: context.xl,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          SizedBox(width: context.wp(6)),
                           GestureDetector(
                             onTap: () {
                               HapticFeedback.lightImpact();
@@ -349,132 +409,136 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                     ],
                   ),
                 ),
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.only(
-                    top: context.hp(2),
-                    left: context.wp(4),
-                    right: context.wp(4),
-                    bottom: context.hp(2),
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.background(context),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '이번 주 얼마나 남았을까요?',
-                        style: AppTextStyles.getTitle(context).copyWith(fontWeight: FontWeight.w900),
-                      ),
-                      Consumer<TimerProvider>(
-                        builder: (context, provider, child) {
-                          return Text(
-                            provider.formattedTime,
-                            style: AppTextStyles.getTimeDisplay(context).copyWith(
-                              color: AppColors.primary(context),
-                              fontFamily: 'chab',
+                SizedBox(height: context.hp(2)),
+                Padding(
+                  padding: context.paddingSM,
+                  child: Container(
+                    height: context.hp(22),
+                    decoration: BoxDecoration(
+                      color: AppColors.background(context),
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                    child: Container(
+                      width: double.infinity,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '이번주 남은시간',
+                            style: AppTextStyles.getBody(context).copyWith(
+                              fontWeight: FontWeight.w900,
                             ),
-                          );
-                        },
-                      ),
-                      SizedBox(height: context.hp(1)),
-                      GestureDetector(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          _showActivityModal(timerProvider);
-                        },
-                        child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: context.xs, vertical: context.sm),
-                            decoration: BoxDecoration(
-                              color: AppColors.backgroundSecondary(context),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.textSecondary(context).withOpacity(0.3),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
+                          ),
+                          Consumer<TimerProvider>(
+                            builder: (context, provider, child) {
+                              return Text(
+                                provider.formattedTime,
+                                style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                  color: AppColors.primary(context),
+                                  fontFamily: 'chab',
                                 ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // 왼쪽: "무엇을 하실 건가요?" 텍스트 (flex: 2)
-                                Expanded(
-                                  flex: 3,
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: context.sm),
-                                    child: Text(
-                                      '활동 선택',
-                                      style: AppTextStyles.getBody(context).copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.textSecondary(context),
-                                      ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: context.hp(1)),
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              _showActivityModal(timerProvider);
+                            },
+                            child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: context.xs, vertical: context.sm),
+                                decoration: BoxDecoration(
+                                  color: AppColors.background(context),
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.textSecondary(context).withOpacity(0.3),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
                                     ),
-                                  ),
+                                  ],
                                 ),
-
-                                // 가운데: 아이콘 + 현재 활동명 (flex: 3)
-                                Expanded(
-                                  flex: 6,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Image.asset(
-                                        getIconImage(timerProvider.currentActivityIcon),
-                                        width: context.xl,
-                                        height: context.xl,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          // 이미지를 로드하는 데 실패한 경우의 대체 표시
-                                          return Container(
-                                            width: context.xl,
-                                            height: context.xl,
-                                            color: Colors.grey.withOpacity(0.2),
-                                            child: Icon(
-                                              Icons.broken_image,
-                                              size: context.xl,
-                                              color: Colors.grey,
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                      SizedBox(width: context.wp(2)),
-                                      Flexible(
-                                        child: Builder(
-                                          builder: (context) {
-                                            final activityName = timerProvider.currentActivityName;
-                                            final displayText =
-                                                activityName.length > 10 ? '${activityName.substring(0, 10)}...' : activityName;
-
-                                            return Text(
-                                              displayText,
-                                              style: AppTextStyles.getTitle(context).copyWith(fontWeight: FontWeight.w900),
-                                            );
-                                          },
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    // 왼쪽: "무엇을 하실 건가요?" 텍스트 (flex: 2)
+                                    Expanded(
+                                      flex: 3,
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: context.sm),
+                                        child: Text(
+                                          '활동 선택',
+                                          style: AppTextStyles.getBody(context).copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textSecondary(context),
+                                          ),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-
-                                // 오른쪽: 화살표 아이콘 (flex: 1)
-                                Expanded(
-                                  flex: 1,
-                                  child: Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Transform(
-                                      // 중심을 기준으로 좌우 대칭(수평 반전)하기
-                                      alignment: Alignment.center,
-                                      transform: Matrix4.identity()..scale(-1.0, 1.0),
-                                      child: Icon(Icons.arrow_back_ios_new_rounded, size: context.lg),
                                     ),
-                                  ),
-                                ),
-                              ],
-                            )),
+
+                                    // 가운데: 아이콘 + 현재 활동명 (flex: 3)
+                                    Expanded(
+                                      flex: 6,
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          Image.asset(
+                                            getIconImage(timerProvider.currentActivityIcon),
+                                            width: context.xl,
+                                            height: context.xl,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                                              return Container(
+                                                width: context.xl,
+                                                height: context.xl,
+                                                color: Colors.grey.withOpacity(0.2),
+                                                child: Icon(
+                                                  Icons.broken_image,
+                                                  size: context.xl,
+                                                  color: Colors.grey,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                          SizedBox(width: context.wp(2)),
+                                          Flexible(
+                                            child: Builder(
+                                              builder: (context) {
+                                                final activityName = timerProvider.currentActivityName;
+                                                final displayText =
+                                                    activityName.length > 10 ? '${activityName.substring(0, 10)}...' : activityName;
+
+                                                return Text(
+                                                  displayText,
+                                                  style: AppTextStyles.getTitle(context).copyWith(fontWeight: FontWeight.w900),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    // 오른쪽: 화살표 아이콘 (flex: 1)
+                                    Expanded(
+                                      flex: 1,
+                                      child: Align(
+                                        alignment: Alignment.centerRight,
+                                        child: Transform(
+                                          // 중심을 기준으로 좌우 대칭(수평 반전)하기
+                                          alignment: Alignment.center,
+                                          transform: Matrix4.identity()..scale(-1.0, 1.0),
+                                          child: Icon(Icons.arrow_back_ios_new_rounded, size: context.lg),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 SizedBox(height: context.hp(2)),
@@ -576,7 +640,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(height: context.hp(15)),
+                              SizedBox(height: context.hp(10)),
                               // 시간 표시 인디케이터
                               Center(
                                 child: TextIndicator(timerProvider: timerProvider),
@@ -657,19 +721,6 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                           ),
                         ),
                       ),
-
-                      // Todo(
-                      //   onHeaderVisibilityChanged: (bool isHidden) {
-                      //     setState(() {
-                      //       _isHeaderHidden = isHidden;
-                      //     });
-                      //     if (isHidden) {
-                      //       _headerAnimation.forward();
-                      //     } else {
-                      //       _headerAnimation.reverse();
-                      //     }
-                      //   },
-                      // ),
                     ],
                   ),
                 ),

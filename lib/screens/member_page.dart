@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class MemberPage extends StatefulWidget {
   const MemberPage({super.key});
@@ -239,11 +238,6 @@ class MemberWidget extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SvgPicture.network(
-                      'https://api.dicebear.com/9.x/thumbs/svg?seed=${user['name']}&radius=50',
-                      width: size / 2,
-                      height: size / 2,
-                    ),
                     const SizedBox(height: 5), // 간격 조정
                     Row(
                       children: [

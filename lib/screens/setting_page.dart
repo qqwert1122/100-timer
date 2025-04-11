@@ -2,12 +2,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:project1/data/credits.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
+import 'package:project1/widgets/footer.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -30,12 +33,35 @@ class _SettingPageState extends State<SettingPage> {
   int selectedValue = 100; // 기본값 (시간 단위)
   final List<int> values = List.generate(13, (index) => index * 5 + 40); // 40부터 100까지의 숫자 목록 생성
 
+  // admob 광고
+  BannerAd? _bannerAd1;
+  bool _isAdLoaded1 = false;
+
   @override
   void initState() {
     super.initState();
     statsProvider = Provider.of<StatsProvider>(context, listen: false);
     dbService = Provider.of<DatabaseService>(context, listen: false);
     _initPrefs();
+
+    // admob 광고 초기화
+    _bannerAd1 = BannerAd(
+      adUnitId: 'ca-app-pub-9503898094962699/7778551117',
+      size: AdSize.fullBanner,
+      request: AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (Ad ad) {
+          setState(() {
+            _isAdLoaded1 = true;
+          });
+        },
+        onAdFailedToLoad: (Ad ad, LoadAdError error) {
+          ad.dispose();
+          print('BannerAd failed to load: $error');
+        },
+      ),
+    );
+    _bannerAd1!.load();
   }
 
   // SharedPreferences 초기화
@@ -87,21 +113,6 @@ class _SettingPageState extends State<SettingPage> {
   Future<void> _saveAlarmFlag(bool value) async {
     await prefs.setBool('alarmFlag', value);
   }
-
-  List<Map<String, dynamic>> creditList = [
-    {
-      'category': '폰트',
-      'title': 'chobddag',
-      'description': '이 어플리케이션의 타이머 숫자는 롯데리아의 찹땡겨체를 사용했어요. 롯데리아 찹땡겨체의 지적 재산권을 포함한 모든 권리는 롯데GRS에 있어요',
-      'link': 'https://lotteriafont.com/chobddag',
-    },
-    {
-      'category': 'Lottie',
-      'title': 'Free Trophy Animation',
-      'description': 'Mahendra Bhunwal의 Free Trophy Animation을 사용했어요',
-      'link': 'https://lottiefiles.com/free-animation/trophy-yEGPe40FVr',
-    },
-  ];
 
   Future<void> _launchURL(String linkUrl) async {
     final Uri url = Uri.parse(linkUrl);
@@ -293,8 +304,19 @@ class _SettingPageState extends State<SettingPage> {
         'title': '이용약관',
         'icon': 'notepad',
         'description': '서비스 이용약관을 확인하세요\n',
-        'onTap': () {
-          print('이용약관 열기');
+        'onTap': () async {
+          const String termsUrl = 'https://dour-sunday-be4.notion.site/100-timer-1c67162f12b2804482cbe6124186a2ac'; // 노션 URL
+          if (await canLaunchUrl(Uri.parse(termsUrl))) {
+            await launchUrl(
+              Uri.parse(termsUrl),
+              mode: LaunchMode.externalApplication,
+            );
+          } else {
+            const snackBar = SnackBar(
+              content: Text('이용약관을 열 수 없습니다.'),
+            );
+            ScaffoldMessenger.of(context).showSnackBar(snackBar);
+          }
         },
         'trailing': null,
       },
@@ -408,10 +430,19 @@ class _SettingPageState extends State<SettingPage> {
       body: ListView(
         padding: const EdgeInsets.all(18), // 화면의 좌우 여백 설정
         children: [
+          _isAdLoaded1
+              ? Container(
+                  width: _bannerAd1!.size.width.toDouble(),
+                  height: _bannerAd1!.size.height.toDouble(),
+                  child: AdWidget(ad: _bannerAd1!),
+                )
+              : SizedBox.shrink(),
+          SizedBox(height: context.hp(1)),
           buildCategory('타이머 설정', timerItems),
           buildCategory('앱 설정', appSettingsItems),
           buildCategory('유틸리티', utilityItems),
           buildCategory('정보', informationItems),
+          Footer(),
         ],
       ),
     );

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:project1/screens/activity_log_page.dart';
 import 'package:project1/theme/app_color.dart';
@@ -45,6 +46,12 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
   TimerProvider? timerProvider;
   StatsProvider? statsProvider;
 
+  // admob 광고
+  BannerAd? _bannerAd1;
+  BannerAd? _bannerAd2;
+  bool _isAdLoaded1 = false;
+  bool _isAdLoaded2 = false;
+
   bool showAllHours = true;
   bool refreshKey = false;
   double currentExtent = 0.1;
@@ -63,6 +70,43 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
   void initState() {
     super.initState();
 
+    // admob 광고 초기화
+    _bannerAd1 = BannerAd(
+      adUnitId: 'ca-app-pub-9503898094962699/5342392791',
+      size: AdSize.fullBanner,
+      request: AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (Ad ad) {
+          setState(() {
+            _isAdLoaded1 = true;
+          });
+        },
+        onAdFailedToLoad: (Ad ad, LoadAdError error) {
+          ad.dispose();
+          print('BannerAd failed to load: $error');
+        },
+      ),
+    );
+    _bannerAd1!.load();
+
+    _bannerAd2 = BannerAd(
+      adUnitId: 'ca-app-pub-9503898094962699/3819791084',
+      size: AdSize.fullBanner,
+      request: AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (Ad ad) {
+          setState(() {
+            _isAdLoaded2 = true;
+          });
+        },
+        onAdFailedToLoad: (Ad ad, LoadAdError error) {
+          ad.dispose();
+          print('BannerAd failed to load: $error');
+        },
+      ),
+    );
+    _bannerAd2!.load();
+
     // 데이터 미리 로딩
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _preloadData();
@@ -71,6 +115,8 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
 
   @override
   void dispose() {
+    _bannerAd1?.dispose();
+    _bannerAd2?.dispose();
     _scrollController = null;
     super.dispose();
   }
@@ -254,18 +300,22 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
                         ),
 
                         SliverToBoxAdapter(
-                          child: SizedBox(height: context.hp(2)),
-                        ),
-
-                        // 히트맵 섹션
-                        SliverToBoxAdapter(
-                          child: _buildHeatmapSection(context, timerProvider!),
+                          child: SizedBox(height: context.hp(1)),
                         ),
 
                         SliverToBoxAdapter(
-                          child: SizedBox(height: context.hp(2)),
+                          child: _isAdLoaded1
+                              ? Container(
+                                  width: _bannerAd1!.size.width.toDouble(),
+                                  height: _bannerAd1!.size.height.toDouble(),
+                                  child: AdWidget(ad: _bannerAd1!),
+                                )
+                              : SizedBox.shrink(),
                         ),
 
+                        SliverToBoxAdapter(
+                          child: SizedBox(height: context.hp(1)),
+                        ),
                         // 활동 시간 섹션
                         SliverToBoxAdapter(
                           child: _buildActivityTimeSection(context, timerProvider!),
@@ -273,6 +323,26 @@ class _SessionHistorySheetState extends State<SessionHistorySheet> with Automati
 
                         SliverToBoxAdapter(
                           child: SizedBox(height: context.hp(2)),
+                        ),
+
+                        // 히트맵 섹션
+                        SliverToBoxAdapter(
+                          child: _buildHeatmapSection(context, timerProvider!),
+                        ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(height: context.hp(1)),
+                        ),
+                        SliverToBoxAdapter(
+                          child: _isAdLoaded2
+                              ? Container(
+                                  width: _bannerAd2!.size.width.toDouble(),
+                                  height: _bannerAd2!.size.height.toDouble(),
+                                  child: AdWidget(ad: _bannerAd2!),
+                                )
+                              : SizedBox.shrink(),
+                        ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(height: context.hp(1)),
                         ),
 
                         // 활동 캘린더 섹션

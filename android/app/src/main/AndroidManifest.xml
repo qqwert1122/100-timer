@@ -39,6 +39,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-9503898094962699~7783086822"/>
 
         <!-- 카카오 로그인 Activity 설정 -->
         <activity
