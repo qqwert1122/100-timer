@@ -14,6 +14,7 @@ import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/widgets/fluid_gradient_background.dart';
 import 'package:project1/widgets/focus_mode.dart';
+import 'package:project1/widgets/focus_mode_card.dart';
 import 'package:project1/widgets/text_indicator.dart';
 import 'package:project1/widgets/timer_info_card.dart';
 import 'package:project1/widgets/timer_page_header.dart';
@@ -293,14 +294,13 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
           children: [
             Column(
               children: [
-                SizedBox(height: context.hp(8)),
+                SizedBox(height: context.hp(6)),
                 const TimerPageHeader(),
                 SizedBox(height: context.hp(0.5)),
                 TimerInfoCard(
                   timerProvider: timerProvider,
                   showActivityModal: () => _showActivityModal(timerProvider),
                 ),
-                SizedBox(height: context.hp(2)),
                 SizedBox(
                   height: context.hp(5),
                   width: double.infinity,
@@ -334,7 +334,9 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                                     SizedBox(width: context.wp(2)),
                                     Text(
                                       "집중 모드",
-                                      style: AppTextStyles.getTitle(context),
+                                      style: AppTextStyles.getBody(context).copyWith(
+                                        fontWeight: FontWeight.w900,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -359,7 +361,9 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                                     SizedBox(width: context.wp(2)),
                                     Text(
                                       "일반 모드",
-                                      style: AppTextStyles.getTitle(context),
+                                      style: AppTextStyles.getBody(context).copyWith(
+                                        fontWeight: FontWeight.w900,
+                                      ),
                                     ),
                                   ],
                                 )
@@ -380,19 +384,17 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                     ],
                   ),
                 ),
-                // ---------------------------
-                // PageView (뽀모도로, 일반모드, 투두)
-                // ---------------------------
+
+                // 타이머 모드 및 실행버튼
                 Expanded(
                   child: PageView(
                     controller: _pageController,
-                    physics: timerProvider.isRunning ? const NeverScrollableScrollPhysics() : const AlwaysScrollableScrollPhysics(),
+                    physics: const AlwaysScrollableScrollPhysics(),
                     onPageChanged: _onPageChanged,
                     children: [
-                      // 0) 뽀모도로(=FocusMode)
+                      // 집중모드
                       FocusMode(timerData: widget.timerData),
-
-                      // 1) 일반 모드
+                      // 일반 모드
                       SingleChildScrollView(
                         child: Padding(
                           padding: context.paddingSM,
@@ -490,7 +492,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
             Positioned(
               left: 0,
               right: 0,
-              bottom: context.hp(14), // 필요하다면 0으로 조절 가능
+              bottom: context.hp(12), // 필요하다면 0으로 조절 가능
               child: Align(
                 alignment: Alignment.center,
                 child: Container(

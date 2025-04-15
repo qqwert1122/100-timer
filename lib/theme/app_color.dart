@@ -21,7 +21,7 @@ class AppColors {
   }
 
   static Color backgroundSecondary(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark ? const Color(0xff2A2F25) : Colors.grey.shade100;
+    return Theme.of(context).brightness == Brightness.dark ? const Color(0xff2A2F25) : Color(0xffF5F5F5);
   }
 
   // 텍스트 on 배경 색상 (배경에 쓰이는 텍스트 색상)

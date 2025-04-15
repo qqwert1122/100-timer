@@ -339,17 +339,16 @@ class _SettingPageState extends State<SettingPage> {
               padding: const EdgeInsets.only(left: 16.0, bottom: 8.0),
               child: Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: context.md,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey, // 제목 색상
                 ),
               ),
             ),
             Container(
-              padding: const EdgeInsets.all(8.0),
+              padding: context.paddingXS,
               decoration: BoxDecoration(
-                color: AppColors.backgroundSecondary(context),
+                color: AppColors.background(context),
                 borderRadius: const BorderRadius.all(Radius.circular(16.0)),
               ),
               child: Column(
@@ -373,8 +372,8 @@ class _SettingPageState extends State<SettingPage> {
                         child: ListTile(
                           leading: Image.asset(
                             getIconImage(items[i]['icon']),
-                            width: context.xxl,
-                            height: context.xxl,
+                            width: context.xl,
+                            height: context.xl,
                             errorBuilder: (context, error, stackTrace) {
                               // 이미지를 로드하는 데 실패한 경우의 대체 표시
                               return Container(
@@ -425,25 +424,27 @@ class _SettingPageState extends State<SettingPage> {
           '설정',
           style: AppTextStyles.getTitle(context),
         ),
-        backgroundColor: AppColors.background(context),
+        backgroundColor: AppColors.backgroundSecondary(context),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(18), // 화면의 좌우 여백 설정
-        children: [
-          _isAdLoaded1
-              ? Container(
-                  width: _bannerAd1!.size.width.toDouble(),
-                  height: _bannerAd1!.size.height.toDouble(),
-                  child: AdWidget(ad: _bannerAd1!),
-                )
-              : SizedBox.shrink(),
-          SizedBox(height: context.hp(1)),
-          buildCategory('타이머 설정', timerItems),
-          buildCategory('앱 설정', appSettingsItems),
-          buildCategory('유틸리티', utilityItems),
-          buildCategory('정보', informationItems),
-          Footer(),
-        ],
+      body: Container(
+        color: AppColors.backgroundSecondary(context),
+        child: ListView(
+          padding: context.paddingSM, // 화면의 좌우 여백 설정
+          children: [
+            _isAdLoaded1
+                ? SizedBox(
+                    width: _bannerAd1!.size.width.toDouble(),
+                    height: _bannerAd1!.size.height.toDouble(),
+                    child: AdWidget(ad: _bannerAd1!),
+                  )
+                : const SizedBox.shrink(),
+            buildCategory('타이머 설정', timerItems),
+            buildCategory('앱 설정', appSettingsItems),
+            buildCategory('유틸리티', utilityItems),
+            buildCategory('정보', informationItems),
+            const Footer(),
+          ],
+        ),
       ),
     );
   }

@@ -507,6 +507,13 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
           'timer_state': 'RUNNING',
         },
       );
+
+      // 활동에 사용이력 남기기
+      await _dbService.updateActivity(
+        activityId: activity['activity_id'],
+        isUsed: true,
+      );
+
       // 업데이트한 timer를 다시 불러와 전역변수 업데이트
       _timerData = await _dbService.getTimer(_timerData!['week_start']);
       _currentState = "RUNNING";

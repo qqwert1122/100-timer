@@ -10,6 +10,7 @@ import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/notification_service.dart';
 import 'package:project1/utils/stats_provider.dart';
+import 'package:project1/utils/test_data_generator.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -62,7 +63,7 @@ void main() async {
   ]);
 
   // 데이터베이스 초기화
-  // final dbService = DatabaseService() ;
+  // final dbService = DatabaseService();
   // await insertTestData(dbService);
 
   runApp(
@@ -154,7 +155,7 @@ class _MyAppState extends State<MyApp> {
       {
         'activity_name': '전체',
         'activity_icon': 'category',
-        'activity_color': '#B7B7B7',
+        'activity_color': '#F5F5F5',
         'is_default': true,
       },
       {
@@ -217,10 +218,11 @@ class _MyAppState extends State<MyApp> {
       bool duplicate = await _dbService.isActivityNameDuplicate(act['activity_name']);
       if (!duplicate) {
         await _dbService.addActivity(
-          act['activity_name'],
-          act['activity_icon'],
-          act['activity_color'],
-          act['is_default'],
+          activityName: act['activity_name'],
+          activityIcon: act['activity_icon'],
+          activityColor: act['activity_color'],
+          isDefault: act['is_default'],
+          parentActivityId: null,
         );
       }
     }

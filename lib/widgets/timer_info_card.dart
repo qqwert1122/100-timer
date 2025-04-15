@@ -75,125 +75,124 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
               borderRadius: const BorderRadius.all(
                 Radius.circular(16.0),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.textSecondary(context).withOpacity(0.2),
+                  spreadRadius: 2,
+                  blurRadius: 2,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Padding(
               padding: context.paddingSM,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
                 children: [
-                  Column(
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'today',
-                        style: AppTextStyles.getBody(context).copyWith(
-                          color: AppColors.textSecondary(context),
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(width: context.hp(1)),
-                      Text(
-                        todayString,
-                        style: AppTextStyles.getTitle(context).copyWith(
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Neo',
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(width: context.wp(5)),
-                  Expanded(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: weekDays.map((date) {
-                        final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
-                        final formattedDate = weekdayNames[date.weekday - 1];
-
-                        return Column(
-                          children: [
-                            Text(
-                              formattedDate,
-                              style: AppTextStyles.getCaption(context).copyWith(
-                                color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
-                              ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'today',
+                            style: AppTextStyles.getCaption(context).copyWith(
+                              color: AppColors.textSecondary(context),
+                              fontWeight: FontWeight.w900,
                             ),
-                            SizedBox(height: context.hp(0.5)),
-                            Container(
-                              padding: const EdgeInsets.all(4.0),
-                              decoration: isToday
-                                  ? BoxDecoration(
-                                      color: AppColors.primary(context).withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(8),
-                                    )
-                                  : null,
-                              child: Text(
-                                '${date.day}',
-                                style: AppTextStyles.getBody(context).copyWith(
-                                  color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
+                          ),
+                          SizedBox(width: context.hp(1)),
+                          Text(
+                            todayString,
+                            style: AppTextStyles.getBody(context).copyWith(
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Neo',
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(width: context.wp(5)),
+                      Expanded(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.max,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: weekDays.map((date) {
+                            final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+                            final formattedDate = weekdayNames[date.weekday - 1];
+
+                            return Column(
+                              children: [
+                                Text(
+                                  formattedDate,
+                                  style: AppTextStyles.getCaption(context).copyWith(
+                                    color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: context.hp(1)),
-
-          // 남은 시간
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.background(context),
-              borderRadius: const BorderRadius.all(
-                Radius.circular(16.0),
-              ),
-            ),
-            child: Padding(
-              padding: context.paddingSM,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '이번 주 남은 시간',
-                        style: AppTextStyles.getBody(context).copyWith(
-                          color: AppColors.textSecondary(context),
-                          fontWeight: FontWeight.w900,
+                                SizedBox(height: context.hp(0.5)),
+                                Container(
+                                  padding: const EdgeInsets.all(4.0),
+                                  decoration: isToday
+                                      ? BoxDecoration(
+                                          color: AppColors.primary(context).withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(8),
+                                        )
+                                      : null,
+                                  child: Text(
+                                    '${date.day}',
+                                    style: AppTextStyles.getCaption(context).copyWith(
+                                      color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
                         ),
-                      ),
-                      Consumer<TimerProvider>(
-                        builder: (context, provider, child) {
-                          return Text(
-                            provider.formattedTime,
-                            style: AppTextStyles.getTimeDisplay(context).copyWith(
-                              color: AppColors.primary(context),
-                              fontFamily: 'chab',
-                            ),
-                          );
-                        },
                       ),
                     ],
                   ),
-                  CircularPercentIndicator(
-                    radius: context.wp(10),
-                    lineWidth: context.wp(5),
-                    animation: true,
-                    percent: percent.clamp(0.0, 1.0),
-                    center: Text(
-                      '$percentText %',
-                      style: AppTextStyles.getCaption(context).copyWith(),
-                    ),
-                    circularStrokeCap: CircularStrokeCap.round,
-                    progressColor: Colors.redAccent,
-                    backgroundColor: AppColors.backgroundSecondary(context),
+                  SizedBox(height: context.hp(1)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '이번 주 남은 시간',
+                            style: AppTextStyles.getCaption(context).copyWith(
+                              color: AppColors.textSecondary(context),
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Consumer<TimerProvider>(
+                            builder: (context, provider, child) {
+                              return Text(
+                                provider.formattedTime,
+                                style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                  color: AppColors.primary(context),
+                                  fontFamily: 'chab',
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                      CircularPercentIndicator(
+                        radius: context.wp(10),
+                        lineWidth: context.wp(5),
+                        animation: true,
+                        percent: percent.clamp(0.0, 1.0),
+                        center: Text(
+                          '$percentText %',
+                          style: AppTextStyles.getCaption(context).copyWith(),
+                        ),
+                        circularStrokeCap: CircularStrokeCap.round,
+                        progressColor: Colors.redAccent,
+                        backgroundColor: AppColors.backgroundSecondary(context),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -202,93 +201,97 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
           SizedBox(height: context.hp(1)),
 
           // 활동 선택
-          SizedBox(
-            width: double.infinity,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    widget.showActivityModal();
-                  },
-                  child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: context.xs, vertical: context.sm),
-                      decoration: BoxDecoration(
-                        color: AppColors.background(context),
-                        borderRadius: BorderRadius.circular(16),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              widget.showActivityModal();
+            },
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: context.xs, vertical: context.md),
+              decoration: BoxDecoration(
+                color: AppColors.background(context),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.textSecondary(context).withOpacity(0.2),
+                    spreadRadius: 2,
+                    blurRadius: 2,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: context.sm),
+                      child: Text(
+                        '활동 선택',
+                        style: AppTextStyles.getBody(context).copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary(context),
+                        ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(horizontal: context.sm),
-                              child: Text(
-                                '활동 선택',
-                                style: AppTextStyles.getBody(context).copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textSecondary(context),
-                                ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 6,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Image.asset(
+                          getIconImage(widget.timerProvider.currentActivityIcon),
+                          width: context.xl,
+                          height: context.xl,
+                          errorBuilder: (context, error, stackTrace) {
+                            // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                            return Container(
+                              width: context.xl,
+                              height: context.xl,
+                              color: Colors.grey.withOpacity(0.2),
+                              child: Icon(
+                                Icons.broken_image,
+                                size: context.xl,
+                                color: Colors.grey,
                               ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 6,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Image.asset(
-                                  getIconImage(widget.timerProvider.currentActivityIcon),
-                                  width: context.xl,
-                                  height: context.xl,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    // 이미지를 로드하는 데 실패한 경우의 대체 표시
-                                    return Container(
-                                      width: context.xl,
-                                      height: context.xl,
-                                      color: Colors.grey.withOpacity(0.2),
-                                      child: Icon(
-                                        Icons.broken_image,
-                                        size: context.xl,
-                                        color: Colors.grey,
-                                      ),
-                                    );
-                                  },
-                                ),
-                                SizedBox(width: context.wp(2)),
-                                Flexible(
-                                  child: Builder(
-                                    builder: (context) {
-                                      final activityName = widget.timerProvider.currentActivityName;
-                                      final displayText = activityName.length > 10 ? '${activityName.substring(0, 10)}...' : activityName;
+                            );
+                          },
+                        ),
+                        SizedBox(width: context.wp(1)),
+                        Flexible(
+                          child: Builder(
+                            builder: (context) {
+                              final activityName = widget.timerProvider.currentActivityName;
+                              final displayText = activityName.length > 15 ? '${activityName.substring(0, 15)}...' : activityName;
 
-                                      return Text(
-                                        displayText,
-                                        style: AppTextStyles.getTitle(context).copyWith(fontWeight: FontWeight.w900),
-                                      );
-                                    },
-                                  ),
+                              return Text(
+                                displayText,
+                                style: AppTextStyles.getBody(context).copyWith(
+                                  fontWeight: FontWeight.w900,
                                 ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
-                          Expanded(
-                            flex: 1,
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: Transform(
-                                  // 중심을 기준으로 좌우 대칭(수평 반전)하기
-                                  alignment: Alignment.center,
-                                  transform: Matrix4.identity()..scale(-1.0, 1.0),
-                                  child: Icon(Icons.arrow_back_ios_new_rounded, size: context.lg)),
-                            ),
-                          ),
-                        ],
-                      )),
-                ),
-              ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Transform(
+                          // 중심을 기준으로 좌우 대칭(수평 반전)하기
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()..scale(-1.0, 1.0),
+                          child: Icon(Icons.arrow_back_ios_new_rounded, size: context.lg)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

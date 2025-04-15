@@ -90,17 +90,6 @@ class StatsProvider extends ChangeNotifier {
 
   */
 
-  Future<List<Map<String, dynamic>>> getActivities() async {
-    try {
-      final result = await _dbService.getActivities();
-
-      return result;
-    } catch (e) {
-      // error log
-      return [];
-    }
-  }
-
   Future<Map<String, dynamic>?> getDefaultActivity() async {
     try {
       final activities = await _dbService.getActivities();
@@ -113,6 +102,45 @@ class StatsProvider extends ChangeNotifier {
     } catch (e) {
       // error log
       return null;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getActivities() async {
+    try {
+      final result = await _dbService.getActivities();
+
+      final sortedResult = List<Map<String, dynamic>>.from(result);
+      sortedResult.sort((a, b) {
+        final orderA = a['sort_order'] ?? 0;
+        final orderB = b['sort_order'] ?? 0;
+        return orderA.compareTo(orderB);
+      });
+
+      return sortedResult;
+    } catch (e) {
+      // 에러 로깅 처리
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getFavoriteActivities() async {
+    try {
+      // 모든 활동을 가져온 다음 즐겨찾기 필드로 필터링
+      final allActivities = await _dbService.getActivities();
+
+      final favoriteActivities = allActivities.where((activity) => activity['is_favorite'] == 1).toList();
+
+      // favorite_order 필드를 기준으로 오름차순 정렬
+      favoriteActivities.sort((a, b) {
+        final orderA = a['favorite_order'] ?? 0;
+        final orderB = b['favorite_order'] ?? 0;
+        return orderA.compareTo(orderB);
+      });
+
+      return favoriteActivities;
+    } catch (e) {
+      // 에러 로깅 처리
+      return [];
     }
   }
 

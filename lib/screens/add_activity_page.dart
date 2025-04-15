@@ -160,10 +160,22 @@ class _AddActivityPageState extends State<AddActivityPage> {
       String colorValue = selectedBaseColor!;
 
       if (widget.isEdit) {
-        await dbService.updateActivity(widget.activityId!, activityName, iconName, colorValue, false);
+        await dbService.updateActivity(
+          activityId: widget.activityId!,
+          newActivityName: activityName,
+          newActivityIcon: iconName,
+          newActivityColor: colorValue,
+          newIsFavorite: 0,
+        );
         Navigator.pop(context, {'name': activityName, 'icon': iconName, 'color': colorValue});
       } else {
-        await dbService.addActivity(activityName, iconName, colorValue, false);
+        await dbService.addActivity(
+          activityName: activityName,
+          activityIcon: iconName,
+          activityColor: colorValue,
+          isDefault: false,
+          parentActivityId: null,
+        );
         Fluttertoast.showToast(
           msg: "활동이 성공적으로 추가되었습니다",
           toastLength: Toast.LENGTH_SHORT,
@@ -224,10 +236,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text(
+              child: const Text(
                 '뒤로',
                 style: TextStyle(
-                  color: AppColors.textPrimary(context),
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -246,8 +258,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
               ),
               child: Text(
                 nextButtonText,
-                style: TextStyle(
-                  color: AppColors.textPrimary(context),
+                style: const TextStyle(
+                  color: Colors.white,
                 ),
               ),
             ),

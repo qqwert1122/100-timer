@@ -96,15 +96,19 @@ class DatabaseService {
       CREATE TABLE activities (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         activity_id TEXT,
+        parent_activity_id TEXT,
         activity_name TEXT,
         activity_icon TEXT,
         activity_color TEXT,
         created_at TEXT,
         deleted_at TEXT,
         last_updated_at TEXT,
+        last_used_at TEXT,
         is_favorite INTEGER DEFAULT 0,
         is_default INTEGER DEFAULT 0,
-        is_deleted INTEGER DEFAULT 0
+        is_deleted INTEGER DEFAULT 0,
+        sort_order INTEGER,
+        favorite_order INTEGER
       )
     ''');
 
@@ -274,31 +278,47 @@ class DatabaseService {
   */
 
   // 활동 추가
-  Future<void> addActivity(
-    String activityName,
-    String activityIcon,
-    String activityColor,
-    bool isDefault,
-  ) async {
+  Future<void> addActivity({
+    required String activityName,
+    required String activityIcon,
+    required String activityColor,
+    required bool isDefault,
+    required String? parentActivityId,
+  }) async {
     final db = await database;
     final activityId = const Uuid().v4();
     String now = DateTime.now().toUtc().toIso8601String();
 
+    final result = await db.rawQuery("SELECT MAX(sort_order) as maxSortOrder FROM activities WHERE is_deleted = 0");
+    int sortOrder = 1;
+    if (result.isNotEmpty && result.first["maxSortOrder"] != null) {
+      // 조회된 최대값에 1을 더해 다음 순서를 지정합니다.
+      sortOrder = (result.first["maxSortOrder"] as int) + 1;
+    }
+
     final activity = {
       'activity_id': activityId,
+      'parent_activity_id': parentActivityId,
       'activity_name': activityName,
       'activity_icon': activityIcon,
       'activity_color': activityColor,
       'created_at': now,
       'deleted_at': null,
       'last_updated_at': now,
+      'last_used_at': null,
       'is_favorite': 0,
       'is_default': isDefault ? 1 : 0,
       'is_deleted': 0,
+      'sort_order': sortOrder,
+      'favorite_order': null,
     };
 
     try {
-      await db.insert('activities', activity, conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.insert(
+        'activities',
+        activity,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     } catch (e) {
       // error log
     }
@@ -322,23 +342,70 @@ class DatabaseService {
   }
 
   // 활동 업데이트
-  Future<void> updateActivity(
-    String activityId,
-    String newActivityName,
-    String newActivityIcon,
-    String newActivityColor,
-    bool newIsFavorite,
-  ) async {
+  Future<void> updateActivity({
+    required String activityId,
+    String? newActivityName,
+    String? newActivityIcon,
+    String? newActivityColor,
+    int? newIsFavorite,
+    bool? isUsed,
+  }) async {
     final db = await database;
     String now = DateTime.now().toUtc().toIso8601String();
 
-    final update = {
-      'activity_name': newActivityName,
-      'activity_icon': newActivityIcon,
-      'activity_color': newActivityColor,
-      'is_favorite': newIsFavorite,
-      'last_updated_at': now,
-    };
+    final Map<String, dynamic> update = {};
+
+    if (newActivityName != null) {
+      update['activity_name'] = newActivityName;
+    }
+    if (newActivityIcon != null) {
+      update['activity_icon'] = newActivityIcon;
+    }
+    if (newActivityColor != null) {
+      update['activity_color'] = newActivityColor;
+    }
+    // 즐겨찾기 상태 변경 시 처리
+    if (newIsFavorite != null) {
+      update['is_favorite'] = newIsFavorite;
+
+      // 즐겨찾기 해제(0)인 경우 favorite_order를 null로 설정
+      if (newIsFavorite == 0) {
+        update['favorite_order'] = null;
+      }
+      // 즐겨찾기 추가(1)인 경우 새로운 favorite_order 값 부여
+      else if (newIsFavorite == 1) {
+        // 현재 최대 favorite_order 값을 조회하여 +1 부여
+        try {
+          final maxOrderResult =
+              await db.rawQuery('SELECT MAX(favorite_order) as max_order FROM activities WHERE is_favorite = 1 AND is_deleted = 0');
+
+          int maxOrder = 0;
+          if (maxOrderResult.isNotEmpty && maxOrderResult[0]['max_order'] != null) {
+            maxOrder = maxOrderResult[0]['max_order'] as int;
+          }
+
+          // 최대값 + 1로 새 순서 설정
+          update['favorite_order'] = maxOrder + 1;
+          print('새로운 즐겨찾기 순서 할당: ${maxOrder + 1}');
+        } catch (e) {
+          print('즐겨찾기 순서 조회 오류: $e');
+          // 오류 시 기본값 할당
+          update['favorite_order'] = 999;
+        }
+      }
+    }
+    // isUsed 플래그가 true이면 last_used_at 업데이트
+    if (isUsed == true) {
+      update['last_used_at'] = now;
+    }
+
+    // 업데이트할 필드가 없으면 불필요한 작업을 피하기 위해 종료
+    if (update.isEmpty) {
+      return;
+    }
+
+    // 마지막 업데이트 시간 갱신
+    update['last_updated_at'] = now;
 
     try {
       // 데이터 업데이트
@@ -355,6 +422,39 @@ class DatabaseService {
       }
     } catch (e) {
       // error log
+    }
+  }
+
+  Future<void> updateActivityOrder({
+    required String activityId,
+    int? newSortOrder,
+    int? newFavoriteOrder,
+  }) async {
+    final db = await database;
+    String now = DateTime.now().toUtc().toIso8601String();
+
+    final update = {
+      'sort_order': newSortOrder,
+      'last_updated_at': now,
+    };
+
+    if (newFavoriteOrder != null) {
+      update['favorite_order'] = newFavoriteOrder;
+    }
+
+    try {
+      final rowsAffected = await db.update(
+        'activities',
+        update,
+        where: 'activity_id = ? AND is_deleted = ?',
+        whereArgs: [activityId, 0],
+      );
+
+      if (rowsAffected == 0) {
+        // 업데이트가 적용되지 않은 경우에 대한 에러 처리
+      }
+    } catch (e) {
+      // 에러 로깅 처리
     }
   }
 
@@ -716,9 +816,13 @@ class DatabaseService {
     }
   }
 
-  Future<void> updateSessionDuration({
+  Future<void> modifySession({
     required String sessionId,
-    required int additionalDurationSeconds,
+    required int newDuration,
+    required String activityId,
+    required String activityName,
+    required String activityColor,
+    required String activityIcon,
   }) async {
     final db = await database;
 
@@ -737,20 +841,21 @@ class DatabaseService {
         // 기존 데이터 가져오기
         final existingDuration = (session.first['duration'] ?? 0) as int;
 
-        // 새로운 duration 계산
-        final newDuration = min(86400, max(0, existingDuration + additionalDurationSeconds));
-
         // 세션 업데이트
-        final sessionUpdateData = {
+        final updateData = {
           'duration': newDuration,
           'original_duration': existingDuration,
           'last_updated_at': now,
           'is_modified': 1,
+          'activity_id': activityId,
+          'activity_name': activityName,
+          'activity_color': activityColor,
+          'activity_icon': activityIcon,
         };
 
         await txn.update(
           'sessions',
-          sessionUpdateData,
+          updateData,
           where: 'session_id = ?',
           whereArgs: [sessionId],
         );

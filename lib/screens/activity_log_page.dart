@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
+import 'package:project1/theme/app_color.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
@@ -90,7 +91,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
           break;
         } else {
           debugPrint("No data for weekOffset: $_currentWeekOffset, trying next week");
-          _currentWeekOffset += 1;
+          _currentWeekOffset -= 1;
           attempts++;
         }
       }
@@ -332,20 +333,26 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
+              backgroundColor: AppColors.background(context),
               title: const Text(
                 '정말 삭제하시겠습니까?',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.redAccent,
                   fontWeight: FontWeight.w900,
+                  fontFamily: 'Neo',
                 ),
               ),
-              content: const Text('이 활동 로그를 삭제하면 복구할 수 없습니다.'),
+              content: const Text('활동 기록을 삭제하면 복구할 수 없습니다.'),
               actions: <Widget>[
                 TextButton(
                   child: const Text(
                     '취소',
-                    style: TextStyle(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.w900),
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                   onPressed: () {
                     Navigator.of(context).pop(false);
@@ -354,7 +361,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                 TextButton(
                   child: const Text(
                     '삭제',
-                    style: TextStyle(color: Colors.redAccent, fontSize: 18, fontWeight: FontWeight.w900),
+                    style: TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Neo',
+                    ),
                   ),
                   onPressed: () {
                     Navigator.of(context).pop(true);
@@ -399,7 +411,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     );
   }
 
-  Widget _buildDateGroup(String date, List<Map<String, dynamic>> logs, bool isDarkMode) {
+  Widget _buildDateGroup(String date, List<Map<String, dynamic>> logs) {
     final DateFormat formatter = DateFormat('yyyy-MM-dd');
     final DateTime dateTime = formatter.parse(date);
     final String dayOfWeek = _getDayOfWeek(date);
@@ -407,17 +419,21 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 12, right: 12, top: 36, bottom: 4),
+          padding: EdgeInsets.only(
+            left: context.spacing_xs,
+            right: context.spacing_xs,
+            top: context.spacing_sm,
+          ),
           child: Text(
             '$date $dayOfWeek요일',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
         Container(
-          margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+          margin: const EdgeInsets.symmetric(vertical: 8.0),
           width: double.infinity,
           decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey.shade900 : Colors.grey.shade100,
+            color: AppColors.background(context),
             borderRadius: BorderRadius.circular(16.0),
           ),
           child: Padding(
@@ -431,6 +447,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                     children: [
                       SlidableAction(
                         onPressed: (context) {
+                          HapticFeedback.lightImpact();
                           showModalBottomSheet(
                               context: context,
                               builder: (BuildContext context) {
@@ -580,7 +597,6 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         title: const Text('활동 기록', style: TextStyle(fontWeight: FontWeight.w400, fontSize: 18)),
@@ -590,42 +606,46 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
             onPressed: _refreshLogs,
           )
         ],
+        backgroundColor: AppColors.backgroundSecondary(context),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Align(
-            alignment: Alignment.center,
-            child: _buildDayButtons(),
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(context.spacing_sm),
-              child: groupedLogs.isEmpty && !_isLoadingMore
-                  ? const Center(child: Text('활동 로그가 없습니다.'))
-                  : RefreshIndicator(
-                      onRefresh: _refreshLogs,
-                      child: NotificationListener<ScrollNotification>(
-                        onNotification: (notification) => false,
-                        child: ScrollablePositionedList.builder(
-                          itemScrollController: _scrollController,
-                          itemPositionsListener: _itemPositionsListener,
-                          itemCount: groupedLogs.length + 1,
-                          itemBuilder: (context, index) {
-                            if (index == groupedLogs.length) {
-                              return _buildBottomWidget();
-                            }
-                            final logGroup = groupedLogs[index];
-                            final date = logGroup['date'] as String;
-                            final logs = logGroup['logs'] as List<Map<String, dynamic>>;
-                            return _buildDateGroup(date, logs, isDarkMode);
-                          },
+      body: Container(
+        color: AppColors.backgroundSecondary(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Align(
+              alignment: Alignment.center,
+              child: _buildDayButtons(),
+            ),
+            Expanded(
+              child: Padding(
+                padding: context.paddingSM,
+                child: groupedLogs.isEmpty && !_isLoadingMore
+                    ? const Center(child: Text('활동 로그가 없습니다.'))
+                    : RefreshIndicator(
+                        onRefresh: _refreshLogs,
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: (notification) => false,
+                          child: ScrollablePositionedList.builder(
+                            itemScrollController: _scrollController,
+                            itemPositionsListener: _itemPositionsListener,
+                            itemCount: groupedLogs.length + 1,
+                            itemBuilder: (context, index) {
+                              if (index == groupedLogs.length) {
+                                return _buildBottomWidget();
+                              }
+                              final logGroup = groupedLogs[index];
+                              final date = logGroup['date'] as String;
+                              final logs = logGroup['logs'] as List<Map<String, dynamic>>;
+                              return _buildDateGroup(date, logs);
+                            },
+                          ),
                         ),
                       ),
-                    ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

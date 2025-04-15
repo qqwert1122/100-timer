@@ -238,6 +238,8 @@ String getIconImage(String? iconName) {
       return 'assets/images/emoji/sh_gloves.png';
     case 'glowing_star':
       return 'assets/images/emoji/sh_glowing_star.png';
+    case 'star':
+      return 'assets/images/emoji/sh_star.png';
     case 'green_circle':
       return 'assets/images/emoji/sh_green_circle.png';
     case 'green_heart':
@@ -318,8 +320,6 @@ String getIconImage(String? iconName) {
       return 'assets/images/emoji/sh_sign_of_the_horns_light.png';
     case 'sparkles':
       return 'assets/images/emoji/sh_sparkles.png';
-    case 'star':
-      return 'assets/images/emoji/sh_star.png';
     case 'stopwatch':
       return 'assets/images/emoji/sh_stopwatch.png';
     case 'calendar':

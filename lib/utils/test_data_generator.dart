@@ -13,28 +13,12 @@ class TestDataGenerator {
   /// 테스트 데이터 생성 및 주입 실행
   /// 기본값을 12개월로 설정하여 1년치 더미 데이터를 생성합니다.
   Future<void> generateAndInsertTestData({int monthsOfHistory = 12}) async {
-    await _insertTestActivities();
+    // await _insertTestActivities();
     await _insertTestTimers(monthsOfHistory);
     await _insertTestSessions(monthsOfHistory);
     await _insertTestTodos();
 
     print('모든 테스트 데이터가 성공적으로 주입되었습니다. $monthsOfHistory개월치 세션 이력이 생성되었습니다.');
-  }
-
-  /// 테스트용 활동 데이터 생성 및 주입
-  Future<void> _insertTestActivities() async {
-    List<Map<String, dynamic>> activities = [
-      _createActivity('전체', 'category', '#FF5733', isDefault: true),
-      _createActivity('업무', 'business', '#F3FF33'),
-      _createActivity('피트니스', 'fitness', '#33FF57'),
-      _createActivity('독서', 'open_book', '#3357FF'),
-    ];
-
-    for (var activity in activities) {
-      await _dbService.insertActivity(activity);
-    }
-
-    print('활동 데이터 ${activities.length}개가 주입되었습니다.');
   }
 
   /// 테스트용 타이머 데이터 생성 및 주입
@@ -295,23 +279,6 @@ class TestDataGenerator {
     }
 
     print('할 일 데이터 ${todos.length}개가 주입되었습니다.');
-  }
-
-  /// 활동 데이터 생성 헬퍼 메서드
-  Map<String, dynamic> _createActivity(String name, String icon, String color, {bool isDefault = false}) {
-    DateTime now = DateTime.now();
-    return {
-      'activity_id': _uuid.v4(),
-      'activity_name': name,
-      'activity_icon': icon,
-      'activity_color': color,
-      'created_at': _formatDateTime(now),
-      'deleted_at': null,
-      'last_updated_at': _formatDateTime(now),
-      'is_favorite': _random.nextBool() ? 1 : 0,
-      'is_default': isDefault ? 1 : 0,
-      'is_deleted': 0,
-    };
   }
 
   /// ISO 형식의 날짜 문자열 반환 (날짜만)
