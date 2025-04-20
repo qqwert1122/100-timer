@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:lottie/lottie.dart';
+import 'package:project1/screens/main_page.dart';
 import 'package:project1/screens/timer_page.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
@@ -14,20 +15,19 @@ import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 
 // StatelessWidget에서 StatefulWidget으로 변경
 class TimerResultPage extends StatefulWidget {
   final Map<String, dynamic> timerData;
   final int sessionDuration;
-  final bool isExceeded;
+  final bool isSessionTargetExceeded;
 
   const TimerResultPage({
     super.key,
     required this.timerData,
     required this.sessionDuration,
-    required this.isExceeded,
+    required this.isSessionTargetExceeded,
   });
 
   @override
@@ -83,7 +83,7 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
     );
 
     // 애니메이션 시작
-    if (widget.isExceeded) {
+    if (widget.isSessionTargetExceeded) {
       _trophyController.forward();
     } else {
       _checkController.forward();
@@ -244,7 +244,7 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => TimerPage(timerData: widget.timerData),
+                              builder: (context) => const MainPage(),
                             ),
                           );
                         });
@@ -429,7 +429,7 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    widget.isExceeded
+                    widget.isSessionTargetExceeded
                         ? Lottie.asset(
                             'assets/images/trophy.json',
                             repeat: true,

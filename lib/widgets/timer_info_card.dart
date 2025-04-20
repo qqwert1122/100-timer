@@ -27,6 +27,7 @@ class TimerInfoCard extends StatefulWidget {
 
 class _TimerInfoCardState extends State<TimerInfoCard> {
   StatsProvider? statsProvider;
+  TimerProvider? timerProvider;
 
   int totalDuration = 0;
   int totalSeconds = 1;
@@ -38,6 +39,7 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
   void initState() {
     super.initState();
     statsProvider = Provider.of<StatsProvider>(context, listen: false);
+    timerProvider = Provider.of<TimerProvider>(context, listen: false);
     _loadWeeklyStats();
   }
 
@@ -123,7 +125,7 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '이번 주 남은 목표 시간',
+                            timerProvider!.isWeeklyTargetExceeded ? '이번 주 초과 달성 시간' : '이번 주 남은 목표 시간',
                             style: AppTextStyles.getCaption(context).copyWith(
                               color: AppColors.textSecondary(context),
                               fontWeight: FontWeight.w900,
@@ -134,7 +136,7 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
                               return Text(
                                 provider.formattedTime,
                                 style: AppTextStyles.getTimeDisplay(context).copyWith(
-                                  color: AppColors.primary(context),
+                                  color: timerProvider!.isWeeklyTargetExceeded ? Colors.blueAccent : AppColors.primary(context),
                                   fontFamily: 'chab',
                                 ),
                               );
@@ -152,7 +154,7 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
                           style: AppTextStyles.getCaption(context).copyWith(),
                         ),
                         circularStrokeCap: CircularStrokeCap.round,
-                        progressColor: Colors.redAccent,
+                        progressColor: timerProvider!.isWeeklyTargetExceeded ? Colors.blueAccent : Colors.redAccent,
                         backgroundColor: AppColors.backgroundSecondary(context),
                       ),
                     ],

@@ -449,7 +449,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                                           if (timerProvider.currentActivityId != null) {
                                             timerProvider.setSessionModeAndTargetDuration(
                                               mode: 'NORMAL',
-                                              targetDuration: timerProvider.remainingSeconds,
+                                              targetDuration: timerProvider.isWeeklyTargetExceeded ? null : timerProvider.remainingSeconds,
                                             );
                                             Navigator.of(context).push(
                                               PageRouteBuilder(

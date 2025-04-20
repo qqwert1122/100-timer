@@ -4,8 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:project1/firebase_options.dart';
 import 'package:project1/screens/main_page.dart';
-import 'package:project1/screens/timer_page.dart';
-import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/theme/app_theme.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/logger_config.dart';
@@ -73,8 +71,8 @@ void main() async {
   ]);
 
   // 데이터베이스 초기화
-  // final dbService = DatabaseService();
-  // await insertTestData(dbService);
+  final dbService = DatabaseService();
+  await insertTestData(dbService);
 
   runApp(
     MultiProvider(
@@ -165,7 +163,7 @@ class _MyAppState extends State<MyApp> {
       {
         'activity_name': '전체',
         'activity_icon': 'category',
-        'activity_color': '#F5F5F5',
+        'activity_color': '#BCBCBC',
         'is_default': true,
       },
       {
@@ -343,9 +341,7 @@ class _MyAppState extends State<MyApp> {
               ),
             );
           }
-
-          final timerData = snapshot.data!;
-          return MainPage(timerData: timerData);
+          return const MainPage();
         },
       ),
     );

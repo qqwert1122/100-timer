@@ -147,19 +147,20 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   }
 
   Future<void> _startNewSession() async {
-    logger.d('Create new session');
+    print('timer_running_page : startNewSession');
     // 새 타이머 시작
     await timerProvider.startTimer(
       activityId: timerProvider.currentActivityId!,
       mode: timerProvider.currentSessionMode!,
-      targetDuration: timerProvider.currentSessionTargetDuration!,
+      targetDuration: timerProvider.currentSessionTargetDuration,
     );
   }
 
+  // 어플 재실행 등
   Future<void> _handleExistingSession() async {
-    logger.d('Handling existing session');
+    print('timer_running_page : _handleExistingSession');
     try {
-      // 타이머 객체에서 session_id
+      // 타이머 객체에서 session_id 불러오기
       final sessionId = widget.timerData['current_session_id'];
       final currentSession = await _dbService.getSession(sessionId);
 
@@ -169,36 +170,33 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
         return;
       }
 
-      // 이미 기록된 누적 시간 (단위: 초)
+      // 이미 기록된 누적 시간
       final previousDuration = currentSession['duration'] as int? ?? 0;
 
-      // 마지막 업데이트 시각
+      // 마지막 업데이트 시각으로부터 경과 시간
       final lastUpdatedAt = DateTime.parse(currentSession['last_updated_at']);
-
-      // 마지막 업데이트 이후 경과 시간(초)
       final elapsedSinceLastUpdate = DateTime.now().difference(lastUpdatedAt).inSeconds;
 
-      // 최종적으로 현재 세션에서 경과한 시간 = (이전까지 누적된 시간) + (마지막 업데이트 이후 추가로 흐른 시간)
+      // 경과 시간 업데이트
       final currentDuration = previousDuration + elapsedSinceLastUpdate;
 
       final targetDuration = currentSession['target_duration'];
 
-      if (currentDuration >= targetDuration) {
+      if (targetDuration != null && currentDuration >= targetDuration) {
         // targetDuration을 초과했을 경우
         logger.i('Session exceeded target duration');
-        await _handleStop(isExceeded: true, targetDuration: targetDuration);
+        await _handleStop(isSessionTargetExceeded: true, targetDuration: targetDuration);
       } else {
         if (widget.timerData['timer_state'] == "PAUSED") {
           // 앱이 재시작되었을 때 기본적으로 일시정지 상태로
-          logger.d('Restoring paused session');
 
           // ※ 여기에 "화면에 그려줄 활동 정보"를 TimerProvider에 적용
           // 이미 currentSession을 가져왔으므로, 여기에 활동 정보가 들어 있음
           timerProvider.setCurrentActivity(
             currentSession['activity_id'] ?? '',
             currentSession['activity_name'] ?? '',
-            currentSession['activity_icon'] ?? 'category_rounded',
-            currentSession['activity_color'] ?? '#B7B7B7',
+            currentSession['activity_icon'] ?? 'category',
+            currentSession['activity_color'] ?? '#BCBCBC',
           );
 
           // 혹시 필요하다면, mode / targetDuration / currentDuration 값을 강제로 세팅해줄 수도 있음:
@@ -218,28 +216,30 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   }
 
   void _handleTimerStateChange() {
+    print('timer_running_page : _handleTimerStateChange :: before');
     if (!mounted || _isNavigating) return;
 
     final isRunning = timerProvider.isRunning;
-    final isExceeded = timerProvider.isExceeded;
+    final isSessionTargetExceeded = timerProvider.justFinishedByExceeding;
     final currentState = timerProvider.currentState;
 
     // 애니메이션 상태 업데이트
     _updateAnimationState(currentState);
 
     // 타이머 초과 케이스 처리
-    if (isExceeded && !_hasShownCompletionDialog) {
-      _navigateToResultPage(isExceeded: true);
+    if (isSessionTargetExceeded && !_hasShownCompletionDialog) {
+      timerProvider.clearEventFlags();
+      _navigateToResultPage(isSessionTargetExceeded: true);
       return;
     }
 
     // 타이머 중지 케이스 처리
-    if (!isRunning && !isExceeded && currentState == 'STOP') {
-      _navigateToResultPage(isExceeded: false);
+    if (!isRunning && !isSessionTargetExceeded && currentState == 'STOP') {
+      _navigateToResultPage(isSessionTargetExceeded: false);
     }
   }
 
-// 애니메이션 상태 관리를 위한 helper 메소드
+  // 애니메이션 상태 관리를 위한 helper 메소드
   void _updateAnimationState(String state) {
     if (state == 'RUNNING') {
       setState(() {
@@ -256,8 +256,9 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     }
   }
 
-// 결과 페이지로 이동하는 helper 메소드
-  void _navigateToResultPage({required bool isExceeded}) {
+  // 결과 페이지로 이동하는 helper 메소드
+  void _navigateToResultPage({required bool isSessionTargetExceeded}) {
+    print('timer_running_page : _navigateToResultPage');
     if (_isNavigating) return;
     _isNavigating = true;
 
@@ -268,7 +269,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
           builder: (context) => TimerResultPage(
             timerData: timerProvider.timerData!,
             sessionDuration: timerProvider.currentSessionDuration,
-            isExceeded: isExceeded,
+            isSessionTargetExceeded: isSessionTargetExceeded,
           ),
         ),
       ).then((_) {
@@ -276,7 +277,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
       });
     }
 
-    if (isExceeded) {
+    if (isSessionTargetExceeded) {
       _hasShownCompletionDialog = true;
     }
   }
@@ -315,8 +316,9 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
   @override
   void didChangeDependencies() {
+    // isRunning 값에 따라 애니메이션 컨트롤
     super.didChangeDependencies();
-    print('===== didChangeDependencies =====');
+    print('timer_running_page : didChangeDependencies');
 
     final isRunning = Provider.of<TimerProvider>(context, listen: false).isRunning;
 
@@ -354,7 +356,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     return weekStart.toIso8601String().split('T').first;
   }
 
-  Future<void> _handleStop({bool isExceeded = false, int? targetDuration}) async {
+  Future<void> _handleStop({bool isSessionTargetExceeded = false, int? targetDuration}) async {
     final timer = timerProvider.timerData!;
     try {
       // 메시지 Timer 정리
@@ -367,7 +369,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
       await NotificationService().cancelCompletionNotification();
 
       // 세션 종료
-      await timerProvider.stopTimer(isExceeded: isExceeded, sessionId: timer['current_session_id']);
+      await timerProvider.stopTimer(isSessionTargetExceeded: isSessionTargetExceeded, sessionId: timer['current_session_id']);
 
       // 애니메이션 중지
       for (var wave in waves) {
@@ -381,7 +383,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
             builder: (context) => TimerResultPage(
               timerData: timer,
               sessionDuration: timerProvider.currentSessionDuration,
-              isExceeded: isExceeded,
+              isSessionTargetExceeded: isSessionTargetExceeded,
             ),
           ),
         );
@@ -546,8 +548,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
           : Future.value(0),
       builder: (context, snapshot) {
         // 데이터 로딩 중이거나 오류가 발생한 경우 로딩 표시
-
-        logger.d(snapshot.data);
         if (!snapshot.hasData) {
           messages
             ..clear()
@@ -620,9 +620,15 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   }
 
   Widget _buildProgressCircle(TimerProvider timerProvider) {
-    final progress = timerProvider.currentSessionTargetDuration != null
-        ? (1 - timerProvider.currentSessionDuration / timerProvider.currentSessionTargetDuration!)
-        : 0.0;
+    double progress = 0.0;
+
+    if (timerProvider.currentSessionMode == 'PMDR' || !timerProvider.isWeeklyTargetExceeded) {
+      progress = 1 - (timerProvider.currentSessionDuration / timerProvider.currentSessionTargetDuration!);
+    } else {
+      // 주간 목표시간 초과달성 시 (1시간 기준 진행률 표시)
+      progress = 1 - (timerProvider.currentSessionDuration / 3600);
+    }
+
     final activityColor = ColorService.hexToColor(timerProvider.currentActivityColor);
     final activityName = timerProvider.currentActivityName;
     final activityIcon = timerProvider.currentActivityIcon;
@@ -772,21 +778,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   Widget _buildTimeDisplayWithConsumer() {
     return Consumer<TimerProvider>(
       builder: (context, provider, child) {
-        if (provider.isExceeded && !_hasShownCompletionDialog && mounted) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => TimerResultPage(
-                  timerData: provider.timerData!,
-                  sessionDuration: provider.currentSessionDuration,
-                  isExceeded: true,
-                ),
-              ),
-            );
-          });
-          _hasShownCompletionDialog = true;
-        }
         return _buildTimeDisplay(provider);
       },
     );

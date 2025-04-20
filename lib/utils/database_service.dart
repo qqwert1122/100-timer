@@ -650,7 +650,7 @@ class DatabaseService {
       required String activityIcon,
       required String activityColor,
       required String mode,
-      required int targetDuration}) async {
+      int? targetDuration}) async {
     final db = await database;
 
     final now = DateTime.now().toUtc().toIso8601String();
@@ -739,7 +739,6 @@ class DatabaseService {
       // ISO 문자열 생성 (UTC 기준)
       String startStr = startDate.toIso8601String();
       String endStr = endDate.toIso8601String();
-      print("Query range: $startStr to $endStr");
 
       final List<Map<String, dynamic>> results = await db.rawQuery('''
       SELECT *      
@@ -749,7 +748,6 @@ class DatabaseService {
         AND is_deleted = 0
     ''', [startStr, endStr]);
 
-      print("getSessionsWithinDateRange returned ${results.length} sessions");
       return results;
     } catch (e) {
       print("Error in getSessionsWithinDateRange: $e");
@@ -767,7 +765,6 @@ class DatabaseService {
       // ISO 문자열 생성 (UTC 기준)
       String startStr = startDate.toIso8601String();
       String endStr = endDate.toIso8601String();
-      print("Query range: $startStr to $endStr");
 
       final List<Map<String, dynamic>> results = await db.rawQuery('''
       SELECT *      

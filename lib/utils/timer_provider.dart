@@ -47,11 +47,10 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   Timer? _timer;
 
-  bool _disposed = false; // dispose 여부를 추적
-  final bool _shouldNotify = false;
-
   Map<String, dynamic>? _timerData;
   Map<String, dynamic>? get timerData => _timerData;
+
+  bool _disposed = false; // dispose 여부를 추적
 
   final Map<String, double> _weeklyActivityData = {
     '월': 0.0,
@@ -75,22 +74,19 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   int _remainingSeconds = 360000; // 기본값 100시간 (초 단위)
   int get remainingSeconds => _remainingSeconds.clamp(0, _totalSeconds);
 
-  String get formattedTime => _formatTime(_remainingSeconds);
+  String get formattedTime => _formatTime(isWeeklyTargetExceeded ? -_remainingSeconds : _remainingSeconds);
   String get formattedHour => _formatHour(_remainingSeconds);
   String get formattedActivityTime => _formatTime(_currentSessionDuration.clamp(0, _totalSeconds));
   String get formattedTotalSessionDuration => _formatTime(_totalSessionDuration);
   String get formattedTotalSessionHour => _formatHour(_totalSessionDuration);
 
-  // activity
+  // 현재 activity 전역 변수
   String? _currentActivityId;
   String? get currentActivityId => _currentActivityId;
-
   String _currentActivityName = '전체';
   String get currentActivityName => _currentActivityName;
-
   String _currentActivityIcon = 'category';
   String get currentActivityIcon => _currentActivityIcon;
-
   String _currentActivityColor = '#B7B7B7';
   String get currentActivityColor => _currentActivityColor;
 
@@ -102,46 +98,53 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   String? _currentSessionMode;
   String? get currentSessionMode => _currentSessionMode;
-
   int? _currentSessionTargetDuration;
   int? get currentSessionTargetDuration => _currentSessionTargetDuration;
 
-  bool _isExceeded = false;
-  bool get isExceeded => _isExceeded;
+  // session의 targetDuration 초과 여부
+  bool _isSessionTargetExceeded = false;
+  bool get isSessionTargetExceeded => _isSessionTargetExceeded;
+  bool _isWeeklyTargetExceeded = false;
+  bool get isWeeklyTargetExceeded => _isWeeklyTargetExceeded;
 
-  // 타이머의 활성 상태를 확인하는 getter 추가
-  bool get isTimerActive => _timer?.isActive ?? false;
-
-  String? _navigationRequest;
-  String? get navigationRequest => _navigationRequest;
+  // 일회성 이벤트 flag
+  bool _justFinishedByExceeding = false;
+  bool get justFinishedByExceeding => _justFinishedByExceeding;
 
   /*
 
-        @Init
+      @Init
 
-    */
+  */
 
   Future<void> initializeFromLastSession() async {
     try {
+      print('timerProvider: initializeFromLastSession');
       // timer 불러오기
       String weekStart = getWeekStart(DateTime.now());
       final timer = await _dbService.getTimer(weekStart);
-
       if (timer == null) return;
 
       // current_session 불러오기
       String sessionId = timer['current_session_id'] ?? '';
       if (sessionId.isEmpty) return;
+      final session = await _dbService.getSession(sessionId);
+      if (session == null) return;
 
-      // 진행 중이던 세션이 있는지 확인
+      _currentSessionMode = session['mode'];
+      _currentSessionDuration = session['duration'];
+      _currentSessionTargetDuration = session['target_duration'];
+      _currentActivityId = session['activity_id'];
+      _currentActivityName = session['activity_name'];
+      _currentActivityIcon = session['activity_icon'];
+      _currentActivityColor = session['activity_color'];
+      _currentState = 'RUNNING';
+      _isRunning = true;
+
+      // timer_state가 RUNNING일 경우
       if (timer['timer_state'] == 'RUNNING') {
-        // timer_state가 RUNNING일 경우
-        // timer에 부착된 session 불러오기기
-        final session = await _dbService.getSession(sessionId);
-        if (session == null) return;
-
-        // 타이머가 작동중인데 백그라운드로 이동했거나 강제종료 되었으므로 경과 시간 계산 필요
-        // 시간 계산 - 앱 종료 시점부터 현재까지 경과 시간
+        print('timerProvider: initializeFromLastSession >> timer[timer_state] == RUNNING');
+        // 앱 종료 시점부터 현재까지 경과 시간 계산
         DateTime lastUpdatedAt = DateTime.parse(session['last_updated_at']);
         DateTime now = DateTime.now();
         int elapsedSeconds = now.difference(lastUpdatedAt).inSeconds;
@@ -150,22 +153,20 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         int totalDuration = session['duration'] + elapsedSeconds;
 
         // 시간이 경과했으므로 목표 시간 초과 여부 확인
-        int targetDuration = session['target_duration'] ?? _totalSeconds;
-        if (totalDuration >= targetDuration) {
-          // 초과했을 경우 세션 완료 처리
-          await stopTimer(isExceeded: true, sessionId: sessionId);
-          _isExceeded = true;
+        int? sessiontargetDuration = session['target_duration'];
+        if (sessiontargetDuration != null && totalDuration >= sessiontargetDuration) {
+          print(
+              'timerProvider: initializeFromLastSession >> timer[timer_state] == RUNNING >> sessiontargetDuration != null && totalDuration >= sessiontargetDuration');
+          // session의 targetDuration을 초과했을 경우 세션 완료 처리
+          await stopTimer(isSessionTargetExceeded: true, sessionId: sessionId);
+          _isSessionTargetExceeded = true;
         } else {
-          // 초과하지 않았을 경우 계속 작동해야 하므로 세션 상태 복원
-          _currentSessionMode = session['mode'];
+          print('timerProvider: initializeFromLastSession >> timer[timer_state] == RUNNING >> else');
+
+          // targetDuration이 null일 경우
+          // 또는 targetDuration을 초과하지 않았을 경우 duration과 targetDuration 업데이트
           _currentSessionDuration = totalDuration;
-          _currentSessionTargetDuration = targetDuration;
-          _currentActivityId = session['activity_id'];
-          _currentActivityName = session['activity_name'];
-          _currentActivityIcon = session['activity_icon'];
-          _currentActivityColor = session['activity_color'];
-          _currentState = 'RUNNING';
-          _isRunning = true;
+          _currentSessionTargetDuration = sessiontargetDuration;
 
           // 타이머 재시작
           _timer?.cancel();
@@ -182,6 +183,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
         notifyListeners();
       } else if (timer['timer_state'] == 'PAUSED') {
+        print('timerProvider: initializeFromLastSession >> timer[timer_state] == PAUSED');
+
         // timer가 PAUSED일 경우
         // timer에 부착된 session 불러오기
         final session = await _dbService.getSession(sessionId);
@@ -430,14 +433,19 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
+  void clearEventFlags() {
+    _justFinishedByExceeding = false;
+  }
+
   /*
 
       @refresh
 
-    */
+  */
 
   void _updateRemainingSeconds() {
-    _remainingSeconds = (_totalSeconds - _totalSessionDuration).clamp(0, _totalSeconds);
+    _remainingSeconds = _totalSeconds - _totalSessionDuration;
+    _isWeeklyTargetExceeded = _remainingSeconds <= 0;
     notifyListeners();
   }
 
@@ -445,14 +453,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     String weekStart = getWeekStart(DateTime.now());
     final totalSeconds = timerData!['total_seconds'];
 
-    print("📅 Week start: $weekStart");
-    print("🔄 기존 remainingSeconds: $_remainingSeconds");
-
     _totalSessionDuration = await _statsProvider.getTotalDurationForCurrentWeek();
-    print("🕓 새 totalSessionDuration: $_totalSessionDuration");
-
     _updateRemainingSeconds();
-    print("🟢 새 remainingSeconds: $_remainingSeconds");
 
     notifyListeners();
   }
@@ -464,25 +466,26 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
     */
 
-  void setSessionModeAndTargetDuration({required String mode, required int targetDuration}) {
+  void setSessionModeAndTargetDuration({required String mode, int? targetDuration}) {
     _currentSessionMode = mode;
     _currentSessionTargetDuration = targetDuration;
   }
 
-  Future<void> startTimer({required String activityId, required String mode, required int targetDuration}) async {
-    if (_isRunning) return;
-    _timer?.cancel();
+  Future<void> startTimer({required String activityId, required String mode, int? targetDuration}) async {
+    print('timerProvider : startTimer');
+
+    if (_isRunning) return; // 중복 실행 방지
+    _timer?.cancel(); // 이미 실행중인 타이머가 있다면 cancel
+
     try {
       // 현재 local날짜 계산해서 utc로 변환환
       DateTime now = DateTime.now();
       DateTime utcNow = now.toUtc();
 
-      // 이미 실행중인 타이머가 있다면 cancel
-
       // activityId를 통해 activity 호출
       final activity = await _statsProvider.getActivityById(activityId);
 
-      // session 생성
+      // 불러온 activity 토대로 session 생성
       final sessionId = const Uuid().v4();
       await _dbService.createSession(
         sessionId: sessionId,
@@ -495,7 +498,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         targetDuration: targetDuration,
       );
 
-      // timer에 current_session_id, timer_state를 업데이트트
+      // timer DB 업데이트
       await _dbService.updateTimer(
         _timerData!['timer_id'],
         {
@@ -512,8 +515,14 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         isUsed: true,
       );
 
-      // 업데이트한 timer를 다시 불러와 전역변수 업데이트
+      // 업데이트한 timer를 다시 불러오기
       _timerData = await _dbService.getTimer(_timerData!['week_start']);
+
+      if (_isWeeklyTargetExceeded == true && mode == 'NORMAL') {
+        targetDuration = null;
+      }
+
+      // timer 전역변수 업데이트
       _currentState = "RUNNING";
       _currentSessionMode = mode;
       _currentSessionTargetDuration = targetDuration;
@@ -537,6 +546,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   // AppResume 시 state == 'RUNNING'일 경우
   Future<void> restartTimer({required String sessionId}) async {
+    print('timerProvider : restartTimer');
     try {
       DateTime now = DateTime.now().toUtc();
 
@@ -544,7 +554,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       final timerData = _timerData;
 
       if (timerData == null) {
-        // error log
         return;
       }
 
@@ -573,6 +582,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<void> resumeTimer({required String sessionId, bool updateUIImmediately = false}) async {
+    print('timerProvider : resumeTimer');
     try {
       // sessionId 유효성 검사
       if (sessionId.isEmpty) {
@@ -663,61 +673,54 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  void clearNavigationRequest() {
-    _navigationRequest = null;
-    notifyListeners();
-  }
-
   void _onTimerTick({required String sessionId}) async {
+    print('timerProvider : _onTimerTick');
     try {
+      // 1초 증가
       _currentSessionDuration++;
       _updateRemainingSeconds();
-
       _dbService.updateSession(sessionId: sessionId, seconds: _currentSessionDuration);
 
-      bool isExceeded = _currentSessionDuration >= (_currentSessionTargetDuration ?? _remainingSeconds) || _remainingSeconds <= 0;
-      if (isExceeded) {
-        // exceeded 시 세션 시간을 목표 시간으로 고정
-        _currentSessionDuration = (_currentSessionTargetDuration ?? _remainingSeconds);
-        _isExceeded = true;
+      _isWeeklyTargetExceeded = _remainingSeconds <= 0; // 주간 targetDuration 초과 여부
+      bool reachedSessionTarget = _currentSessionTargetDuration != null && _currentSessionDuration >= _currentSessionTargetDuration!;
+      _isSessionTargetExceeded = reachedSessionTarget; // 해당 session의 targetDuration 초과 여부
 
-        // 타이머 정지
-        stopTimer(isExceeded: true, sessionId: sessionId);
-        notifyListeners(); // duration 고정을 UI에 반영
-
+      print('_isWeeklyTargetExceeded: $_isWeeklyTargetExceeded');
+      print('_isSessionTargetExceeded: $_isSessionTargetExceeded');
+      // 해당 session 목표 초과 시 타이머 종료
+      if (_isSessionTargetExceeded) {
+        _justFinishedByExceeding = true;
+        notifyListeners();
+        await stopTimer(
+          sessionId: sessionId,
+          isSessionTargetExceeded: _isSessionTargetExceeded, // 주간 초과 여부 함께 전달
+        );
         return;
       }
+
+      if (!_disposed) notifyListeners();
     } catch (e) {
       rethrow;
     }
   }
 
-  Future<void> stopTimer({required bool isExceeded, required String sessionId}) async {
-    print('stopTimer called : $sessionId');
-
+  Future<void> stopTimer({required bool isSessionTargetExceeded, required String sessionId}) async {
+    print('timerProvider : stopTimer ($isSessionTargetExceeded, $sessionId)');
     try {
       // 타이머 즉시 중지
       _timer?.cancel();
       _isRunning = false;
 
-      // 세션 종료 로직
+      // session 불러오기
       final currentSession = await _dbService.getSession(sessionId);
-
-      // 1) currentSession null 체크
-      if (currentSession == null) {
-        print('No session found for sessionId: $sessionId');
-        return;
-      }
-      if (currentSession['start_time'] == null) {
-        print('Session has no start_time. sessionId: $sessionId');
-        return;
-      }
+      if (currentSession == null) return;
+      if (currentSession['start_time'] == null) return;
 
       final startTime = DateTime.parse(currentSession['start_time'] as String);
       DateTime endTime;
       int totalDuration = _currentSessionDuration;
 
-      if (isExceeded) {
+      if (isSessionTargetExceeded) {
         endTime = startTime.add(Duration(seconds: _currentSessionDuration));
       } else {
         endTime = DateTime.now().toUtc();
@@ -730,10 +733,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       );
 
       // 2) _timerData 및 'timer_id' 체크
-      if (_timerData == null || !_timerData!.containsKey('timer_id')) {
-        print('Error: _timerData or timer_id is null => cannot update timer status');
-        return;
-      }
+      if (_timerData == null || !_timerData!.containsKey('timer_id')) return;
+
       await _dbService.updateTimer(
         _timerData!['timer_id'],
         {
@@ -744,9 +745,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       );
       _currentState = 'STOP';
       _timerData = await _dbService.getTimer(getWeekStart(DateTime.now()));
-      _isExceeded = false;
+      _isSessionTargetExceeded = false;
 
-      String weekStart = getWeekStart(DateTime.now());
       _totalSessionDuration = await _statsProvider.getTotalDurationForCurrentWeek();
       _updateRemainingSeconds();
 
@@ -787,6 +787,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   String _formatTime(int seconds) {
+    final int safe = seconds.abs(); // 음수에 대해서는 절대값 , 음수라는 것에 대해서는 UI상으로 표현
     final hours = (seconds ~/ 3600).toString().padLeft(2, '0');
     final minutes = ((seconds % 3600) ~/ 60).toString().padLeft(2, '0');
     final secs = (seconds % 60).toString().padLeft(2, '0');

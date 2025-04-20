@@ -8,37 +8,42 @@ import 'package:project1/screens/timer_page.dart';
 import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/utils/responsive_size.dart';
+import 'package:project1/utils/timer_provider.dart';
+import 'package:provider/provider.dart';
 // 다른 페이지용 임포트 추가
 
 class MainPage extends StatefulWidget {
-  final Map<String, dynamic> timerData;
-
-  const MainPage({Key? key, required this.timerData}) : super(key: key);
+  const MainPage({Key? key}) : super(key: key);
 
   @override
   State<MainPage> createState() => _MainPageState();
 }
 
 class _MainPageState extends State<MainPage> {
+  TimerProvider? timerProvider;
   int _selectedIndex = 0;
-  late List<Widget> _pages;
+  List<Widget> _pages = [];
 
   @override
   void initState() {
     super.initState();
-    _initPages();
+    timerProvider = Provider.of<TimerProvider>(context, listen: false);
+    _initTimer();
   }
 
-  void _initPages() {
-    // 타이머 상태에 따라 첫 번째 탭 페이지 결정
+  void _initTimer() async {
+    await timerProvider!.setTimer();
+
     Widget timerTab;
-    if (widget.timerData['timer_state'] != 'STOP') {
+    if (timerProvider!.timerData?['timer_state'] != 'STOP') {
+      print('main_page : TimerRunningPage');
       timerTab = TimerRunningPage(
-        timerData: widget.timerData,
+        timerData: timerProvider!.timerData!,
         isNewSession: false,
       );
     } else {
-      timerTab = TimerPage(timerData: widget.timerData);
+      print('main_page : TimerPage');
+      timerTab = TimerPage(timerData: timerProvider!.timerData!);
     }
 
     // 4개의 탭에 해당하는 페이지들
@@ -49,6 +54,8 @@ class _MainPageState extends State<MainPage> {
       const ChartPage(),
       const SettingPage(),
     ];
+
+    setState(() {});
   }
 
   void _onItemTapped(int index) {
@@ -59,6 +66,16 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_pages.isEmpty) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Colors.grey,
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: _pages[_selectedIndex],
       bottomNavigationBar: Container(
@@ -110,23 +127,6 @@ class _MainPageState extends State<MainPage> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// 임시 페이지 위젯 (실제 구현 전까지 사용)
-class PlaceholderPage extends StatelessWidget {
-  final String title;
-
-  const PlaceholderPage({Key? key, required this.title}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 24),
       ),
     );
   }
