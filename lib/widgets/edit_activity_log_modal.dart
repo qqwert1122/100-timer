@@ -515,6 +515,26 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                       style: AppTextStyles.getTitle(context),
                     ),
                     SizedBox(height: context.hp(2)),
+                    Container(
+                      width: context.wp(100),
+                      padding: context.paddingSM,
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundSecondary(context),
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(16.0),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '- 활동 시간 수정 시 시작일시와 종료일시는 변경되지 않습니다.\n- 시간대별 히트맵은 수정된 활동시간이 반영되지 않습니다.',
+                            style: AppTextStyles.getCaption(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: context.hp(4)),
                     GestureDetector(
                       onTap: () {
                         _showActivityPicker(context);
@@ -657,33 +677,6 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                    SizedBox(height: context.hp(5)),
-                    Container(
-                      width: context.wp(100),
-                      padding: context.paddingSM,
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundSecondary(context),
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(16.0),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '안내사항 📢',
-                            style: AppTextStyles.getCaption(context).copyWith(
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          SizedBox(height: context.hp(1)),
-                          Text(
-                            '- 활동 시간 수정 시 시작일시와 종료일시는 변경되지 않습니다.\n- 시간대별 히트맵은 수정된 활동시간이 반영되지 않습니다.',
-                            style: AppTextStyles.getCaption(context),
-                          ),
-                        ],
                       ),
                     ),
                     const Spacer(),

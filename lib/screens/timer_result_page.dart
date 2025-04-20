@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:lottie/lottie.dart';
 import 'package:project1/screens/timer_page.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
+import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/music_player.dart';
 import 'package:project1/utils/notification_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 
 // StatelessWidget에서 StatefulWidget으로 변경
@@ -33,11 +37,17 @@ class TimerResultPage extends StatefulWidget {
 // State 클래스에 TickerProviderStateMixin 추가
 class _TimerResultPageState extends State<TimerResultPage> with TickerProviderStateMixin {
   final NotificationService _notificationService = NotificationService();
+  late final TimerProvider timerProvider;
+  late final StatsProvider statsProvider;
+  late final DatabaseService dbService;
 
   // 애니메이션 컨트롤러 선언
   late AnimationController _trophyController;
   late AnimationController _checkController;
   late AnimationController _congratulationsController;
+
+  // musicPlayer
+  final musicPlayer = MusicPlayer();
 
   // admob 광고
   BannerAd? _bannerAd1;
@@ -47,7 +57,12 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
   void initState() {
     super.initState();
 
-    _notificationService.showActivityCompletedNotification(title: '활동 완료', body: '활동을 완료했습니다');
+    timerProvider = Provider.of<TimerProvider>(context, listen: false);
+    statsProvider = Provider.of<StatsProvider>(context, listen: false);
+    dbService = Provider.of<DatabaseService>(context, listen: false);
+
+    // 음악 종료
+    musicPlayer.stopMusic();
 
     // 트로피 애니메이션 컨트롤러 초기화
     _trophyController = AnimationController(
@@ -103,6 +118,54 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
     _checkController.dispose();
     _congratulationsController.dispose();
     super.dispose();
+  }
+
+  String formatDuration(int seconds) {
+    final Duration duration = Duration(seconds: seconds);
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final remainingSeconds = duration.inSeconds.remainder(60);
+
+    if (hours > 0) {
+      return '$hours시간 $minutes분';
+    } else if (minutes > 0) {
+      return '$minutes분 $remainingSeconds초';
+    } else {
+      return '$remainingSeconds초';
+    }
+  }
+
+  Future<bool> _showDeleteConfirmationDialog(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('정말 삭제하시겠습니까?', style: AppTextStyles.getTitle(context).copyWith(color: Colors.redAccent)),
+              content: Text(
+                '활동 기록을 삭제할 경우 통계에 반영되지 않으며 복구할 수 없습니다.',
+                style: AppTextStyles.getBody(context),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: Text('취소', style: AppTextStyles.getTitle(context).copyWith(color: Colors.grey)),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).pop(false);
+                  },
+                ),
+                TextButton(
+                  child: Text('삭제', style: AppTextStyles.getTitle(context).copyWith(color: Colors.redAccent)),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).pop(true);
+                  },
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 
   @override
@@ -166,46 +229,81 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                 right: context.spacing_sm,
                 bottom: context.spacing_sm,
               ),
-              child: SafeArea(
-                top: false,
-                child: SizedBox(
-                  width: double.infinity,
-                  height: context.hp(7),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // 타이머 데이터 갱신 로직 추가
-                      final timerProvider = Provider.of<TimerProvider>(context, listen: false);
-                      final statsProvider = Provider.of<StatsProvider>(context, listen: false);
-
-                      statsProvider.updateCurrentSessions();
-                      // 남은 시간 갱신 및 상태 업데이트
-                      timerProvider.refreshRemainingSeconds().then((_) {
-                        // 갱신이 완료된 후 페이지 이동
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TimerPage(timerData: widget.timerData),
-                          ),
-                        );
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(context.wp(3)),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: context.hp(7),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // 타이머 데이터 갱신 로직 추가
+                        statsProvider.updateCurrentSessions();
+                        // 남은 시간 갱신 및 상태 업데이트
+                        timerProvider.refreshRemainingSeconds().then((_) {
+                          // 갱신이 완료된 후 페이지 이동
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TimerPage(timerData: widget.timerData),
+                            ),
+                          );
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(context.wp(3)),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      '확인',
-                      style: TextStyle(
-                        fontSize: context.md,
-                        fontWeight: FontWeight.bold,
+                      child: Text(
+                        '확인',
+                        style: TextStyle(
+                          fontSize: context.md,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
+                  SizedBox(height: context.hp(1)),
+                  SizedBox(
+                    width: double.infinity,
+                    height: context.hp(7),
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        HapticFeedback.lightImpact();
+                        final shouldDelete = await _showDeleteConfirmationDialog(context);
+                        if (!shouldDelete) return;
+
+                        await dbService.deleteSession(widget.timerData['current_session_id']).then((_) {
+                          // 갱신이 완료된 후 페이지 이동
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TimerPage(timerData: widget.timerData),
+                            ),
+                          );
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.backgroundTertiary(context),
+                        foregroundColor: AppColors.textPrimary(context),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(context.wp(3)),
+                        ),
+                      ),
+                      child: Text(
+                        '활동 삭제하기',
+                        style: TextStyle(
+                          fontSize: context.md,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -228,21 +326,6 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
   Widget _buildMainCard(BuildContext context) {
     final timerProvider = Provider.of<TimerProvider>(context);
     final activityColor = ColorService.hexToColor(timerProvider.currentActivityColor);
-
-    String formatDuration(int seconds) {
-      final Duration duration = Duration(seconds: seconds);
-      final hours = duration.inHours;
-      final minutes = duration.inMinutes.remainder(60);
-      final remainingSeconds = duration.inSeconds.remainder(60);
-
-      if (hours > 0) {
-        return '$hours시간 $minutes분';
-      } else if (minutes > 0) {
-        return '$minutes분 $remainingSeconds초';
-      } else {
-        return '$remainingSeconds초';
-      }
-    }
 
     String formatTargetDuration() {
       return formatDuration(timerProvider.currentSessionTargetDuration!);

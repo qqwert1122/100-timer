@@ -10,18 +10,15 @@ class Footer extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        SizedBox(height: context.hp(10)),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Copyright 2025. ', style: AppTextStyles.getCaption(context)),
-              Text('luceforge All rights reserved.', style: AppTextStyles.getCaption(context)),
-            ],
-          ),
+        SizedBox(height: context.hp(5)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Copyright 2025. ', style: AppTextStyles.getCaption(context)),
+            Text('luceforge All rights reserved.', style: AppTextStyles.getCaption(context)),
+          ],
         ),
-        SizedBox(height: context.hp(10)),
+        SizedBox(height: context.hp(2)),
       ],
     );
   }

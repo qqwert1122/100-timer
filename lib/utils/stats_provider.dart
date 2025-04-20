@@ -204,6 +204,35 @@ class StatsProvider extends ChangeNotifier {
 
   */
 
+  Future<int> getTotalDurationForDate(DateTime date) async {
+    try {
+      // 해당 날짜의 시작(00:00:00)과 끝(23:59:59) 구하기 (로컬 타임 기준)
+      final startOfDayLocal = DateTime(date.year, date.month, date.day);
+      final endOfDayLocal = startOfDayLocal.add(const Duration(days: 1)).subtract(const Duration(seconds: 1));
+
+      final startUtc = startOfDayLocal.toUtc();
+      final endUtc = endOfDayLocal.toUtc();
+
+      // 해당 범위의 세션 조회
+      final sessions = await _dbService.getSessionsWithinDateRange(
+        startDate: startUtc,
+        endDate: endUtc,
+      );
+
+      // duration 필드 합산
+      final total = sessions.fold<int>(
+        0,
+        (sum, session) => sum + (session['duration'] as int? ?? 0),
+      );
+
+      return total;
+    } catch (e) {
+      // 에러 시 0 반환
+      debugPrint('Error in getTotalDurationForDate: $e');
+      return 0;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getSessionsForWeek(int weekOffset) async {
     try {
       // 주 단위 시작일과 종료일 계산 (DateUtils.getWeeklyRange가 로컬 타임을 반환하는 경우)

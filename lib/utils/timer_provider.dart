@@ -88,7 +88,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   String _currentActivityName = '전체';
   String get currentActivityName => _currentActivityName;
 
-  String _currentActivityIcon = 'category_rounded';
+  String _currentActivityIcon = 'category';
   String get currentActivityIcon => _currentActivityIcon;
 
   String _currentActivityColor = '#B7B7B7';
@@ -97,11 +97,11 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   String _currentState = 'STOP';
   String get currentState => _currentState;
 
-  String? _currentSessionMode;
-  String? get currentSessionMode => _currentSessionMode;
-
   int _currentSessionDuration = 0;
   int get currentSessionDuration => _currentSessionDuration;
+
+  String? _currentSessionMode;
+  String? get currentSessionMode => _currentSessionMode;
 
   int? _currentSessionTargetDuration;
   int? get currentSessionTargetDuration => _currentSessionTargetDuration;
@@ -470,13 +470,14 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<void> startTimer({required String activityId, required String mode, required int targetDuration}) async {
+    if (_isRunning) return;
+    _timer?.cancel();
     try {
       // 현재 local날짜 계산해서 utc로 변환환
       DateTime now = DateTime.now();
       DateTime utcNow = now.toUtc();
 
       // 이미 실행중인 타이머가 있다면 cancel
-      _timer?.cancel();
 
       // activityId를 통해 activity 호출
       final activity = await _statsProvider.getActivityById(activityId);
@@ -493,9 +494,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         mode: mode,
         targetDuration: targetDuration,
       );
-
-      logger.d('timer_id: ${_timerData!['timer_id']}');
-      logger.d('current_session_id: $sessionId');
 
       // timer에 current_session_id, timer_state를 업데이트트
       await _dbService.updateTimer(

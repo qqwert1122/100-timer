@@ -31,6 +31,9 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
   int totalDuration = 0;
   int totalSeconds = 1;
 
+  List<int> _dailyDurations = List.filled(7, 0);
+  List<double> _dailyPercents = List.filled(7, 0.0);
+
   @override
   void initState() {
     super.initState();
@@ -42,10 +45,34 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
     final duration = await statsProvider!.getTotalDurationForCurrentWeek();
     final total = await statsProvider!.getTotalSecondsForCurrnetWeek();
 
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final weekDays = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
+
+    List<int> dailyDurations = [];
+    for (var date in weekDays) {
+      // StatsProvider에 날짜 단위로 duration을 가져오는 메서드가 있다고 가정
+      final d = await statsProvider!.getTotalDurationForDate(date);
+      dailyDurations.add(d);
+    }
+
+    int remaining = total;
+    List<double> percents = [];
+    for (int i = 0; i < 7; i++) {
+      final daysLeft = 7 - i;
+      final target = remaining / daysLeft; // 남은 일수로 균등 분배
+      final actual = dailyDurations[i].toDouble();
+      final pct = (actual / (target > 0 ? target : 1)).clamp(0.0, 1.0);
+      percents.add(pct);
+      remaining -= actual.toInt(); // 다음 요일 목표 계산을 위해 차감
+    }
+
     if (mounted) {
       setState(() {
         totalDuration = duration;
         totalSeconds = total != 0 ? total : 1; // 0이면 퍼센트 계산 에러 방지
+        _dailyDurations = dailyDurations;
+        _dailyPercents = percents;
       });
     }
   }
@@ -89,70 +116,6 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
               child: Column(
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'today',
-                            style: AppTextStyles.getCaption(context).copyWith(
-                              color: AppColors.textSecondary(context),
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          SizedBox(width: context.hp(1)),
-                          Text(
-                            todayString,
-                            style: AppTextStyles.getBody(context).copyWith(
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'Neo',
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(width: context.wp(5)),
-                      Expanded(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: weekDays.map((date) {
-                            final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
-                            final formattedDate = weekdayNames[date.weekday - 1];
-
-                            return Column(
-                              children: [
-                                Text(
-                                  formattedDate,
-                                  style: AppTextStyles.getCaption(context).copyWith(
-                                    color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
-                                  ),
-                                ),
-                                SizedBox(height: context.hp(0.5)),
-                                Container(
-                                  padding: const EdgeInsets.all(4.0),
-                                  decoration: isToday
-                                      ? BoxDecoration(
-                                          color: AppColors.primary(context).withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(8),
-                                        )
-                                      : null,
-                                  child: Text(
-                                    '${date.day}',
-                                    style: AppTextStyles.getCaption(context).copyWith(
-                                      color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: context.hp(1)),
-                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -160,7 +123,7 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '이번 주 남은 시간',
+                            '이번 주 남은 목표 시간',
                             style: AppTextStyles.getCaption(context).copyWith(
                               color: AppColors.textSecondary(context),
                               fontWeight: FontWeight.w900,
@@ -193,6 +156,47 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
                         backgroundColor: AppColors.backgroundSecondary(context),
                       ),
                     ],
+                  ),
+                  SizedBox(height: context.hp(1)),
+                  Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(7, (i) {
+                      final date = weekDays[i];
+                      final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+                      final formattedDate = weekdayNames[date.weekday - 1];
+                      final pct = _dailyPercents[i].clamp(0.0, 1.0);
+
+                      return Column(
+                        children: [
+                          // 요일 표시
+                          Text(
+                            formattedDate,
+                            style: AppTextStyles.getCaption(context).copyWith(
+                              color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
+                            ),
+                          ),
+                          SizedBox(height: context.hp(0.5)),
+                          // 날짜 + 프로그레스
+                          CircularPercentIndicator(
+                            radius: context.wp(4),
+                            lineWidth: context.wp(2),
+                            animation: true,
+                            percent: pct,
+                            center: Text(
+                              '${date.day}',
+                              style: AppTextStyles.getCaption(context).copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
+                              ),
+                            ),
+                            progressColor: isToday ? AppColors.primary(context) : AppColors.textSecondary(context).withOpacity(0.4),
+                            backgroundColor: AppColors.backgroundSecondary(context),
+                            circularStrokeCap: CircularStrokeCap.round,
+                          ),
+                        ],
+                      );
+                    }),
                   ),
                 ],
               ),

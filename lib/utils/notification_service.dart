@@ -1,5 +1,7 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationService {
   // 싱글톤 패턴 적용
@@ -7,20 +9,27 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
+  late final SharedPreferences _prefs;
+
   // 고정된 알림 ID 사용
   static const int activityCompletionId = 1;
   static const int activityReminderId = 2;
+  static const String channelKey = 'activity_channel_20250419';
+
   // 알림 초기화
   Future<void> initialize() async {
+    _prefs = await SharedPreferences.getInstance(); // sharedPreference 초기화
+    await _prefs.reload(); // 초기화 순서 충돌 방지를 위한 disk 동기화
+
     await AwesomeNotifications().initialize(
       null, // 앱 아이콘 (null = 앱 아이콘 사용)
       [
         NotificationChannel(
-          channelKey: 'activity_channel',
+          channelKey: channelKey,
           channelName: 'Activity Notifications',
           channelDescription: '활동 관련 알림',
-          defaultColor: Colors.blue,
-          ledColor: Colors.blue,
+          defaultColor: Colors.redAccent,
+          ledColor: Colors.redAccent,
           importance: NotificationImportance.High,
           playSound: true,
           enableVibration: true,
@@ -32,25 +41,35 @@ class NotificationService {
       debug: true,
     );
 
-    // 권한 요청
-    await requestPermissions();
+    final hasRequested = _prefs.getBool('hasRequestedNotificationPermission') ?? false;
+
+    if (!hasRequested) {
+      requestPermissions();
+      await _prefs.setBool('hasRequestedNotificationPermission', true);
+    }
+  }
+
+  Future<bool> checkPermission() async {
+    return await AwesomeNotifications().isNotificationAllowed();
   }
 
   // 알림 권한 요청 (소리와 진동 권한 포함)
-  Future<void> requestPermissions() async {
-    await AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
-      if (!isAllowed) {
-        AwesomeNotifications().requestPermissionToSendNotifications(
-          permissions: [
-            NotificationPermission.Alert,
-            NotificationPermission.Sound,
-            NotificationPermission.Badge,
-            NotificationPermission.Vibration,
-            NotificationPermission.Light,
-          ],
-        );
-      }
-    });
+  Future<bool> requestPermissions() async {
+    final isAllowed = await AwesomeNotifications().isNotificationAllowed();
+    if (isAllowed) return true;
+
+    final bool granted = await AwesomeNotifications().requestPermissionToSendNotifications(
+      permissions: [
+        NotificationPermission.Alert,
+        NotificationPermission.Sound,
+        NotificationPermission.Badge,
+        NotificationPermission.Vibration,
+        NotificationPermission.Light,
+      ],
+    );
+
+    await _prefs.setBool('alarmFlag', granted);
+    return granted;
   }
 
   // 1. 즉시 활동 완료 알림
@@ -58,16 +77,25 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
+    if (!await checkPermission()) {
+      return;
+    }
+    ;
+
     // 다른 예약된 알림이 있을 수 있으므로 모두 취소
     await cancelAllScheduledNotifications();
 
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: activityCompletionId,
-        channelKey: 'activity_channel',
+        channelKey: channelKey,
         title: title,
         body: body,
         notificationLayout: NotificationLayout.Default,
+        wakeUpScreen: true,
+        fullScreenIntent: true,
+        category: NotificationCategory.Alarm,
+        autoDismissible: true,
       ),
     );
   }
@@ -78,18 +106,28 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
+    if (!await checkPermission()) {
+      return;
+    }
+    ;
+
     // 기존에 예약된 모든 알림 취소
     await cancelAllScheduledNotifications();
 
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: activityCompletionId,
-        channelKey: 'activity_channel',
+        channelKey: channelKey,
         title: title,
         body: body,
         notificationLayout: NotificationLayout.Default,
       ),
-      schedule: NotificationCalendar.fromDate(date: scheduledTime),
+      schedule: NotificationCalendar.fromDate(
+        date: scheduledTime,
+        preciseAlarm: true, // ← 필수
+        allowWhileIdle: true, // ← 필수
+        repeats: false,
+      ),
     );
   }
 
@@ -99,13 +137,17 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
+    if (!await checkPermission()) {
+      return;
+    }
+
     // 기존에 예약된 미리 알림만 취소 (완료 알림은 유지)
     await cancelReminderNotification();
 
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: activityReminderId,
-        channelKey: 'activity_channel',
+        channelKey: channelKey,
         title: title,
         body: body,
         notificationLayout: NotificationLayout.Default,
@@ -121,6 +163,10 @@ class NotificationService {
     required String body,
     bool isReminder = false,
   }) async {
+    if (!await checkPermission()) {
+      return;
+    }
+
     final int notificationId = isReminder ? activityReminderId : activityCompletionId;
 
     // 기존 해당 유형의 알림 취소
@@ -130,7 +176,7 @@ class NotificationService {
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: notificationId,
-        channelKey: 'activity_channel',
+        channelKey: channelKey,
         title: title,
         body: body,
         notificationLayout: NotificationLayout.Default,

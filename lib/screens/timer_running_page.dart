@@ -11,10 +11,12 @@ import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/music_player.dart';
+import 'package:project1/utils/notification_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 
 /// 타이머 실행 화면 위젯
@@ -39,6 +41,9 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   late final DatabaseService _dbService; // 데이터베이스 서비스
   late final TimerProvider timerProvider; // 타이머 상태 관리 Provider
   late final StatsProvider statsProvider; // 통계 관리 provider
+
+  // preference
+  late final SharedPreferences _prefs;
 
   // 배경음악 플레이어 객체
   final musicPlayer = MusicPlayer();
@@ -88,10 +93,11 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     // 앱 라이프사이클 옵저버 등록 (백그라운드 처리용)
     WidgetsBinding.instance.addObserver(this);
 
-    // 타이머, 애니메이션, 메시지 초기화
+    // 타이머, 애니메이션, 메시지, 알림 초기화
     _initTimer();
     _initMessageAnimation();
     _startMessageTimer();
+    _initAlarm();
   }
 
   @override
@@ -126,6 +132,18 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     } catch (_) {
       _isTimerInitialized = false;
     }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _handleExistingSession(); // ← 이대로 두면 됨
+    }
+  }
+
+  Future<void> _initAlarm() async {
+    _prefs = await SharedPreferences.getInstance();
+    _isAlarmOn = _prefs.getBool('alarmFlag') ?? false;
   }
 
   Future<void> _startNewSession() async {
@@ -338,13 +356,15 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
   Future<void> _handleStop({bool isExceeded = false, int? targetDuration}) async {
     final timer = timerProvider.timerData!;
-
     try {
       // 메시지 Timer 정리
       _messageTimer.cancel();
 
       // 음악 종료
       musicPlayer.stopMusic();
+
+      // 푸쉬알림 종료
+      await NotificationService().cancelCompletionNotification();
 
       // 세션 종료
       await timerProvider.stopTimer(isExceeded: isExceeded, sessionId: timer['current_session_id']);
@@ -473,14 +493,38 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     );
   }
 
-  void _toggleAlarm() {
-    print("토글 전: $_isAlarmOn");
+  void _toggleAlarm() async {
+    bool newAlarmState = !_isAlarmOn;
+
+    if (newAlarmState) {
+      // 알림 권한 요청
+      final granted = await NotificationService().requestPermissions();
+      if (!granted) {
+        // 권한 거부된 경우 알림 상태를 false로 유지
+        setState(() {
+          _isAlarmOn = false;
+        });
+        Fluttertoast.showToast(
+          msg: "알림 권한이 필요합니다",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.grey.shade700,
+          textColor: Colors.white,
+          fontSize: context.md,
+        );
+        return;
+      }
+    }
+
+    // 권한 확인 완료 또는 알림 끄기
     setState(() {
-      _isAlarmOn = !_isAlarmOn;
+      _isAlarmOn = newAlarmState;
     });
-    print("토글 후: $_isAlarmOn");
+
+    await _prefs.setBool('alarmFlag', _isAlarmOn);
+
     Fluttertoast.showToast(
-      msg: "알림이 설정되었습니다",
+      msg: _isAlarmOn ? "알림이 설정되었습니다" : "알림이 해제되었습니다",
       toastLength: Toast.LENGTH_SHORT,
       gravity: ToastGravity.TOP,
       backgroundColor: Colors.redAccent.shade200,

@@ -179,7 +179,7 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
       });
 
       if (widget.selectedActivity == activityName) {
-        widget.onSelectActivity(defaultAcitivty['acitivty_id'], '전체', 'category_rounded', '#F5F5F5');
+        widget.onSelectActivity(defaultAcitivty['activity_id'], '전체', 'category_rounded', '#F5F5F5');
       }
 
       Fluttertoast.showToast(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:project1/firebase_options.dart';
+import 'package:project1/screens/main_page.dart';
 import 'package:project1/screens/timer_page.dart';
 import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/theme/app_theme.dart';
@@ -19,32 +20,35 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:uuid/uuid.dart';
 
 Future<void> initializeAppSettings() async {
-  // 화면 켜짐 유지
-  WakelockPlus.enable();
-
   // SharedPreferences 초기화 및 기본값 설정
   final prefs = await SharedPreferences.getInstance();
 
-  // 1. totalSeconds 초기화 (처음 실행 시에만)
+  // wakelock
+  final keepScreenOn = prefs.getBool('keepScreenOn') ?? false;
+  WakelockPlus.toggle(enable: keepScreenOn);
+
+  // totalSeconds 초기화 (처음 실행 시에만)
   if (!prefs.containsKey('totalSeconds')) {
-    logger.d('앱 최초 실행: totalSeconds 초기화');
     await prefs.setInt('totalSeconds', 360000); // 100시간 (초 단위)
   }
 
-  // 2. 온보딩 상태 초기화 (처음 실행 시에만)
+  // 온보딩 상태 초기화 (처음 실행 시에만)
   if (!prefs.containsKey('hasCompletedOnboarding')) {
-    logger.d('앱 최초 실행: 온보딩 상태 초기화');
     await prefs.setBool('hasCompletedOnboarding', false);
   }
 
-  // 3. 화면 켜짐 유지 설정 초기화 (처음 실행 시에만)
+  // 화면 켜짐 유지 설정 초기화 (처음 실행 시에만)
   if (!prefs.containsKey('keepScreenOn')) {
-    logger.d('앱 최초 실행: 화면 켜짐 유지 설정 초기화');
     await prefs.setBool('keepScreenOn', false);
   }
 
+  // 최초 1회 알림 권한 요청 여부
+  if (!prefs.containsKey('hasRequestedNotificationPermission')) {
+    await prefs.setBool('hasRequestedNotificationPermission', false);
+  }
+
+  // 알림 허용 여부
   if (!prefs.containsKey('alarmFlag')) {
-    logger.d('앱 최초 실행 : 알람 설정 초기화');
     await prefs.setBool('alarmFlag', true);
   }
 
@@ -54,10 +58,16 @@ Future<void> initializeAppSettings() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 기본 설정, 날짜, firebase, wakeLock 초기화
   await initializeAppSettings();
+
+  // 광고 초기화
   MobileAds.instance.initialize();
 
+  // 알림 초기화
   await NotificationService().initialize();
+
+  // 화면 방향 고정
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp, // 세로 위 방향만 허용
   ]);
@@ -259,7 +269,7 @@ class _MyAppState extends State<MyApp> {
       final now = DateTime.now();
       final weekStart = getWeekStart(now);
       final timerId = const Uuid().v4();
-      final userTotalSeconds = prefs.getInt('total_seconds') ?? 360000; // 기본값: 100시간
+      final userTotalSeconds = prefs.getInt('totalSeconds') ?? 360000; // 기본값: 100시간
 
       logger.i('새 타이머 생성: ID=$timerId, 주 시작일=$weekStart');
 
@@ -335,16 +345,7 @@ class _MyAppState extends State<MyApp> {
           }
 
           final timerData = snapshot.data!;
-
-          // timer_state에 따라 랜딩 페이지 결정: STOP이면 TimerPage, 아니면 TimerRunningPage
-          if (timerData['timer_state'] != 'STOP') {
-            return TimerRunningPage(
-              timerData: timerData,
-              isNewSession: false,
-            );
-          } else {
-            return TimerPage(timerData: timerData);
-          }
+          return MainPage(timerData: timerData);
         },
       ),
     );

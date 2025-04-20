@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/session_history_sheet.dart';
 import 'package:project1/screens/setting_page.dart';
@@ -306,9 +307,8 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                   width: double.infinity,
                   child: Stack(
                     children: [
+                      // 타이머 모드의 상단 제목
                       AnimatedAlign(
-                        // 왼쪽 페이지가 활성화되면(center)에 위치하여 텍스트 포함,
-                        // 오른쪽 페이지가 활성화되면(left) 구석에 아이콘만 표시
                         alignment: _currentPageIndex == 1 ? Alignment.centerLeft : Alignment.center,
                         duration: const Duration(milliseconds: 200),
                         curve: Curves.easeInOut,
@@ -330,7 +330,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                                   key: const ValueKey<String>("LeftWithText"),
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.timelapse_sharp, size: context.lg),
+                                    Icon(LucideIcons.hourglass, size: context.lg),
                                     SizedBox(width: context.wp(2)),
                                     Text(
                                       "집중 모드",
@@ -357,7 +357,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                                   key: const ValueKey<String>("RightWithText"),
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.timer_rounded, size: context.lg),
+                                    Icon(LucideIcons.timer, size: context.lg),
                                     SizedBox(width: context.wp(2)),
                                     Text(
                                       "일반 모드",
@@ -492,7 +492,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
             Positioned(
               left: 0,
               right: 0,
-              bottom: context.hp(12), // 필요하다면 0으로 조절 가능
+              bottom: context.hp(3), // 필요하다면 0으로 조절 가능
               child: Align(
                 alignment: Alignment.center,
                 child: Container(
@@ -546,7 +546,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                                 return Icon(
                                   _getIconForIndex(index),
                                   color: color,
-                                  size: context.xl,
+                                  size: context.lg,
                                 );
                               },
                             ),
@@ -558,23 +558,6 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                 ),
               ),
             ),
-
-            /// 3) 드래그 시트 (SessionHistorySheet)
-            SessionHistorySheet(
-              controller: _controller,
-              onPopInvoked: (isFullScreen) {
-                setState(() {
-                  _canPop = false;
-                });
-              },
-              onExtentChanged: (extent) {
-                setState(() {
-                  _sheetSize = extent;
-                });
-              },
-              isBackButtonPressed: _isBackButtonPressed,
-              sheetScrollController: _sheetScrollController,
-            ),
           ],
         ),
       ),
@@ -584,11 +567,10 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
   IconData _getIconForIndex(int index) {
     switch (index) {
       case 0:
-        return Icons.timelapse_sharp;
+        return LucideIcons.hourglass;
       case 1:
-        return Icons.timer_rounded;
-      case 2:
-        return Icons.check_circle_rounded;
+        return LucideIcons.timer;
+
       default:
         return Icons.error;
     }

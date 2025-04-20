@@ -5,6 +5,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:project1/theme/app_color.dart';
+import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
@@ -60,6 +61,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   @override
   void dispose() {
     _itemPositionsListener.itemPositions.removeListener(_onScroll);
+    isProgrammaticScroll = false;
     super.dispose();
   }
 
@@ -84,20 +86,16 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       const int maxAttempts = 10;
       int attempts = 0;
       while (attempts < maxAttempts) {
-        debugPrint("Loading data for weekOffset: $_currentWeekOffset");
         logData = await _statsProvider.getSessionsForWeek(_currentWeekOffset);
         if (logData.isNotEmpty) {
-          debugPrint("Data found for weekOffset: $_currentWeekOffset (${logData.length} records)");
           break;
         } else {
-          debugPrint("No data for weekOffset: $_currentWeekOffset, trying next week");
           _currentWeekOffset -= 1;
           attempts++;
         }
       }
 
       if (logData.isEmpty) {
-        debugPrint("No more data after $attempts attempts.");
         setState(() {
           _hasMoreData = false;
         });
@@ -117,9 +115,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       // 초기 로드시 현재 날짜에 해당하는 인덱스로 스크롤
       if (isInitialLoad) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          final index = dayToIndexMap[selectedDay] ?? 0;
-          debugPrint('초기 로드 후 스크롤: selectedDay=$selectedDay, index=$index');
-          _scrollToIndex(index);
+          if (mounted) {
+            final index = dayToIndexMap[selectedDay] ?? 0;
+            _scrollToIndex(index);
+          }
         });
       }
       // 추가 데이터 로드 후 이전 스크롤 위치 유지
@@ -128,8 +127,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         if (positions.isNotEmpty) {
           final targetIndex = positions.first.index;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_scrollController.isAttached && targetIndex < groupedLogs.length) {
-              debugPrint('추가 데이터 로드 후 이전 위치로 복귀: targetIndex=$targetIndex');
+            if (mounted && _scrollController.isAttached && targetIndex < groupedLogs.length) {
               _scrollController.jumpTo(index: targetIndex);
             }
           });
@@ -147,15 +145,17 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         });
       }
     } catch (e) {
-      debugPrint('로그 데이터를 가져오는 중 오류 발생: $e');
-      setState(() {
-        _loadingError = true;
-      });
+      if (mounted) {
+        setState(() {
+          _loadingError = false;
+        });
+      }
     } finally {
-      setState(() {
-        _isLoadingMore = false;
-      });
-      debugPrint('_initializeLogs 종료, _isLoadingMore: $_isLoadingMore');
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
     }
   }
 
@@ -163,13 +163,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     if (isProgrammaticScroll) return;
     final positions = _itemPositionsListener.itemPositions.value;
     if (positions.isEmpty) {
-      debugPrint('스크롤 위치 정보가 없음');
       return;
     }
-
-    // 전체 positions 출력 (디버깅용)
-    debugPrint(
-        '현재 itemPositions: ${positions.map((e) => "index:${e.index}, leading:${e.itemLeadingEdge}, trailing:${e.itemTrailingEdge}").toList()}');
 
     // 화면 중앙에 가장 가까운 아이템 인덱스 계산
     const screenMiddle = 0.5;
@@ -178,7 +173,6 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       final closestMiddle = (closest.itemLeadingEdge + closest.itemTrailingEdge) / 2;
       return (itemMiddle - screenMiddle).abs() < (closestMiddle - screenMiddle).abs() ? position : closest;
     });
-    debugPrint('중앙에 위치한 아이템 index: ${middlePosition.index}');
 
     final index = middlePosition.index;
     if (index < groupedLogs.length) {
@@ -566,7 +560,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     if (_isLoadingMore) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 16),
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: Colors.grey,
+          ),
+        ),
       );
     } else if (_loadingError) {
       return Padding(
@@ -599,7 +597,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     super.build(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('활동 기록', style: TextStyle(fontWeight: FontWeight.w400, fontSize: 18)),
+        title: Text(
+          '활동 기록',
+          style: AppTextStyles.getTitle(context),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -619,10 +620,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
             ),
             Expanded(
               child: Padding(
-                padding: context.paddingSM,
+                padding: context.paddingHorizSM,
                 child: groupedLogs.isEmpty && !_isLoadingMore
                     ? const Center(child: Text('활동 로그가 없습니다.'))
                     : RefreshIndicator(
+                        color: Colors.grey,
+                        backgroundColor: AppColors.backgroundSecondary(context),
                         onRefresh: _refreshLogs,
                         child: NotificationListener<ScrollNotification>(
                           onNotification: (notification) => false,

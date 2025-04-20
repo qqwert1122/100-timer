@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/timer_running_page.dart';
+import 'package:project1/utils/notification_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
@@ -18,6 +19,8 @@ class FocusMode extends StatefulWidget {
 
 class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
   late final StatsProvider _statsProvider;
+  late final TimerProvider _timerProvider;
+
   List<Map<String, dynamic>> pomodoroItems = [
     {
       'title': '10',
@@ -52,7 +55,8 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _statsProvider = Provider.of<StatsProvider>(context, listen: false); // DatabaseService 주입
+    _statsProvider = Provider.of<StatsProvider>(context, listen: false);
+    _timerProvider = Provider.of<TimerProvider>(context, listen: false);
     _initPomodoroCounts();
   }
 
@@ -70,6 +74,21 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
       setState(() {
         pomodoroItems = updatedItems;
       });
+    }
+  }
+
+  String formatDuration(int seconds) {
+    final Duration duration = Duration(seconds: seconds);
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final remainingSeconds = duration.inSeconds.remainder(60);
+
+    if (hours > 0) {
+      return '$hours시간 $minutes분';
+    } else if (minutes > 0) {
+      return '$minutes분 $remainingSeconds초';
+    } else {
+      return '$remainingSeconds초';
     }
   }
 
@@ -129,6 +148,17 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
               onTap: () async {
                 await Future.delayed(const Duration(milliseconds: 100));
                 timerProvider.setSessionModeAndTargetDuration(mode: 'PMDR', targetDuration: item['value']);
+
+                DateTime scheduledTime = DateTime.now().add(Duration(seconds: item['value']));
+                await NotificationService().scheduleActivityCompletionNotification(
+                  scheduledTime: scheduledTime,
+                  title: '활동 완료',
+                  body: '${timerProvider.currentActivityName} 활동을 ${formatDuration(item['value'])} 완료했어요!',
+                );
+
+                print('checkPermission: ${await NotificationService().checkPermission()}');
+                print('scheduledTime : $scheduledTime');
+
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
                     builder: (context) => TimerRunningPage(
