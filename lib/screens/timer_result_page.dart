@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:lottie/lottie.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:project1/screens/main_page.dart';
 import 'package:project1/screens/timer_page.dart';
 import 'package:project1/theme/app_color.dart';
@@ -9,6 +10,7 @@ import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/music_player.dart';
 import 'package:project1/utils/notification_service.dart';
 import 'package:project1/utils/stats_provider.dart';
@@ -56,7 +58,7 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
   @override
   void initState() {
     super.initState();
-
+    logger.d('@@@ timer_result_page : ${widget.timerData}, ${widget.sessionDuration}, ${widget.isSessionTargetExceeded}');
     timerProvider = Provider.of<TimerProvider>(context, listen: false);
     statsProvider = Provider.of<StatsProvider>(context, listen: false);
     dbService = Provider.of<DatabaseService>(context, listen: false);
@@ -229,11 +231,42 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                 right: context.spacing_sm,
                 bottom: context.spacing_sm,
               ),
-              child: Column(
+              child: Row(
                 children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: context.hp(7),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                        onPressed: () async {
+                          HapticFeedback.lightImpact();
+                          final shouldDelete = await _showDeleteConfirmationDialog(context);
+                          if (!shouldDelete) return;
+
+                          await dbService.deleteSession(widget.timerData['current_session_id']).then((_) {
+                            // 갱신이 완료된 후 페이지 이동
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TimerPage(timerData: widget.timerData),
+                              ),
+                            );
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.backgroundTertiary(context),
+                            foregroundColor: AppColors.textPrimary(context),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(context.wp(3)),
+                            ),
+                            minimumSize: Size(0, context.hp(7))),
+                        child: Icon(
+                          LucideIcons.trash2,
+                          size: context.lg,
+                        )),
+                  ),
+                  SizedBox(width: context.wp(2)),
+                  Expanded(
+                    flex: 7,
                     child: ElevatedButton(
                       onPressed: () {
                         // 타이머 데이터 갱신 로직 추가
@@ -250,52 +283,15 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                         });
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(context.wp(3)),
-                        ),
-                      ),
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(context.wp(3)),
+                          ),
+                          minimumSize: Size(0, context.hp(7))),
                       child: Text(
                         '확인',
-                        style: TextStyle(
-                          fontSize: context.md,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: context.hp(1)),
-                  SizedBox(
-                    width: double.infinity,
-                    height: context.hp(7),
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        HapticFeedback.lightImpact();
-                        final shouldDelete = await _showDeleteConfirmationDialog(context);
-                        if (!shouldDelete) return;
-
-                        await dbService.deleteSession(widget.timerData['current_session_id']).then((_) {
-                          // 갱신이 완료된 후 페이지 이동
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TimerPage(timerData: widget.timerData),
-                            ),
-                          );
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.backgroundTertiary(context),
-                        foregroundColor: AppColors.textPrimary(context),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(context.wp(3)),
-                        ),
-                      ),
-                      child: Text(
-                        '활동 삭제하기',
                         style: TextStyle(
                           fontSize: context.md,
                           fontWeight: FontWeight.bold,
@@ -335,7 +331,7 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
       width: context.wp(90),
       height: context.hp(50),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(context.wp(5)),
+        borderRadius: BorderRadius.circular(32.0),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -355,115 +351,130 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
           ),
         ],
       ),
-      padding: context.paddingLG,
       child: Stack(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Image.asset(
-                getIconImage(timerProvider.currentActivityIcon),
-                width: context.xxxl,
-                height: context.xxxl,
+          Shimmer.fromColors(
+            period: const Duration(seconds: 2),
+            baseColor: activityColor,
+            highlightColor: Colors.white.withOpacity(0.3),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(32.0),
+                color: activityColor.withOpacity(0.5), // base fallback
               ),
-              SizedBox(height: context.hp(2)),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    alignment: WrapAlignment.end,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Builder(
-                        builder: (context) {
-                          final activityName = timerProvider.currentActivityName;
-                          final displayText = activityName.length > 6 ? '${activityName.substring(0, 6)}...' : activityName;
+              width: context.wp(90),
+              height: context.hp(50),
+            ),
+          ),
+          Padding(
+            padding: context.paddingSM,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Image.asset(
+                  getIconImage(timerProvider.currentActivityIcon),
+                  width: context.xxxl,
+                  height: context.xxxl,
+                ),
+                SizedBox(height: context.hp(2)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      alignment: WrapAlignment.end,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Builder(
+                          builder: (context) {
+                            final activityName = timerProvider.currentActivityName;
+                            final displayText = activityName.length > 6 ? '${activityName.substring(0, 6)}...' : activityName;
 
-                          return Text(
-                            displayText,
-                            style: AppTextStyles.getHeadline(context).copyWith(
-                              color: ColorService.getTextColorForBackground(activityColor),
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'Neo',
-                            ),
-                          );
-                        },
-                      ),
-                      SizedBox(width: context.wp(2)),
-                      Builder(
-                        builder: (context) {
-                          final activityName = timerProvider.currentActivityName;
-                          final displayText = activityName.length > 6 ? '활동 완료' : '활동을 완료했습니다 !';
+                            return Text(
+                              displayText,
+                              style: AppTextStyles.getHeadline(context).copyWith(
+                                color: ColorService.getTextColorForBackground(activityColor),
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'Neo',
+                              ),
+                            );
+                          },
+                        ),
+                        SizedBox(width: context.wp(2)),
+                        Builder(
+                          builder: (context) {
+                            final activityName = timerProvider.currentActivityName;
+                            final displayText = activityName.length > 6 ? '활동 완료' : '활동을 완료했습니다 !';
 
-                          return Text(
-                            displayText,
-                            style: AppTextStyles.getTitle(context).copyWith(
-                              fontWeight: FontWeight.w900,
-                              color: ColorService.getTextColorForBackground(activityColor),
-                            ),
-                          );
-                        },
+                            return Text(
+                              displayText,
+                              style: AppTextStyles.getTitle(context).copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: ColorService.getTextColorForBackground(activityColor),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: context.hp(4)),
+                Align(
+                  alignment: Alignment.center,
+                  child: Shimmer.fromColors(
+                    baseColor: ColorService.getTextColorForBackground(activityColor),
+                    highlightColor: Colors.grey.shade100.withOpacity(0.2),
+                    child: Text(
+                      formatDuration(widget.sessionDuration),
+                      style: AppTextStyles.getHeadline(context).copyWith(
+                        color: ColorService.getTextColorForBackground(activityColor),
+                        fontFamily: 'Neo',
+                        fontSize: context.xxl,
                       ),
-                    ],
-                  ),
-                ],
-              ),
-              SizedBox(height: context.hp(4)),
-              Align(
-                alignment: Alignment.center,
-                child: Shimmer.fromColors(
-                  baseColor: ColorService.getTextColorForBackground(activityColor),
-                  highlightColor: Colors.grey.shade100.withOpacity(0.2),
-                  child: Text(
-                    formatDuration(widget.sessionDuration),
-                    style: AppTextStyles.getHeadline(context).copyWith(
-                      color: ColorService.getTextColorForBackground(activityColor),
-                      fontFamily: 'Neo',
-                      fontSize: context.xxl,
                     ),
                   ),
                 ),
-              ),
-              SizedBox(height: context.hp(2)),
-              Center(
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    widget.isSessionTargetExceeded
-                        ? Lottie.asset(
-                            'assets/images/trophy.json',
-                            repeat: true,
-                            width: context.wp(30),
-                            height: context.wp(30),
-                            fit: BoxFit.contain,
-                            controller: _trophyController,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
-                                Icons.error,
-                                color: Colors.red,
-                                size: 24,
-                              );
-                            },
-                          )
-                        : Lottie.asset(
-                            'assets/images/check_3.json',
-                            repeat: true,
-                            width: context.wp(20),
-                            height: context.wp(20),
-                            fit: BoxFit.contain,
-                            controller: _checkController,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
-                                Icons.error,
-                                color: Colors.red,
-                                size: 24,
-                              );
-                            },
-                          ),
-                  ],
+                SizedBox(height: context.hp(2)),
+                Center(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      widget.isSessionTargetExceeded
+                          ? Lottie.asset(
+                              'assets/images/trophy.json',
+                              repeat: true,
+                              width: context.wp(30),
+                              height: context.wp(30),
+                              fit: BoxFit.contain,
+                              controller: _trophyController,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.error,
+                                  color: Colors.red,
+                                  size: 24,
+                                );
+                              },
+                            )
+                          : Lottie.asset(
+                              'assets/images/check_3.json',
+                              repeat: false,
+                              width: context.wp(20),
+                              height: context.wp(20),
+                              fit: BoxFit.contain,
+                              controller: _checkController,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.error,
+                                  color: Colors.red,
+                                  size: 24,
+                                );
+                              },
+                            ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           Lottie.asset(
             'assets/images/congraturations.json',

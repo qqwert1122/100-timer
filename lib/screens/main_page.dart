@@ -7,6 +7,7 @@ import 'package:project1/screens/setting_page.dart';
 import 'package:project1/screens/timer_page.dart';
 import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/theme/app_color.dart';
+import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
@@ -20,7 +21,7 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  TimerProvider? timerProvider;
+  late final TimerProvider timerProvider;
   int _selectedIndex = 0;
   List<Widget> _pages = [];
 
@@ -32,18 +33,15 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _initTimer() async {
-    await timerProvider!.setTimer();
-
     Widget timerTab;
-    if (timerProvider!.timerData?['timer_state'] != 'STOP') {
-      print('main_page : TimerRunningPage');
-      timerTab = TimerRunningPage(
-        timerData: timerProvider!.timerData!,
+    if (timerProvider.timerData!['timer_state'] != 'STOP') {
+      // timer_state == 'PAUSED', 'RUNNING'
+      timerTab = const TimerRunningPage(
         isNewSession: false,
       );
     } else {
-      print('main_page : TimerPage');
-      timerTab = TimerPage(timerData: timerProvider!.timerData!);
+      // timer_state == 'STOP'
+      timerTab = TimerPage(timerData: timerProvider.timerData!);
     }
 
     // 4개의 탭에 해당하는 페이지들
@@ -76,58 +74,62 @@ class _MainPageState extends State<MainPage> {
       );
     }
 
+    final bool isTimerRunningPage = _pages[_selectedIndex] is TimerRunningPage;
+
     return Scaffold(
       body: _pages[_selectedIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: Colors.grey.withOpacity(0.2), // 경계선 색상
-              width: 1,
+      bottomNavigationBar: isTimerRunningPage
+          ? null
+          : Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: Colors.grey.withOpacity(0.2), // 경계선 색상
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: ClipRRect(
+                child: BottomNavigationBar(
+                  type: BottomNavigationBarType.fixed,
+                  backgroundColor: AppColors.background(context),
+                  currentIndex: _selectedIndex,
+                  onTap: _onItemTapped,
+                  selectedItemColor: AppColors.primary(context),
+                  unselectedItemColor: AppColors.textSecondary(context),
+                  selectedLabelStyle: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: context.sm,
+                  ),
+                  unselectedLabelStyle: TextStyle(
+                    fontSize: context.sm,
+                  ),
+                  elevation: 10,
+                  items: const [
+                    BottomNavigationBarItem(
+                      icon: Icon(LucideIcons.timer),
+                      label: '타이머',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(LucideIcons.galleryVerticalEnd),
+                      label: '기록',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(LucideIcons.flag),
+                      label: '목표',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(LucideIcons.lineChart),
+                      label: '통계',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(LucideIcons.settings2),
+                      label: '설정',
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
-        child: ClipRRect(
-          child: BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: AppColors.background(context),
-            currentIndex: _selectedIndex,
-            onTap: _onItemTapped,
-            selectedItemColor: AppColors.primary(context),
-            unselectedItemColor: AppColors.textSecondary(context),
-            selectedLabelStyle: TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: context.sm,
-            ),
-            unselectedLabelStyle: TextStyle(
-              fontSize: context.sm,
-            ),
-            elevation: 10,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.timer),
-                label: '타이머',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.galleryVerticalEnd),
-                label: '기록',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.flag),
-                label: '목표',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.lineChart),
-                label: '통계',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.settings2),
-                label: '설정',
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

@@ -10,6 +10,7 @@ import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 class TimerInfoCard extends StatefulWidget {
   final TimerProvider timerProvider;
@@ -35,6 +36,10 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
   List<int> _dailyDurations = List.filled(7, 0);
   List<double> _dailyPercents = List.filled(7, 0.0);
 
+  late int duration;
+  late int total;
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -44,8 +49,8 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
   }
 
   Future<void> _loadWeeklyStats() async {
-    final duration = await statsProvider!.getTotalDurationForCurrentWeek();
-    final total = await statsProvider!.getTotalSecondsForCurrnetWeek();
+    duration = await statsProvider!.getTotalDurationForCurrentWeek();
+    total = await statsProvider!.getTotalSecondsForCurrnetWeek();
 
     final now = DateTime.now();
     final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
@@ -75,8 +80,21 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
         totalSeconds = total != 0 ? total : 1; // 0이면 퍼센트 계산 에러 방지
         _dailyDurations = dailyDurations;
         _dailyPercents = percents;
+        _isLoading = false;
       });
     }
+  }
+
+  String _formatHour(int seconds) {
+    final hours = seconds ~/ 3600;
+    return '$hours';
+  }
+
+  String _formatTime(int seconds) {
+    final int safe = seconds.abs(); // 음수에 대해서는 절대값 , 음수라는 것에 대해서는 UI상으로 표현
+    final hours = (seconds ~/ 3600).toString().padLeft(2, '0');
+    final minutes = ((seconds % 3600) ~/ 60).toString().padLeft(2, '0');
+    return '${hours}h ${minutes}m';
   }
 
   @override
@@ -92,216 +110,232 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
     double percent = (totalDuration / totalSeconds);
     String percentText = (percent * 100).toStringAsFixed(0);
 
-    return Padding(
-      padding: context.paddingSM,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 주간 날짜
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.background(context),
-              borderRadius: const BorderRadius.all(
-                Radius.circular(16.0),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.textSecondary(context).withOpacity(0.2),
-                  spreadRadius: 2,
-                  blurRadius: 2,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: context.paddingSM,
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            timerProvider!.isWeeklyTargetExceeded ? '이번 주 초과 달성 시간' : '이번 주 남은 목표 시간',
-                            style: AppTextStyles.getCaption(context).copyWith(
-                              color: AppColors.textSecondary(context),
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          Consumer<TimerProvider>(
-                            builder: (context, provider, child) {
-                              return Text(
-                                provider.formattedTime,
-                                style: AppTextStyles.getTimeDisplay(context).copyWith(
-                                  color: timerProvider!.isWeeklyTargetExceeded ? Colors.blueAccent : AppColors.primary(context),
-                                  fontFamily: 'chab',
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      CircularPercentIndicator(
-                        radius: context.wp(10),
-                        lineWidth: context.wp(5),
-                        animation: true,
-                        percent: percent.clamp(0.0, 1.0),
-                        center: Text(
-                          '$percentText %',
-                          style: AppTextStyles.getCaption(context).copyWith(),
-                        ),
-                        circularStrokeCap: CircularStrokeCap.round,
-                        progressColor: timerProvider!.isWeeklyTargetExceeded ? Colors.blueAccent : Colors.redAccent,
-                        backgroundColor: AppColors.backgroundSecondary(context),
+    return _isLoading
+        ? Shimmer.fromColors(
+            baseColor: AppColors.backgroundSecondary(context),
+            highlightColor: Colors.white,
+            child: Container(height: context.hp(20)),
+          )
+        : Padding(
+            padding: context.paddingSM,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 주간 날짜
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.background(context),
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(16.0),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.textSecondary(context).withOpacity(0.2),
+                        spreadRadius: 2,
+                        blurRadius: 2,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  SizedBox(height: context.hp(1)),
-                  Row(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(7, (i) {
-                      final date = weekDays[i];
-                      final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
-                      final formattedDate = weekdayNames[date.weekday - 1];
-                      final pct = _dailyPercents[i].clamp(0.0, 1.0);
-
-                      return Column(
-                        children: [
-                          // 요일 표시
-                          Text(
-                            formattedDate,
-                            style: AppTextStyles.getCaption(context).copyWith(
-                              color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
+                  child: Padding(
+                    padding: context.paddingSM,
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  timerProvider!.isWeeklyTargetExceeded ? '이번 주 달성 시간' : '이번 주 남은 목표 시간',
+                                  style: AppTextStyles.getCaption(context).copyWith(
+                                    color: AppColors.textSecondary(context),
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                Consumer<TimerProvider>(
+                                  builder: (context, provider, child) {
+                                    if (timerProvider!.isWeeklyTargetExceeded) {
+                                      return Text(
+                                        _formatTime(duration),
+                                        style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                          color: Colors.blueAccent,
+                                          fontFamily: 'chab',
+                                        ),
+                                      );
+                                    } else {
+                                      return Text(
+                                        provider.formattedTime,
+                                        style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                          color: AppColors.primary(context),
+                                          fontFamily: 'chab',
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ],
                             ),
-                          ),
-                          SizedBox(height: context.hp(0.5)),
-                          // 날짜 + 프로그레스
-                          CircularPercentIndicator(
-                            radius: context.wp(4),
-                            lineWidth: context.wp(2),
-                            animation: true,
-                            percent: pct,
-                            center: Text(
-                              '${date.day}',
-                              style: AppTextStyles.getCaption(context).copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
+                            CircularPercentIndicator(
+                              radius: context.wp(10),
+                              lineWidth: context.wp(5),
+                              animation: true,
+                              percent: percent.clamp(0.0, 1.0),
+                              center: Text(
+                                '$percentText %',
+                                style: AppTextStyles.getCaption(context).copyWith(),
                               ),
+                              circularStrokeCap: CircularStrokeCap.round,
+                              progressColor: timerProvider!.isWeeklyTargetExceeded ? Colors.blueAccent : Colors.redAccent,
+                              backgroundColor: AppColors.backgroundSecondary(context),
                             ),
-                            progressColor: isToday ? AppColors.primary(context) : AppColors.textSecondary(context).withOpacity(0.4),
-                            backgroundColor: AppColors.backgroundSecondary(context),
-                            circularStrokeCap: CircularStrokeCap.round,
-                          ),
-                        ],
-                      );
-                    }),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: context.hp(1)),
-
-          // 활동 선택
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              widget.showActivityModal();
-            },
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: context.xs, vertical: context.md),
-              decoration: BoxDecoration(
-                color: AppColors.background(context),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.textSecondary(context).withOpacity(0.2),
-                    spreadRadius: 2,
-                    blurRadius: 2,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: context.sm),
-                      child: Text(
-                        '활동 선택',
-                        style: AppTextStyles.getBody(context).copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary(context),
+                          ],
                         ),
-                      ),
+                        SizedBox(height: context.hp(1)),
+                        Row(
+                          mainAxisSize: MainAxisSize.max,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(7, (i) {
+                            final date = weekDays[i];
+                            final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+                            final formattedDate = weekdayNames[date.weekday - 1];
+                            final pct = _dailyPercents[i].clamp(0.0, 1.0);
+
+                            return Column(
+                              children: [
+                                // 요일 표시
+                                Text(
+                                  formattedDate,
+                                  style: AppTextStyles.getCaption(context).copyWith(
+                                    color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
+                                  ),
+                                ),
+                                SizedBox(height: context.hp(0.5)),
+                                // 날짜 + 프로그레스
+                                CircularPercentIndicator(
+                                  radius: context.wp(4),
+                                  lineWidth: context.wp(2),
+                                  animation: true,
+                                  percent: pct,
+                                  center: Text(
+                                    '${date.day}',
+                                    style: AppTextStyles.getCaption(context).copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
+                                    ),
+                                  ),
+                                  progressColor: isToday ? AppColors.primary(context) : AppColors.textSecondary(context).withOpacity(0.4),
+                                  backgroundColor: AppColors.backgroundSecondary(context),
+                                  circularStrokeCap: CircularStrokeCap.round,
+                                ),
+                              ],
+                            );
+                          }),
+                        ),
+                      ],
                     ),
                   ),
-                  Expanded(
-                    flex: 6,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Image.asset(
-                          getIconImage(widget.timerProvider.currentActivityIcon),
-                          width: context.xl,
-                          height: context.xl,
-                          errorBuilder: (context, error, stackTrace) {
-                            // 이미지를 로드하는 데 실패한 경우의 대체 표시
-                            return Container(
-                              width: context.xl,
-                              height: context.xl,
-                              color: Colors.grey.withOpacity(0.2),
-                              child: Icon(
-                                Icons.broken_image,
-                                size: context.xl,
-                                color: Colors.grey,
-                              ),
-                            );
-                          },
-                        ),
-                        SizedBox(width: context.wp(1)),
-                        Flexible(
-                          child: Builder(
-                            builder: (context) {
-                              final activityName = widget.timerProvider.currentActivityName;
-                              final displayText = activityName.length > 15 ? '${activityName.substring(0, 15)}...' : activityName;
+                ),
+                SizedBox(height: context.hp(1)),
 
-                              return Text(
-                                displayText,
-                                style: AppTextStyles.getBody(context).copyWith(
-                                  fontWeight: FontWeight.w900,
+                // 활동 선택
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    widget.showActivityModal();
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(horizontal: context.xs, vertical: context.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.background(context),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.textSecondary(context).withOpacity(0.2),
+                          spreadRadius: 2,
+                          blurRadius: 2,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: context.sm),
+                            child: Text(
+                              '활동 선택',
+                              style: AppTextStyles.getBody(context).copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecondary(context),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 6,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Image.asset(
+                                getIconImage(widget.timerProvider.currentActivityIcon),
+                                width: context.xl,
+                                height: context.xl,
+                                errorBuilder: (context, error, stackTrace) {
+                                  // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                                  return Container(
+                                    width: context.xl,
+                                    height: context.xl,
+                                    color: Colors.grey.withOpacity(0.2),
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      size: context.xl,
+                                      color: Colors.grey,
+                                    ),
+                                  );
+                                },
+                              ),
+                              SizedBox(width: context.wp(1)),
+                              Flexible(
+                                child: Builder(
+                                  builder: (context) {
+                                    final activityName = widget.timerProvider.currentActivityName;
+                                    final displayText = activityName.length > 15 ? '${activityName.substring(0, 15)}...' : activityName;
+
+                                    return Text(
+                                      displayText,
+                                      style: AppTextStyles.getBody(context).copyWith(
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Transform(
+                                // 중심을 기준으로 좌우 대칭(수평 반전)하기
+                                alignment: Alignment.center,
+                                transform: Matrix4.identity()..scale(-1.0, 1.0),
+                                child: Icon(Icons.arrow_back_ios_new_rounded, size: context.lg)),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Expanded(
-                    flex: 1,
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Transform(
-                          // 중심을 기준으로 좌우 대칭(수평 반전)하기
-                          alignment: Alignment.center,
-                          transform: Matrix4.identity()..scale(-1.0, 1.0),
-                          child: Icon(Icons.arrow_back_ios_new_rounded, size: context.lg)),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-    );
+          );
   }
 }

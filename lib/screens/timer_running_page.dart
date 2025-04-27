@@ -23,12 +23,10 @@ import 'package:shimmer/shimmer.dart';
 /// 사용자가 선택한 활동에 대한 타이머를 실행하고 시각적으로 표시함
 class TimerRunningPage extends StatefulWidget {
   /// 타이머 페이지 초기화에 필요한 타이머 데이터
-  final Map<String, dynamic> timerData;
   final bool isNewSession;
 
   const TimerRunningPage({
     super.key,
-    required this.timerData,
     required this.isNewSession,
   });
 
@@ -78,23 +76,30 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   @override
   void initState() {
     super.initState();
-
+    logger.d('@@@ timer_running_page : init');
     // 서비스 객체 초기화
     _dbService = Provider.of<DatabaseService>(context, listen: false);
     timerProvider = Provider.of<TimerProvider>(context, listen: false);
     statsProvider = Provider.of<StatsProvider>(context, listen: false);
 
+    timerProvider.clearEventFlags();
+
     // 타이머 상태 변경 리스너 등록
     if (!_isListenerAdded) {
+      logger.d('@@@ timer_running_page : _isListenerAdded: $_isListenerAdded');
       timerProvider.addListener(_handleTimerStateChange);
       _isListenerAdded = true;
     }
+
+    timerProvider.ready.then((_) {
+      if (mounted) setState(() {}); // 애니메이션·메시지 초기화 등
+    });
 
     // 앱 라이프사이클 옵저버 등록 (백그라운드 처리용)
     WidgetsBinding.instance.addObserver(this);
 
     // 타이머, 애니메이션, 메시지, 알림 초기화
-    _initTimer();
+    // _initTimer();
     _initMessageAnimation();
     _startMessageTimer();
     _initAlarm();
@@ -115,108 +120,13 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     super.dispose();
   }
 
-  // 초기 타이머 실행 흐름
-  // 새 세션 시작 또는 기존 세션 복원 처리
-  Future<void> _initTimer() async {
-    logger.i('Timer init');
-    if (_isTimerInitialized) return; // 이미 초기화됐으면 중복 실행 방지
-    try {
-      if (widget.isNewSession) {
-        // 새 세션 시작
-        await _startNewSession();
-      } else {
-        // 기존 세션 복원
-        await _handleExistingSession();
-      }
-      _isTimerInitialized = true;
-    } catch (_) {
-      _isTimerInitialized = false;
-    }
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && mounted) {
-      _handleExistingSession(); // ← 이대로 두면 됨
-    }
-  }
-
   Future<void> _initAlarm() async {
     _prefs = await SharedPreferences.getInstance();
     _isAlarmOn = _prefs.getBool('alarmFlag') ?? false;
   }
 
-  Future<void> _startNewSession() async {
-    print('timer_running_page : startNewSession');
-    // 새 타이머 시작
-    await timerProvider.startTimer(
-      activityId: timerProvider.currentActivityId!,
-      mode: timerProvider.currentSessionMode!,
-      targetDuration: timerProvider.currentSessionTargetDuration,
-    );
-  }
-
-  // 어플 재실행 등
-  Future<void> _handleExistingSession() async {
-    print('timer_running_page : _handleExistingSession');
-    try {
-      // 타이머 객체에서 session_id 불러오기
-      final sessionId = widget.timerData['current_session_id'];
-      final currentSession = await _dbService.getSession(sessionId);
-
-      if (currentSession == null) {
-        logger.d('Session data not found, starting new session');
-        await _startNewSession();
-        return;
-      }
-
-      // 이미 기록된 누적 시간
-      final previousDuration = currentSession['duration'] as int? ?? 0;
-
-      // 마지막 업데이트 시각으로부터 경과 시간
-      final lastUpdatedAt = DateTime.parse(currentSession['last_updated_at']);
-      final elapsedSinceLastUpdate = DateTime.now().difference(lastUpdatedAt).inSeconds;
-
-      // 경과 시간 업데이트
-      final currentDuration = previousDuration + elapsedSinceLastUpdate;
-
-      final targetDuration = currentSession['target_duration'];
-
-      if (targetDuration != null && currentDuration >= targetDuration) {
-        // targetDuration을 초과했을 경우
-        logger.i('Session exceeded target duration');
-        await _handleStop(isSessionTargetExceeded: true, targetDuration: targetDuration);
-      } else {
-        if (widget.timerData['timer_state'] == "PAUSED") {
-          // 앱이 재시작되었을 때 기본적으로 일시정지 상태로
-
-          // ※ 여기에 "화면에 그려줄 활동 정보"를 TimerProvider에 적용
-          // 이미 currentSession을 가져왔으므로, 여기에 활동 정보가 들어 있음
-          timerProvider.setCurrentActivity(
-            currentSession['activity_id'] ?? '',
-            currentSession['activity_name'] ?? '',
-            currentSession['activity_icon'] ?? 'category',
-            currentSession['activity_color'] ?? '#BCBCBC',
-          );
-
-          // 혹시 필요하다면, mode / targetDuration / currentDuration 값을 강제로 세팅해줄 수도 있음:
-          timerProvider.setSessionModeAndTargetDuration(
-            mode: currentSession['mode'] ?? 'NORMAL',
-            targetDuration: currentSession['target_duration'] ?? 360000,
-          );
-        } else {
-          logger.i('Restarting running session');
-          await timerProvider.restartTimer(sessionId: sessionId);
-        }
-      }
-    } catch (e) {
-      logger.d('Error handling existing session: $e');
-      await _startNewSession();
-    }
-  }
-
   void _handleTimerStateChange() {
-    print('timer_running_page : _handleTimerStateChange :: before');
+    logger.d('@@@ timer_running_page @@@ : _handleTimerStateChange()');
     if (!mounted || _isNavigating) return;
 
     final isRunning = timerProvider.isRunning;
@@ -228,6 +138,9 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
     // 타이머 초과 케이스 처리
     if (isSessionTargetExceeded && !_hasShownCompletionDialog) {
+      logger.d('@@@ timer_running_page @@@ : _handleTimerStateChange() >> isSessionTargetExceeded');
+      logger.d(
+          'timerProvider.justFinishedByExceeding : ${timerProvider.justFinishedByExceeding}, _hasShownCompletionDialog : $_hasShownCompletionDialog');
       timerProvider.clearEventFlags();
       _navigateToResultPage(isSessionTargetExceeded: true);
       return;
@@ -235,6 +148,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
     // 타이머 중지 케이스 처리
     if (!isRunning && !isSessionTargetExceeded && currentState == 'STOP') {
+      logger.d('@@@ timer_running_page @@@ : _handleTimerStateChange() >> isSessionTarget Not Exceeded');
       _navigateToResultPage(isSessionTargetExceeded: false);
     }
   }
@@ -258,7 +172,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
   // 결과 페이지로 이동하는 helper 메소드
   void _navigateToResultPage({required bool isSessionTargetExceeded}) {
-    print('timer_running_page : _navigateToResultPage');
+    logger.d('@@@ timer_running_page : _navigateToResultPage($isSessionTargetExceeded)');
     if (_isNavigating) return;
     _isNavigating = true;
 
@@ -268,7 +182,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
         MaterialPageRoute(
           builder: (context) => TimerResultPage(
             timerData: timerProvider.timerData!,
-            sessionDuration: timerProvider.currentSessionDuration,
+            sessionDuration: isSessionTargetExceeded ? timerProvider.currentSessionTargetDuration! : timerProvider.currentSessionDuration,
             isSessionTargetExceeded: isSessionTargetExceeded,
           ),
         ),
@@ -357,6 +271,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   }
 
   Future<void> _handleStop({bool isSessionTargetExceeded = false, int? targetDuration}) async {
+    logger.d('@@@ timer_running_page @@@ : handleStop({$isSessionTargetExceeded, $targetDuration})');
+
     final timer = timerProvider.timerData!;
     try {
       // 메시지 Timer 정리
@@ -382,7 +298,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
           MaterialPageRoute(
             builder: (context) => TimerResultPage(
               timerData: timer,
-              sessionDuration: timerProvider.currentSessionDuration,
+              sessionDuration: isSessionTargetExceeded ? targetDuration! : timerProvider.currentSessionDuration,
               isSessionTargetExceeded: isSessionTargetExceeded,
             ),
           ),
@@ -496,19 +412,14 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   }
 
   void _toggleAlarm() async {
-    bool newAlarmState = !_isAlarmOn;
+    final bool turnOn = !_isAlarmOn;
 
-    if (newAlarmState) {
-      // 알림 권한 요청
+    if (turnOn) {
       final granted = await NotificationService().requestPermissions();
       if (!granted) {
-        // 권한 거부된 경우 알림 상태를 false로 유지
-        setState(() {
-          _isAlarmOn = false;
-        });
+        setState(() => _isAlarmOn = false);
         Fluttertoast.showToast(
           msg: "알림 권한이 필요합니다",
-          toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.TOP,
           backgroundColor: Colors.grey.shade700,
           textColor: Colors.white,
@@ -519,12 +430,27 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     }
 
     // 권한 확인 완료 또는 알림 끄기
-    setState(() {
-      _isAlarmOn = newAlarmState;
-    });
-
+    setState(() => _isAlarmOn = turnOn);
     await _prefs.setBool('alarmFlag', _isAlarmOn);
-
+    if (timerProvider.currentState == 'RUNNING' &&
+        timerProvider.currentSessionMode == 'PMDR' &&
+        timerProvider.currentSessionTargetDuration != null) {
+      if (turnOn) {
+        // ✔ 알림 켜짐 → 잔여 시간으로 재예약
+        final remaining = timerProvider.currentSessionTargetDuration! - timerProvider.currentSessionDuration;
+        if (remaining > 0) {
+          await NotificationService().scheduleActivityCompletionNotification(
+            scheduledTime: DateTime.now().add(Duration(seconds: remaining)),
+            title: '100 timer',
+            body: '${timerProvider.currentActivityName} 활동을 '
+                '${timerProvider.formatDuration(timerProvider.currentSessionTargetDuration!)} 집중했어요!',
+          );
+        }
+      } else {
+        // ✘ 알림 꺼짐 → 현재 예약된 알림 취소
+        await NotificationService().cancelCompletionNotification();
+      }
+    }
     Fluttertoast.showToast(
       msg: _isAlarmOn ? "알림이 설정되었습니다" : "알림이 해제되었습니다",
       toastLength: Toast.LENGTH_SHORT,
@@ -734,13 +660,11 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: isDarkMode ? Colors.black : Colors.white,
+        backgroundColor: AppColors.background(context),
         body: SafeArea(
-          // Consumer를 제거하고 각 위젯별로 필요한 부분만 Consumer로 감싸기
           child: Column(
             children: [
               SizedBox(height: context.hp(3)),

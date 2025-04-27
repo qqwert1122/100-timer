@@ -18,6 +18,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:uuid/uuid.dart';
 
 Future<void> initializeAppSettings() async {
+  logger.d('@@@ main @@@ initializeAppSettings()');
   // SharedPreferences 초기화 및 기본값 설정
   final prefs = await SharedPreferences.getInstance();
 
@@ -55,8 +56,10 @@ Future<void> initializeAppSettings() async {
 }
 
 void main() async {
+  logger.d('@@@ main @@@ main()');
   WidgetsFlutterBinding.ensureInitialized();
   // 기본 설정, 날짜, firebase, wakeLock 초기화
+
   await initializeAppSettings();
 
   // 광고 초기화
@@ -70,9 +73,9 @@ void main() async {
     DeviceOrientation.portraitUp, // 세로 위 방향만 허용
   ]);
 
-  // 데이터베이스 초기화
-  final dbService = DatabaseService();
-  await insertTestData(dbService);
+  // 데이터베이스 초기
+  // final dbService = DatabaseService();
+  // await insertTestData(dbService);
 
   runApp(
     MultiProvider(
@@ -123,6 +126,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late Future<Map<String, dynamic>> _initializationFuture;
   late DatabaseService _dbService;
+  late TimerProvider _timerProvider;
   late SharedPreferences prefs;
 
   @override
@@ -133,12 +137,13 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<Map<String, dynamic>> _initializeProviders() async {
+    logger.d('@@@ main @@@ _initializeProviders()');
     _dbService = Provider.of<DatabaseService>(context, listen: false);
-
+    _timerProvider = Provider.of<TimerProvider>(context, listen: false);
     // Provider들의 초기화 완료 대기
     await Future.wait([
       context.read<StatsProvider>().initialized,
-      context.read<TimerProvider>().initialized,
+      context.read<TimerProvider>().ready,
     ]);
 
     // 기본 활동(기존 목록) 추가: 이미 활동이 있으면 건너뜁니다.
@@ -158,6 +163,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _insertDefaultActivities() async {
+    logger.d('@@@ main @@@ _insertDefaultActivities()');
     // 기본 활동 목록 (원하는 만큼 추가 가능)
     final List<Map<String, dynamic>> defaultActivities = [
       {
@@ -237,25 +243,20 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<Map<String, dynamic>> _initializeApp() async {
+    logger.d('@@@ main @@@ _initializeApp()');
     try {
       // 현재 local 날짜와 weekStart를 가져옴
       DateTime now = DateTime.now();
       String weekStart = getWeekStart(now);
 
-      logger.d('타이머 초기화: 주 시작일=$weekStart');
-
       // 타이머 데이터를 가져오거나 새로 생성
       Map<String, dynamic>? timer = await _dbService.getTimer(weekStart);
       if (timer == null) {
-        logger.d('이번 주의 타이머 없음, 새 타이머 생성');
         timer = await _createDefaultTimer();
-      } else {
-        logger.d('기존 타이머 로드: ${timer['timer_id']}, 상태: ${timer['timer_state']}');
-      }
+      } else {}
       return timer;
     } catch (e, stackTrace) {
-      logger.e('타이머 초기화 중 오류 발생: $e');
-      logger.e('스택 트레이스: $stackTrace');
+      logger.e('@@@ main @@@ e: $e, stackTrace: $stackTrace');
       // 오류 발생 시 기본 타이머 반환
       return await _createDefaultTimer();
     }
@@ -263,50 +264,30 @@ class _MyAppState extends State<MyApp> {
 
 // 기본 타이머 생성 메서드
   Future<Map<String, dynamic>> _createDefaultTimer() async {
-    try {
-      final now = DateTime.now();
-      final weekStart = getWeekStart(now);
-      final timerId = const Uuid().v4();
-      final userTotalSeconds = prefs.getInt('totalSeconds') ?? 360000; // 기본값: 100시간
+    logger.d('@@@ main @@@ _createDefaultTimer()');
+    final now = DateTime.now();
+    final weekStart = getWeekStart(now);
+    final timerId = const Uuid().v4();
+    final userTotalSeconds = prefs.getInt('totalSeconds') ?? 360000; // 기본값: 100시간
 
-      logger.i('새 타이머 생성: ID=$timerId, 주 시작일=$weekStart');
+    final timer = {
+      'timer_id': timerId,
+      'current_session_id': null,
+      'week_start': weekStart,
+      'total_seconds': userTotalSeconds,
+      'timer_state': 'STOP', // 'STOP'이면 TimerPage, 그 외면 TimerRunningPage로 이동
+      'created_at': now.toUtc().toIso8601String(),
+      'deleted_at': null,
+      'last_started_at': null,
+      'last_ended_at': null,
+      'last_updated_at': now.toUtc().toIso8601String(),
+      'is_deleted': 0,
+      'timezone': DateTime.now().timeZoneName,
+    };
 
-      final timer = {
-        'timer_id': timerId,
-        'current_session_id': null,
-        'week_start': weekStart,
-        'total_seconds': userTotalSeconds,
-        'timer_state': 'STOP', // 'STOP'이면 TimerPage, 그 외면 TimerRunningPage로 이동
-        'created_at': now.toUtc().toIso8601String(),
-        'deleted_at': null,
-        'last_started_at': null,
-        'last_ended_at': null,
-        'last_updated_at': now.toUtc().toIso8601String(),
-        'is_deleted': 0,
-        'timezone': DateTime.now().timeZoneName,
-      };
+    await _dbService.createTimer(timer); // 타이머 데이터베이스에 저장
 
-      // 타이머 데이터베이스에 저장
-      await _dbService.createTimer(timer);
-      logger.d('타이머 데이터베이스에 저장 완료');
-
-      return timer;
-    } catch (e, stackTrace) {
-      logger.e('기본 타이머 생성 중 오류 발생: $e');
-      logger.e('스택 트레이스: $stackTrace');
-
-      // 심각한 오류 - 빈 타이머 객체 반환
-      final now = DateTime.now();
-      return {
-        'timer_id': 'error_${const Uuid().v4()}',
-        'week_start': getWeekStart(now),
-        'total_seconds': 360000,
-        'timer_state': 'STOP',
-        'created_at': now.toUtc().toIso8601String(),
-        'last_updated_at': now.toUtc().toIso8601String(),
-        'is_deleted': 0,
-      };
-    }
+    return timer;
   }
 
   String getWeekStart(DateTime date) {
@@ -327,7 +308,7 @@ class _MyAppState extends State<MyApp> {
       home: FutureBuilder<Map<String, dynamic>>(
         future: _initializationFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting || !_timerProvider.isTimerProviderInit) {
             return const Scaffold(
               body: Center(
                 child: SizedBox(

@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:project1/utils/logger_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationService {
@@ -10,6 +14,9 @@ class NotificationService {
   NotificationService._internal();
 
   late final SharedPreferences _prefs;
+  bool _isInitialized = false;
+  final Completer<void> _readyCompleter = Completer<void>();
+  Future<void> get ready => _readyCompleter.future;
 
   // 고정된 알림 ID 사용
   static const int activityCompletionId = 1;
@@ -18,6 +25,10 @@ class NotificationService {
 
   // 알림 초기화
   Future<void> initialize() async {
+    if (_readyCompleter.isCompleted) return; // 이미 완료
+    if (_isInitialized) return; // 초기화 진행 중
+    _isInitialized = true;
+
     _prefs = await SharedPreferences.getInstance(); // sharedPreference 초기화
     await _prefs.reload(); // 초기화 순서 충돌 방지를 위한 disk 동기화
 
@@ -47,6 +58,8 @@ class NotificationService {
       requestPermissions();
       await _prefs.setBool('hasRequestedNotificationPermission', true);
     }
+
+    _readyCompleter.complete();
   }
 
   Future<bool> checkPermission() async {
@@ -77,27 +90,33 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
-    if (!await checkPermission()) {
+    try {
+      await ready;
+      if (!await checkPermission()) {
+        return;
+      }
+      ;
+
+      // 다른 예약된 알림이 있을 수 있으므로 모두 취소
+      await cancelAllScheduledNotifications();
+
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: activityCompletionId,
+          channelKey: channelKey,
+          title: title,
+          body: body,
+          notificationLayout: NotificationLayout.Default,
+          wakeUpScreen: true,
+          fullScreenIntent: true,
+          category: NotificationCategory.Alarm,
+          autoDismissible: true,
+        ),
+      );
+    } on PlatformException catch (e) {
+      debugPrint('AwesomeNotif error: ${e.code} ${e.message}');
       return;
     }
-    ;
-
-    // 다른 예약된 알림이 있을 수 있으므로 모두 취소
-    await cancelAllScheduledNotifications();
-
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: activityCompletionId,
-        channelKey: channelKey,
-        title: title,
-        body: body,
-        notificationLayout: NotificationLayout.Default,
-        wakeUpScreen: true,
-        fullScreenIntent: true,
-        category: NotificationCategory.Alarm,
-        autoDismissible: true,
-      ),
-    );
   }
 
   // 2. 예약 활동 완료 알림
@@ -106,29 +125,35 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
-    if (!await checkPermission()) {
+    try {
+      await ready;
+      if (!await checkPermission()) {
+        return;
+      }
+      ;
+
+      // 기존에 예약된 모든 알림 취소
+      await cancelAllScheduledNotifications();
+
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: activityCompletionId,
+          channelKey: channelKey,
+          title: title,
+          body: body,
+          notificationLayout: NotificationLayout.Default,
+        ),
+        schedule: NotificationCalendar.fromDate(
+          date: scheduledTime,
+          preciseAlarm: true, // ← 필수
+          allowWhileIdle: true, // ← 필수
+          repeats: false,
+        ),
+      );
+    } on PlatformException catch (e) {
+      debugPrint('AwesomeNotif error: ${e.code} ${e.message}');
       return;
     }
-    ;
-
-    // 기존에 예약된 모든 알림 취소
-    await cancelAllScheduledNotifications();
-
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: activityCompletionId,
-        channelKey: channelKey,
-        title: title,
-        body: body,
-        notificationLayout: NotificationLayout.Default,
-      ),
-      schedule: NotificationCalendar.fromDate(
-        date: scheduledTime,
-        preciseAlarm: true, // ← 필수
-        allowWhileIdle: true, // ← 필수
-        repeats: false,
-      ),
-    );
   }
 
   // 3. 예약된 활동 알림 (미리 알림)
@@ -137,23 +162,29 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
-    if (!await checkPermission()) {
+    try {
+      await ready;
+      if (!await checkPermission()) {
+        return;
+      }
+
+      // 기존에 예약된 미리 알림만 취소 (완료 알림은 유지)
+      await cancelReminderNotification();
+
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: activityReminderId,
+          channelKey: channelKey,
+          title: title,
+          body: body,
+          notificationLayout: NotificationLayout.Default,
+        ),
+        schedule: NotificationCalendar.fromDate(date: reminderTime),
+      );
+    } on PlatformException catch (e) {
+      debugPrint('AwesomeNotif error: ${e.code} ${e.message}');
       return;
     }
-
-    // 기존에 예약된 미리 알림만 취소 (완료 알림은 유지)
-    await cancelReminderNotification();
-
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: activityReminderId,
-        channelKey: channelKey,
-        title: title,
-        body: body,
-        notificationLayout: NotificationLayout.Default,
-      ),
-      schedule: NotificationCalendar.fromDate(date: reminderTime),
-    );
   }
 
   // 예약된 활동 알림 변경
@@ -163,36 +194,52 @@ class NotificationService {
     required String body,
     bool isReminder = false,
   }) async {
-    if (!await checkPermission()) {
+    try {
+      await ready;
+      if (!await checkPermission()) {
+        return;
+      }
+
+      final int notificationId = isReminder ? activityReminderId : activityCompletionId;
+
+      // 기존 해당 유형의 알림 취소
+      await AwesomeNotifications().cancel(notificationId);
+
+      // 새 알림 예약
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: notificationId,
+          channelKey: channelKey,
+          title: title,
+          body: body,
+          notificationLayout: NotificationLayout.Default,
+        ),
+        schedule: NotificationCalendar.fromDate(date: newScheduledTime),
+      );
+    } on PlatformException catch (e) {
+      debugPrint('AwesomeNotif error: ${e.code} ${e.message}');
       return;
     }
-
-    final int notificationId = isReminder ? activityReminderId : activityCompletionId;
-
-    // 기존 해당 유형의 알림 취소
-    await AwesomeNotifications().cancel(notificationId);
-
-    // 새 알림 예약
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: notificationId,
-        channelKey: channelKey,
-        title: title,
-        body: body,
-        notificationLayout: NotificationLayout.Default,
-      ),
-      schedule: NotificationCalendar.fromDate(date: newScheduledTime),
-    );
   }
 
   // 완료 알림만 취소
   Future<void> cancelCompletionNotification() async {
-    await AwesomeNotifications().cancel(activityCompletionId);
+    try {
+      await ready;
+      await AwesomeNotifications().cancel(activityCompletionId);
+    } on PlatformException catch (e) {
+      logger.e('AwesomeNotif error: ${e.code} ${e.message}');
+    }
   }
 
   // 미리 알림만 취소
   Future<void> cancelReminderNotification() async {
-    await AwesomeNotifications().cancel(activityReminderId);
+    try {
+      await ready;
+      await AwesomeNotifications().cancel(activityReminderId);
+    } on PlatformException catch (e) {
+      logger.e('AwesomeNotif error: ${e.code} ${e.message}');
+    }
   }
 
   // 모든 예약된 알림 취소
@@ -203,7 +250,12 @@ class NotificationService {
 
   // 모든 알림 취소 (표시된 알림 포함)
   Future<void> cancelAllNotifications() async {
-    await AwesomeNotifications().cancelAll();
+    try {
+      await ready;
+      await AwesomeNotifications().cancelAll();
+    } on PlatformException catch (e) {
+      logger.e('AwesomeNotif error: ${e.code} ${e.message}');
+    }
   }
 
   // 알림 액션 수신 핸들러 (정적 메서드)

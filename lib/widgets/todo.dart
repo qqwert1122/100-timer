@@ -382,7 +382,7 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                                                         cancelCompletion(todo['todo_id']); // Lottie를 눌러 완료 취소
                                                       },
                                                       child: Lottie.asset(
-                                                        'assets/images/check_3.json', // Lottie 파일 경로
+                                                        'assets/images/check_orange.json', // Lottie 파일 경로
                                                         repeat: false,
                                                         errorBuilder: (context, error, stackTrace) {
                                                           return const Icon(

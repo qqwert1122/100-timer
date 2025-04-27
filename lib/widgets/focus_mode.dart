@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/timer_running_page.dart';
@@ -77,21 +78,6 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
     }
   }
 
-  String formatDuration(int seconds) {
-    final Duration duration = Duration(seconds: seconds);
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    final remainingSeconds = duration.inSeconds.remainder(60);
-
-    if (hours > 0) {
-      return '$hours시간 $minutes분';
-    } else if (minutes > 0) {
-      return '$minutes분 $remainingSeconds초';
-    } else {
-      return '$remainingSeconds초';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final timerProvider = Provider.of<TimerProvider>(context);
@@ -146,23 +132,29 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
 
             return GestureDetector(
               onTap: () async {
-                await Future.delayed(const Duration(milliseconds: 100));
-                timerProvider.setSessionModeAndTargetDuration(mode: 'PMDR', targetDuration: item['value']);
-
-                DateTime scheduledTime = DateTime.now().add(Duration(seconds: item['value']));
-                await NotificationService().scheduleActivityCompletionNotification(
-                  scheduledTime: scheduledTime,
-                  title: '활동 완료',
-                  body: '${timerProvider.currentActivityName} 활동을 ${formatDuration(item['value'])} 완료했어요!',
-                );
-
-                print('checkPermission: ${await NotificationService().checkPermission()}');
-                print('scheduledTime : $scheduledTime');
-
+                HapticFeedback.lightImpact();
+                final int target = item['value'] as int; // 초 단위
+                try {
+                  await timerProvider.startTimer(
+                    activityId: timerProvider.currentActivityId!,
+                    mode: 'PMDR',
+                    targetDuration: target,
+                  );
+                } catch (e) {
+                  Fluttertoast.showToast(
+                    msg: "타이머 시작 중 오류가 발생했습니다",
+                    gravity: ToastGravity.TOP,
+                    backgroundColor: Colors.redAccent.shade200,
+                    textColor: Colors.white,
+                    fontSize: context.md,
+                  );
+                  return;
+                }
+                // 페이지 전환 (TimerRunningPage는 그리기 전용)
+                if (!context.mounted) return;
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
-                    builder: (context) => TimerRunningPage(
-                      timerData: widget.timerData,
+                    builder: (_) => const TimerRunningPage(
                       isNewSession: true,
                     ),
                   ),

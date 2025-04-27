@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path/path.dart';
+import 'package:project1/utils/logger_config.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -787,6 +788,7 @@ class DatabaseService {
     required String endTime,
     required int duration,
   }) async {
+    logger.d('### dbService ### : endSession({$sessionId, $endTime, $duration})');
     final db = await database;
     final now = DateTime.now().toUtc();
 
