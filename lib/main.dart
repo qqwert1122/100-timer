@@ -3,64 +3,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:project1/firebase_options.dart';
+import 'package:project1/screens/activity_log_page.dart';
+import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/main_page.dart';
+import 'package:project1/screens/timer_page.dart';
+import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/theme/app_theme.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/notification_service.dart';
+import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/test_data_generator.dart';
 import 'package:project1/utils/timer_provider.dart';
+import 'package:project1/widgets/focus_mode.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:uuid/uuid.dart';
 
-Future<void> initializeAppSettings() async {
-  logger.d('@@@ main @@@ initializeAppSettings()');
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   // SharedPreferences 초기화 및 기본값 설정
-  final prefs = await SharedPreferences.getInstance();
+  await PrefsService().init();
 
   // wakelock
-  final keepScreenOn = prefs.getBool('keepScreenOn') ?? false;
-  WakelockPlus.toggle(enable: keepScreenOn);
-
-  // totalSeconds 초기화 (처음 실행 시에만)
-  if (!prefs.containsKey('totalSeconds')) {
-    await prefs.setInt('totalSeconds', 360000); // 100시간 (초 단위)
-  }
-
-  // 온보딩 상태 초기화 (처음 실행 시에만)
-  if (!prefs.containsKey('hasCompletedOnboarding')) {
-    await prefs.setBool('hasCompletedOnboarding', false);
-  }
-
-  // 화면 켜짐 유지 설정 초기화 (처음 실행 시에만)
-  if (!prefs.containsKey('keepScreenOn')) {
-    await prefs.setBool('keepScreenOn', false);
-  }
-
-  // 최초 1회 알림 권한 요청 여부
-  if (!prefs.containsKey('hasRequestedNotificationPermission')) {
-    await prefs.setBool('hasRequestedNotificationPermission', false);
-  }
-
-  // 알림 허용 여부
-  if (!prefs.containsKey('alarmFlag')) {
-    await prefs.setBool('alarmFlag', true);
-  }
+  WakelockPlus.toggle(enable: PrefsService().keepScreenOn);
 
   await initializeDateFormatting('ko_KR', null);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.android);
-}
-
-void main() async {
-  logger.d('@@@ main @@@ main()');
-  WidgetsFlutterBinding.ensureInitialized();
-  // 기본 설정, 날짜, firebase, wakeLock 초기화
-
-  await initializeAppSettings();
 
   // 광고 초기화
   MobileAds.instance.initialize();
@@ -111,7 +84,31 @@ void main() async {
           },
         ),
       ],
-      child: const MyApp(),
+      child: ShowCaseWidget(
+        onComplete: (_, key) {
+          if (key == TimerPage.playButtonKey) {
+            PrefsService().setOnboarding('timer', true);
+            NotificationService().requestPermissions();
+          }
+
+          if (key == ActivityPicker.listKey3) {
+            PrefsService().setOnboarding('activityPicker', true);
+          }
+
+          if (key == TimerRunningPage.lightOnKey) {
+            PrefsService().setOnboarding('timerRunning', true);
+          }
+
+          if (key == FocusMode.countKey) {
+            PrefsService().setOnboarding('focusMode', true);
+          }
+
+          if (key == ActivityLogPage.logKey) {
+            PrefsService().setOnboarding('history', true);
+          }
+        },
+        builder: (context) => const MyApp(),
+      ),
     ),
   );
   // 앱 설정 초기화 함수
@@ -127,13 +124,14 @@ class _MyAppState extends State<MyApp> {
   late Future<Map<String, dynamic>> _initializationFuture;
   late DatabaseService _dbService;
   late TimerProvider _timerProvider;
-  late SharedPreferences prefs;
 
   @override
   void initState() {
     super.initState();
-    _initializationFuture = _initializeProviders();
-    _initPrefs();
+    _initializationFuture = Future.any([
+      _initializeProviders(),
+      Future.delayed(const Duration(seconds: 8), () => throw 'init-timeout'),
+    ]);
   }
 
   Future<Map<String, dynamic>> _initializeProviders() async {
@@ -157,14 +155,9 @@ class _MyAppState extends State<MyApp> {
     return timerData;
   }
 
-  // SharedPreferences 초기화
-  Future<void> _initPrefs() async {
-    prefs = await SharedPreferences.getInstance();
-  }
-
   Future<void> _insertDefaultActivities() async {
-    logger.d('@@@ main @@@ _insertDefaultActivities()');
-    // 기본 활동 목록 (원하는 만큼 추가 가능)
+    logger.d('[main] insert Default Activities');
+
     final List<Map<String, dynamic>> defaultActivities = [
       {
         'activity_name': '전체',
@@ -209,21 +202,9 @@ class _MyAppState extends State<MyApp> {
         'is_default': false,
       },
       {
-        'activity_name': '러닝',
+        'activity_name': '코딩',
         'activity_icon': 'running',
         'activity_color': '#6A5ACD',
-        'is_default': false,
-      },
-      {
-        'activity_name': '휴식',
-        'activity_icon': 'house',
-        'activity_color': '#E59BE9',
-        'is_default': false,
-      },
-      {
-        'activity_name': '운전',
-        'activity_icon': 'automobile',
-        'activity_color': '#FFAAAA',
         'is_default': false,
       },
     ];
@@ -240,6 +221,8 @@ class _MyAppState extends State<MyApp> {
         );
       }
     }
+
+    await _timerProvider.setDefaultActivity();
   }
 
   Future<Map<String, dynamic>> _initializeApp() async {
@@ -268,7 +251,7 @@ class _MyAppState extends State<MyApp> {
     final now = DateTime.now();
     final weekStart = getWeekStart(now);
     final timerId = const Uuid().v4();
-    final userTotalSeconds = prefs.getInt('totalSeconds') ?? 360000; // 기본값: 100시간
+    final userTotalSeconds = PrefsService().totalSeconds;
 
     final timer = {
       'timer_id': timerId,
@@ -308,6 +291,10 @@ class _MyAppState extends State<MyApp> {
       home: FutureBuilder<Map<String, dynamic>>(
         future: _initializationFuture,
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            logger.e('App init failed: ${snapshot.error}');
+            return const MainPage();
+          }
           if (snapshot.connectionState == ConnectionState.waiting || !_timerProvider.isTimerProviderInit) {
             return const Scaffold(
               body: Center(

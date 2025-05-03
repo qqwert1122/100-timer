@@ -9,14 +9,18 @@ import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/widgets/edit_activity_log_modal.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class ActivityLogPage extends StatefulWidget {
   const ActivityLogPage({super.key});
+
+  static final GlobalKey logKey = GlobalKey(debugLabel: 'history');
 
   @override
   _ActivityLogPageState createState() => _ActivityLogPageState();
@@ -44,6 +48,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   // 메모리에 최대 유지할 주차 수 (예, 6주치 데이터)
   static const int _maxStoredWeeks = 6;
 
+  // Onboarding flag
+  bool _needShowOnboarding = false;
+
+  // Onboarding GlobalKey
+  final _logKey = ActivityLogPage.logKey;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +66,17 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
 
     _initializeLogs(isInitialLoad: true);
     _itemPositionsListener.itemPositions.addListener(_onScroll);
+
+    _needShowOnboarding = !PrefsService().getOnboarding('history');
+    if (_needShowOnboarding) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) {
+          ShowCaseWidget.of(context).startShowCase([
+            _logKey,
+          ]);
+        },
+      );
+    }
   }
 
   @override
@@ -405,7 +426,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     );
   }
 
-  Widget _buildDateGroup(String date, List<Map<String, dynamic>> logs) {
+  Widget _buildDateGroup(String date, List<Map<String, dynamic>> logs, {required bool isFirstGroup}) {
     final DateFormat formatter = DateFormat('yyyy-MM-dd');
     final DateTime dateTime = formatter.parse(date);
     final String dayOfWeek = _getDayOfWeek(date);
@@ -433,8 +454,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
-              children: logs.map((log) {
-                return Slidable(
+              children: logs.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final log = entry.value;
+
+                Widget tile = Slidable(
                   key: ValueKey(log['session_id']),
                   endActionPane: ActionPane(
                     motion: const ScrollMotion(),
@@ -548,6 +572,18 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                     ),
                   ),
                 );
+
+                if (isFirstGroup && idx == 0) {
+                  tile = Showcase(
+                    key: _logKey,
+                    description: '왼쪽으로 드래그해서 기록 수정/삭제',
+                    targetBorderRadius: BorderRadius.circular(8),
+                    overlayOpacity: 0.5,
+                    child: tile,
+                  );
+                }
+
+                return tile;
               }).toList(),
             ),
           ),
@@ -601,12 +637,6 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
           '활동 기록',
           style: AppTextStyles.getTitle(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _refreshLogs,
-          )
-        ],
         backgroundColor: AppColors.backgroundSecondary(context),
       ),
       body: Container(
@@ -640,7 +670,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                               final logGroup = groupedLogs[index];
                               final date = logGroup['date'] as String;
                               final logs = logGroup['logs'] as List<Map<String, dynamic>>;
-                              return _buildDateGroup(date, logs);
+                              final isFirstGroup = index == 0;
+                              return _buildDateGroup(date, logs, isFirstGroup: isFirstGroup);
                             },
                           ),
                         ),

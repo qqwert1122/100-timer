@@ -4,15 +4,19 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/utils/notification_service.dart';
+import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class FocusMode extends StatefulWidget {
   final Map<String, dynamic> timerData;
 
   const FocusMode({super.key, required this.timerData});
+
+  static final GlobalKey countKey = GlobalKey(debugLabel: 'focusMode');
 
   @override
   State<FocusMode> createState() => _FocusModeState();
@@ -20,7 +24,6 @@ class FocusMode extends StatefulWidget {
 
 class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
   late final StatsProvider _statsProvider;
-  late final TimerProvider _timerProvider;
 
   List<Map<String, dynamic>> pomodoroItems = [
     {
@@ -53,12 +56,33 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
     },
   ];
 
+  // Onboarding flag
+  bool _needShowOnboarding = false;
+
+  // Onboarding GlobalKey
+  final GlobalKey _valueKey = GlobalKey();
+  final _countKey = FocusMode.countKey;
+
   @override
   void initState() {
     super.initState();
     _statsProvider = Provider.of<StatsProvider>(context, listen: false);
-    _timerProvider = Provider.of<TimerProvider>(context, listen: false);
     _initPomodoroCounts();
+
+    _needShowOnboarding = !PrefsService().getOnboarding('focusMode');
+    if (_needShowOnboarding) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) {
+          Future.delayed(const Duration(milliseconds: 800), () {
+            if (!mounted) return; // 위젯이 살아 있을 때만
+            ShowCaseWidget.of(context).startShowCase([
+              _valueKey,
+              _countKey,
+            ]);
+          });
+        },
+      );
+    }
   }
 
   Future<void> _initPomodoroCounts() async {
@@ -130,6 +154,88 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
           itemBuilder: (context, index) {
             final item = pomodoroItems[index];
 
+            Widget card = Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: item['gradientColors'],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: context.paddingSM,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              item['title'],
+                              style: TextStyle(
+                                fontSize: context.lg * 2,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.white,
+                                fontFamily: 'chab',
+                              ),
+                            ),
+                            SizedBox(width: context.wp(1)),
+                            Text(
+                              index <= 1 ? '분' : '시간',
+                              style: TextStyle(
+                                fontSize: context.sm,
+                                fontWeight: FontWeight.w200,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        index == 0
+                            ? Showcase(
+                                key: _countKey,
+                                description: '해당 주차에 집중한 횟수를 표시해요',
+                                targetBorderRadius: BorderRadius.circular(16),
+                                targetPadding: context.paddingXS,
+                                targetShapeBorder: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                overlayOpacity: 0.5,
+                                child: buildCountIndicator(
+                                  item['maxCount'],
+                                  item['currentCount'],
+                                ),
+                              )
+                            : buildCountIndicator(
+                                item['maxCount'],
+                                item['currentCount'],
+                              ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+
+            if (index == 0) {
+              card = Showcase(
+                key: _valueKey,
+                description: '정해진 시간 동안 집중하는 모드에요',
+                overlayOpacity: 0.5,
+                targetBorderRadius: BorderRadius.circular(16),
+                child: card,
+              );
+            }
+
             return GestureDetector(
               onTap: () async {
                 HapticFeedback.lightImpact();
@@ -160,62 +266,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                   ),
                 );
               },
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: item['gradientColors'],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  children: [
-                    Padding(
-                      padding: context.paddingSM,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                item['title'],
-                                style: TextStyle(
-                                  fontSize: context.lg * 2,
-                                  fontWeight: FontWeight.w400,
-                                  color: Colors.white,
-                                  fontFamily: 'chab',
-                                ),
-                              ),
-                              SizedBox(width: context.wp(1)),
-                              Text(
-                                index <= 1 ? '분' : '시간',
-                                style: TextStyle(
-                                  fontSize: context.sm,
-                                  fontWeight: FontWeight.w200,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                          buildCountIndicator(
-                            item['maxCount'],
-                            item['currentCount'],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              child: card,
             );
           },
         ),

@@ -12,12 +12,14 @@ import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/music_player.dart';
 import 'package:project1/utils/notification_service.dart';
+import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 /// 타이머 실행 화면 위젯
 /// 사용자가 선택한 활동에 대한 타이머를 실행하고 시각적으로 표시함
@@ -30,6 +32,8 @@ class TimerRunningPage extends StatefulWidget {
     required this.isNewSession,
   });
 
+  static final GlobalKey lightOnKey = GlobalKey(debugLabel: 'timerRunning');
+
   @override
   State<TimerRunningPage> createState() => _TimerRunningPageState();
 }
@@ -39,9 +43,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   late final DatabaseService _dbService; // 데이터베이스 서비스
   late final TimerProvider timerProvider; // 타이머 상태 관리 Provider
   late final StatsProvider statsProvider; // 통계 관리 provider
-
-  // preference
-  late final SharedPreferences _prefs;
 
   // 배경음악 플레이어 객체
   final musicPlayer = MusicPlayer();
@@ -62,6 +63,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   // 설정 관련 변수
   bool _isMusicOn = false; // 음악 설정
   bool _isAlarmOn = false; // 알림 설정
+  bool _isLightOn = false; // wakelock 설정
 
   // 원형 프로그레스 및 파동 애니메이션션 관련
   List<Wave> waves = []; // 파동 애니메이션 객체 목록
@@ -72,6 +74,15 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   int currentMessageIndex = 0; // 현재 표시 중인 메시지 인덱스
   final List<String> messages = []; // 표시할 메시지 목록
   bool _hasShownCompletionDialog = false; // 완료 다이얼로그 표시 여부
+
+  // Onboarding flag
+  bool _needShowOnboarding = false;
+
+  // Onboarding GlobalKey
+  final GlobalKey _timeKey = GlobalKey();
+  final GlobalKey _musicKey = GlobalKey();
+  final GlobalKey _alarmkey = GlobalKey();
+  final _lightOnKey = TimerRunningPage.lightOnKey;
 
   @override
   void initState() {
@@ -102,7 +113,22 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     // _initTimer();
     _initMessageAnimation();
     _startMessageTimer();
-    _initAlarm();
+    _isAlarmOn = PrefsService().alarmFlag;
+    _isLightOn = PrefsService().keepScreenOn;
+
+    _needShowOnboarding = !PrefsService().getOnboarding('timerRunning');
+    if (_needShowOnboarding) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) {
+          ShowCaseWidget.of(context).startShowCase([
+            _timeKey,
+            _musicKey,
+            _alarmkey,
+            _lightOnKey,
+          ]);
+        },
+      );
+    }
   }
 
   @override
@@ -118,11 +144,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     _disposeAnimations();
 
     super.dispose();
-  }
-
-  Future<void> _initAlarm() async {
-    _prefs = await SharedPreferences.getInstance();
-    _isAlarmOn = _prefs.getBool('alarmFlag') ?? false;
   }
 
   void _handleTimerStateChange() {
@@ -431,7 +452,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
     // 권한 확인 완료 또는 알림 끄기
     setState(() => _isAlarmOn = turnOn);
-    await _prefs.setBool('alarmFlag', _isAlarmOn);
+    PrefsService().alarmFlag = turnOn;
     if (timerProvider.currentState == 'RUNNING' &&
         timerProvider.currentSessionMode == 'PMDR' &&
         timerProvider.currentSessionTargetDuration != null) {
@@ -453,6 +474,24 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     }
     Fluttertoast.showToast(
       msg: _isAlarmOn ? "알림이 설정되었습니다" : "알림이 해제되었습니다",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.TOP,
+      backgroundColor: Colors.redAccent.shade200,
+      textColor: Colors.white,
+      fontSize: context.md,
+    );
+    HapticFeedback.lightImpact();
+  }
+
+  void _toggleLightOn() async {
+    final bool turnOn = !_isLightOn;
+
+    setState(() => _isLightOn = turnOn);
+    PrefsService().keepScreenOn = turnOn;
+    WakelockPlus.toggle(enable: turnOn);
+
+    Fluttertoast.showToast(
+      msg: _isLightOn ? "화면이 항상 켜집니다" : "시간이 지나면 화면이 꺼집니다",
       toastLength: Toast.LENGTH_SHORT,
       gravity: ToastGravity.TOP,
       backgroundColor: Colors.redAccent.shade200,
@@ -675,13 +714,19 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                   children: [
                     _buildProgressCircleWithConsumer(),
                     const SizedBox(height: 80),
-                    _buildTimeDisplayWithConsumer(),
+                    Showcase(
+                        key: _timeKey,
+                        description: '활동 중인 시간이나 잔여 시간 표시',
+                        targetBorderRadius: BorderRadius.circular(16),
+                        targetPadding: context.paddingXS,
+                        overlayOpacity: 0.5,
+                        child: _buildTimeDisplayWithConsumer()),
                     const SizedBox(height: 10),
                     _buildActivityMessageWithConsumer(),
                   ],
                 ),
               ),
-              _buildPauseButton(), // 휴식 버튼
+              _buildPauseButton(),
               _buildStopButton(),
             ],
           ),
@@ -729,16 +774,52 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
               ),
               Row(
                 children: [
-                  Shimmer.fromColors(
-                    baseColor: _isMusicOn ? Colors.redAccent : AppColors.textPrimary(context),
-                    highlightColor: _isMusicOn ? Colors.yellowAccent : AppColors.textPrimary(context),
+                  Showcase(
+                    key: _musicKey,
+                    description: '배경음악을 틀어보세요',
+                    targetBorderRadius: BorderRadius.circular(16),
+                    overlayOpacity: 0.5,
+                    child: Shimmer.fromColors(
+                      baseColor: _isMusicOn ? Colors.redAccent : AppColors.textPrimary(context),
+                      highlightColor: _isMusicOn ? Colors.yellowAccent : AppColors.textPrimary(context),
+                      child: IconButton(
+                        onPressed: () {
+                          _showMusicBottomSheet();
+                          HapticFeedback.lightImpact();
+                        },
+                        icon: Image.asset(
+                          getIconImage('music'),
+                          width: context.xl,
+                          height: context.xl,
+                          errorBuilder: (context, error, stackTrace) {
+                            // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                            return Container(
+                              width: context.xl,
+                              height: context.xl,
+                              color: Colors.grey.withOpacity(0.2),
+                              child: Icon(
+                                Icons.broken_image,
+                                size: context.xl,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: context.wp(2)),
+                  Showcase(
+                    key: _alarmkey,
+                    description: '집중모드가 끝난 뒤 푸시알림 켜고 끄세요',
+                    targetBorderRadius: BorderRadius.circular(16),
+                    overlayOpacity: 0.5,
                     child: IconButton(
                       onPressed: () {
-                        _showMusicBottomSheet();
-                        HapticFeedback.lightImpact();
+                        _toggleAlarm();
                       },
                       icon: Image.asset(
-                        getIconImage('music'),
+                        getIconImage(_isAlarmOn ? 'bell' : 'bell_muted'),
                         width: context.xl,
                         height: context.xl,
                         errorBuilder: (context, error, stackTrace) {
@@ -757,28 +838,35 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                       ),
                     ),
                   ),
-                  SizedBox(width: context.wp(5)),
-                  IconButton(
-                    onPressed: () {
-                      _toggleAlarm();
-                    },
-                    icon: Image.asset(
-                      getIconImage(_isAlarmOn ? 'bell' : 'bell_muted'),
-                      width: context.xl,
-                      height: context.xl,
-                      errorBuilder: (context, error, stackTrace) {
-                        // 이미지를 로드하는 데 실패한 경우의 대체 표시
-                        return Container(
-                          width: context.xl,
-                          height: context.xl,
-                          color: Colors.grey.withOpacity(0.2),
-                          child: Icon(
-                            Icons.broken_image,
-                            size: context.xl,
-                            color: Colors.grey,
-                          ),
-                        );
+                  SizedBox(width: context.wp(2)),
+                  Showcase(
+                    key: _lightOnKey,
+                    description: '화면을 항상 켜보세요',
+                    targetBorderRadius: BorderRadius.circular(16),
+                    overlayOpacity: 0.5,
+                    child: IconButton(
+                      onPressed: () {
+                        _toggleLightOn();
                       },
+                      icon: Image.asset(
+                        getIconImage('bulb'),
+                        width: context.xl,
+                        height: context.xl,
+                        color: _isLightOn ? null : AppColors.textPrimary(context),
+                        errorBuilder: (context, error, stackTrace) {
+                          // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                          return Container(
+                            width: context.xl,
+                            height: context.xl,
+                            color: Colors.grey.withOpacity(0.2),
+                            child: Icon(
+                              Icons.broken_image,
+                              size: context.xl,
+                              color: Colors.grey,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ],

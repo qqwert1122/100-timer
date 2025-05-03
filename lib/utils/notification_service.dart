@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:project1/utils/logger_config.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:project1/utils/prefs_service.dart';
 
 class NotificationService {
   // 싱글톤 패턴 적용
@@ -13,7 +12,6 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  late final SharedPreferences _prefs;
   bool _isInitialized = false;
   final Completer<void> _readyCompleter = Completer<void>();
   Future<void> get ready => _readyCompleter.future;
@@ -25,12 +23,12 @@ class NotificationService {
 
   // 알림 초기화
   Future<void> initialize() async {
+    logger.d('[NotificationService] Notification init');
     if (_readyCompleter.isCompleted) return; // 이미 완료
     if (_isInitialized) return; // 초기화 진행 중
     _isInitialized = true;
 
-    _prefs = await SharedPreferences.getInstance(); // sharedPreference 초기화
-    await _prefs.reload(); // 초기화 순서 충돌 방지를 위한 disk 동기화
+    await PrefsService().reload(); // 초기화 순서 충돌 방지를 위한 disk 동기화
 
     await AwesomeNotifications().initialize(
       null, // 앱 아이콘 (null = 앱 아이콘 사용)
@@ -52,11 +50,9 @@ class NotificationService {
       debug: true,
     );
 
-    final hasRequested = _prefs.getBool('hasRequestedNotificationPermission') ?? false;
-
-    if (!hasRequested) {
-      requestPermissions();
-      await _prefs.setBool('hasRequestedNotificationPermission', true);
+    if (PrefsService().hasRequestedNotificationPermission) {
+      await requestPermissions();
+      PrefsService().hasRequestedNotificationPermission = true;
     }
 
     _readyCompleter.complete();
@@ -81,7 +77,7 @@ class NotificationService {
       ],
     );
 
-    await _prefs.setBool('alarmFlag', granted);
+    PrefsService().alarmFlag = granted;
     return granted;
   }
 

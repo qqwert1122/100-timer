@@ -1,8 +1,8 @@
-import 'dart:ffi';
-
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,16 +10,18 @@ import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/responsive_size.dart';
 
-class GoalFeatureIntroPage extends StatelessWidget {
-  final String interestFormUrl;
+class GoalFeatureIntroPage extends StatefulWidget {
+  const GoalFeatureIntroPage({
+    super.key,
+  });
 
-  GoalFeatureIntroPage({
-    Key? key,
-    this.interestFormUrl = 'https://your-google-form-url.com',
-  }) : super(key: key);
+  @override
+  State<GoalFeatureIntroPage> createState() => _GoalFeatureIntroPageState();
+}
 
+class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
   void _launchURL() async {
-    final uri = Uri.parse(interestFormUrl);
+    final uri = Uri.parse('https://forms.gle/wu5majckKn2er9NX7');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -29,57 +31,47 @@ class GoalFeatureIntroPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
 
-    Widget _samPleBadge({
-      required Color backgroundColor,
-      required String label,
-      required Color textColor,
-    }) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: textColor,
-            fontSize: context.sm,
-          ),
-        ),
-      );
-    }
+    final List<Map<String, dynamic>> goalSamples = [
+      {
+        'title': '어플리케이션 출시',
+        'color': '#F67280',
+        'icon': 'laptop',
+      },
+      {
+        'title': '바디프로필 촬영',
+        'color': '#C06C84',
+        'icon': 'fitness',
+      },
+      {
+        'title': '영어점수 100점',
+        'color': '#6C5B7B',
+        'icon': 'hundred',
+      },
+      {
+        'title': '책 12권 읽기',
+        'color': '#355C7D',
+        'icon': 'openbook',
+      },
+    ];
 
-    Widget _samPleCalendarBadge({
-      required String label,
-    }) {
+    Widget _buildIntroLine(BuildContext context, String text) {
       return Row(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.background(context),
-              borderRadius: BorderRadius.circular(8.0),
-            ),
-            child: Row(
-              children: [
-                SizedBox(width: context.wp(1)),
-                Icon(
-                  LucideIcons.calendarDays,
-                  size: context.sm,
-                ),
-                _samPleBadge(
-                  backgroundColor: AppColors.background(context),
-                  label: label,
-                  textColor: AppColors.textPrimary(context),
-                ),
-              ],
-            ),
+          Icon(
+            LucideIcons.check,
+            size: context.md,
+            color: AppColors.textPrimary(context),
           ),
-          SizedBox(width: context.wp(0.5)),
-          Text(
-            '까지',
-            style: TextStyle(fontSize: context.sm),
+          SizedBox(width: context.wp(2)),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTextStyles.getBody(context).copyWith(
+                color: AppColors.textPrimary(context),
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ),
         ],
       );
@@ -138,19 +130,19 @@ class GoalFeatureIntroPage extends StatelessWidget {
       );
     }
 
-    Widget _sampleGoalCard1() {
+    Widget fitnessCard() {
       return Container(
-        padding: context.paddingSM,
         width: double.infinity,
+        padding: context.paddingSM,
         decoration: BoxDecoration(
           color: AppColors.background(context),
+          borderRadius: BorderRadius.circular(16.0),
           boxShadow: [
             BoxShadow(
-              color: AppColors.backgroundTertiary(context),
-              spreadRadius: 2,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            )
+              color: AppColors.textPrimary(context).withOpacity(0.08), // 그림자 색상
+              blurRadius: 10, // 그림자 흐림 정도
+              offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
+            ),
           ],
         ),
         child: Column(
@@ -158,172 +150,100 @@ class GoalFeatureIntroPage extends StatelessWidget {
           children: [
             Row(
               children: [
-                Image.asset(
-                  getIconImage('fitness'),
-                  width: context.xxl,
-                  height: context.xxl,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: context.xl,
-                      height: context.xl,
-                      color: Colors.grey.withOpacity(0.2),
-                      child: Icon(
-                        Icons.broken_image,
-                        size: context.xl,
-                        color: Colors.grey,
-                      ),
-                    );
-                  },
-                ),
-                SizedBox(width: context.wp(2)),
-                Text(
-                  '바디프로필 찍기',
-                  style: AppTextStyles.getTitle(context).copyWith(
-                    fontFamily: 'Neo',
-                  ),
-                ),
-              ],
-            ),
-            Divider(color: AppColors.backgroundSecondary(context)),
-            SizedBox(height: context.hp(1)),
-            Text(
-              '  목표 카드',
-              style: AppTextStyles.getBody(context).copyWith(
-                fontFamily: 'Neo',
-              ),
-            ),
-            SizedBox(height: context.hp(1)),
-            Container(
-              width: double.infinity,
-              padding: context.paddingSM,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    isDarkMode ? Colors.indigo : Colors.indigo.shade50,
-                    isDarkMode ? Colors.blueAccent : Colors.blue.shade100,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16.0),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.backgroundTertiary(context),
-                    blurRadius: 8,
-                    offset: const Offset(2, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Image.asset(
-                        getIconImage('running'),
+                Container(
+                  width: context.xxxl,
+                  height: context.xxxl,
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(50.0)),
+                  child: Image.asset(
+                    getIconImage('fitness'),
+                    width: context.xl,
+                    height: context.xl,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
                         width: context.xl,
                         height: context.xl,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: context.xl,
-                            height: context.xl,
-                            color: Colors.grey.withOpacity(0.2),
-                            child: Icon(Icons.broken_image, size: context.xl, color: Colors.grey),
-                          );
-                        },
-                      ),
-                      SizedBox(width: context.wp(2)),
-                      Text(
-                        '러닝',
-                        style: AppTextStyles.getBody(context).copyWith(
-                          fontFamily: 'Neo',
-                        ),
-                      ),
-                    ],
+                        color: Colors.grey.withOpacity(0.2),
+                        child: Icon(Icons.broken_image, size: context.xl, color: Colors.grey),
+                      );
+                    },
                   ),
-                  const Divider(color: Colors.white),
-                  SizedBox(height: context.hp(1)),
-                  Wrap(
-                    alignment: WrapAlignment.start,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: context.wp(2),
-                    runSpacing: context.hp(1),
-                    children: [
-                      _samPleCalendarBadge(label: '2025-12-31'),
-                      _samPleBadge(
-                        backgroundColor: AppColors.background(context),
-                        label: '매일',
-                        textColor: AppColors.textPrimary(context),
-                      ),
-                      _samPleBadge(
-                        backgroundColor: Colors.blueAccent,
-                        label: '러닝',
-                        textColor: Colors.white,
-                      ),
-                      _samPleBadge(
-                        backgroundColor: Colors.indigo,
-                        label: '30분',
-                        textColor: Colors.white,
-                      ),
-                      Text(
-                        '하기',
-                        style: TextStyle(
-                          fontSize: context.sm,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: context.hp(1)),
-                  Wrap(
-                    alignment: WrapAlignment.start,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: context.wp(2),
-                    runSpacing: context.hp(1),
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                        decoration: BoxDecoration(
-                          color: Colors.green[50],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '성공 조건 | 90% 이상',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: context.sm,
-                            color: Colors.green[700],
+                ),
+                SizedBox(width: context.wp(2)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          '활동 | ',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
+                        Text(
+                          '피트니스',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            fontFamily: 'neo',
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(
-                              LucideIcons.alarmClock,
-                              size: context.md,
-                            ),
-                            SizedBox(width: context.wp(1)),
-                            Text(
-                              '매일 06:00',
-                              style: TextStyle(
-                                fontSize: context.sm,
-                              ),
-                            ),
-                          ],
+                      ],
+                    ),
+                    Wrap(
+                      alignment: WrapAlignment.start,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: context.wp(1),
+                      runSpacing: context.hp(1),
+                      children: [
+                        Text(
+                          '3개월',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.0,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                        Text(
+                          '동안',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.0,
+                          ),
+                        ),
+                        Text(
+                          '매주',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.0,
+                          ),
+                        ),
+                        Text(
+                          '피트니스',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.0,
+                          ),
+                        ),
+                        Text(
+                          '3회',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.0,
+                          ),
+                        ),
+                        Text(
+                          '하기',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ),
             SizedBox(height: context.hp(2)),
             Padding(
@@ -351,7 +271,244 @@ class GoalFeatureIntroPage extends StatelessWidget {
                       ),
                       SizedBox(width: context.wp(1)),
                       Text(
-                        '17',
+                        '7',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: context.sm,
+                          color: Colors.blueAccent,
+                        ),
+                      ),
+                      Text(
+                        '/15회',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: context.sm,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '|',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: context.sm,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(
+                        LucideIcons.lineChart,
+                        size: context.md,
+                        color: Colors.grey,
+                      ),
+                      SizedBox(width: context.wp(1)),
+                      Text(
+                        '47% 달성',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: context.sm,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: context.hp(1)),
+            Padding(
+              padding: context.paddingHorizXS,
+              child: Wrap(
+                alignment: WrapAlignment.start,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: context.wp(2),
+                runSpacing: context.hp(1),
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(
+                        LucideIcons.timer,
+                        size: context.md,
+                        color: Colors.grey,
+                      ),
+                      SizedBox(width: context.wp(1)),
+                      Text(
+                        '누적 활동 시간   11h 32m',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: context.sm,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget runningCard() {
+      return Container(
+        width: double.infinity,
+        padding: context.paddingSM,
+        decoration: BoxDecoration(
+          color: AppColors.background(context),
+          borderRadius: BorderRadius.circular(16.0),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.textPrimary(context).withOpacity(0.08), // 그림자 색상
+              blurRadius: 10, // 그림자 흐림 정도
+              offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: context.xxxl,
+                  height: context.xxxl,
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(50.0)),
+                  child: Image.asset(
+                    getIconImage('running'),
+                    width: context.xl,
+                    height: context.xl,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: context.xl,
+                        height: context.xl,
+                        color: Colors.grey.withOpacity(0.2),
+                        child: Icon(Icons.broken_image, size: context.xl, color: Colors.grey),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(width: context.wp(2)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          '활동 | ',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            color: AppColors.textSecondary(context),
+                          ),
+                        ),
+                        Text(
+                          '러닝',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            fontFamily: 'neo',
+                          ),
+                        ),
+                      ],
+                    ),
+                    Wrap(
+                      alignment: WrapAlignment.start,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: context.wp(1),
+                      runSpacing: context.hp(1),
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              LucideIcons.calendarDays,
+                              size: context.sm,
+                            ),
+                            SizedBox(width: context.wp(1)),
+                            Text(
+                              '2025-12-31',
+                              style: AppTextStyles.getBody(context).copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '까지',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.0,
+                          ),
+                        ),
+                        Text(
+                          '매일',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.0,
+                          ),
+                        ),
+                        Text(
+                          '러닝',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.0,
+                          ),
+                        ),
+                        Text(
+                          '30분',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.0,
+                          ),
+                        ),
+                        Text(
+                          '하기',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: context.hp(2)),
+            Padding(
+              padding: context.paddingHorizXS,
+              child: dayStatus([1, 1, 1, 1, 1, 1, 0, 0, 0, 0], context),
+            ),
+            SizedBox(height: context.hp(1)),
+            Padding(
+              padding: context.paddingHorizXS,
+              child: Wrap(
+                alignment: WrapAlignment.start,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: context.wp(2),
+                runSpacing: context.hp(1),
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(
+                        LucideIcons.checkCircle2,
+                        size: context.md,
+                        color: Colors.blueAccent,
+                      ),
+                      SizedBox(width: context.wp(1)),
+                      Text(
+                        '6',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: context.sm,
@@ -388,7 +545,7 @@ class GoalFeatureIntroPage extends StatelessWidget {
                       ),
                       SizedBox(width: context.wp(1)),
                       Text(
-                        '7% 달성',
+                        '2% 달성',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: context.sm,
@@ -421,248 +578,11 @@ class GoalFeatureIntroPage extends StatelessWidget {
                       ),
                       SizedBox(width: context.wp(1)),
                       Text(
-                        '누적 활동 시간   9h 32m',
+                        '누적 활동 시간   3h 11m',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: context.sm,
                           color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: context.hp(4)),
-            Container(
-              width: double.infinity,
-              padding: context.paddingSM,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    isDarkMode ? Colors.pink : Colors.pinkAccent.shade100,
-                    isDarkMode ? Colors.amberAccent : Colors.amber.shade200,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16.0),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.backgroundTertiary(context),
-                    blurRadius: 8,
-                    offset: const Offset(2, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Image.asset(
-                        getIconImage('fitness'),
-                        width: context.xl,
-                        height: context.xl,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: context.xl,
-                            height: context.xl,
-                            color: Colors.grey.withOpacity(0.2),
-                            child: Icon(Icons.broken_image, size: context.xl, color: Colors.grey),
-                          );
-                        },
-                      ),
-                      SizedBox(width: context.wp(2)),
-                      Text(
-                        '피트니스',
-                        style: AppTextStyles.getBody(context).copyWith(
-                          fontFamily: 'Neo',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(color: Colors.white),
-                  SizedBox(height: context.hp(1)),
-                  Wrap(
-                    alignment: WrapAlignment.start,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: context.wp(2),
-                    runSpacing: context.hp(1),
-                    children: [
-                      _samPleCalendarBadge(label: '3개월'),
-                      _samPleBadge(
-                        backgroundColor: AppColors.background(context),
-                        label: '매주',
-                        textColor: AppColors.textPrimary(context),
-                      ),
-                      _samPleBadge(
-                        backgroundColor: Colors.yellow,
-                        label: '피트니스',
-                        textColor: Colors.black,
-                      ),
-                      _samPleBadge(
-                        backgroundColor: Colors.indigo,
-                        label: '3회',
-                        textColor: Colors.white,
-                      ),
-                      Text(
-                        '하기',
-                        style: TextStyle(
-                          fontSize: context.sm,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: context.hp(1)),
-                  Wrap(
-                    alignment: WrapAlignment.start,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: context.wp(2),
-                    runSpacing: context.hp(1),
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                        decoration: BoxDecoration(
-                          color: Colors.green[50],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '성공 조건 | 90% 이상',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: context.sm,
-                            color: Colors.green[700],
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(
-                              LucideIcons.alarmClock,
-                              size: context.md,
-                            ),
-                            SizedBox(width: context.wp(1)),
-                            Text(
-                              '월,수,금 09:00',
-                              style: TextStyle(
-                                fontSize: context.sm,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: context.hp(2)),
-            Padding(
-              padding: context.paddingHorizXS,
-              child: dayStatus([1, 1, 0, 0, 0, 0, 0, 0, 0, 0], context),
-            ),
-            SizedBox(height: context.hp(1)),
-            Padding(
-              padding: context.paddingHorizXS,
-              child: Wrap(
-                alignment: WrapAlignment.start,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: context.wp(2),
-                runSpacing: context.hp(1),
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        LucideIcons.checkCircle2,
-                        size: context.md,
-                        color: Colors.blueAccent,
-                      ),
-                      SizedBox(width: context.wp(1)),
-                      Text(
-                        '2',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: Colors.blueAccent,
-                        ),
-                      ),
-                      Text(
-                        '/12회',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: Colors.grey.shade400,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '|',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: context.sm,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        LucideIcons.lineChart,
-                        size: context.md,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(width: context.wp(1)),
-                      Text(
-                        '16% 달성',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '|',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: context.sm,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        LucideIcons.trendingUp,
-                        size: context.lg,
-                        color: AppColors.primary(context),
-                      ),
-                      SizedBox(width: context.wp(1)),
-                      Text(
-                        '2주 연속 달성!',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: AppColors.primary(context),
                         ),
                       ),
                     ],
@@ -675,28 +595,44 @@ class GoalFeatureIntroPage extends StatelessWidget {
       );
     }
 
-    Widget _sampleGoalCard2() {
+    Widget goalCard() {
       return Container(
-        padding: context.paddingSM,
+        padding: context.paddingHorizSM,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: AppColors.background(context),
+          color: AppColors.backgroundSecondary(context),
+          borderRadius: BorderRadius.circular(16.0), // 둥근 모서리
           boxShadow: [
             BoxShadow(
-              color: AppColors.backgroundTertiary(context),
-              spreadRadius: 2,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            )
+              color: AppColors.textPrimary(context).withOpacity(0.08), // 그림자 색상
+              blurRadius: 10, // 그림자 흐림 정도
+              offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
+            ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            SizedBox(height: context.hp(1)),
             Row(
               children: [
+                Text(
+                  '목표 |',
+                  style: AppTextStyles.getBody(context).copyWith(
+                    fontFamily: 'Neo',
+                    color: AppColors.textSecondary(context),
+                  ),
+                ),
+                SizedBox(width: context.wp(2)),
+                Text(
+                  '바디프로필 찍기',
+                  style: AppTextStyles.getBody(context).copyWith(
+                    fontFamily: 'Neo',
+                  ),
+                ),
+                SizedBox(width: context.wp(2)),
                 Image.asset(
-                  getIconImage('hundred'),
+                  getIconImage('fitness'),
                   width: context.xxl,
                   height: context.xxl,
                   errorBuilder: (context, error, stackTrace) {
@@ -712,258 +648,158 @@ class GoalFeatureIntroPage extends StatelessWidget {
                     );
                   },
                 ),
-                SizedBox(width: context.wp(2)),
-                Text(
-                  '영어점수 100점 맞기',
-                  style: AppTextStyles.getTitle(context).copyWith(
-                    fontFamily: 'Neo',
+              ],
+            ),
+            Divider(color: AppColors.backgroundTertiary(context)),
+            SizedBox(height: context.hp(1)),
+            fitnessCard(),
+            SizedBox(height: context.hp(4)),
+            runningCard(),
+            SizedBox(height: context.hp(2)),
+          ],
+        ),
+      );
+    }
+
+    Widget goalChart() {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.symmetric(horizontal: 16.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16.0), // 둥근 모서리
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.textPrimary(context).withOpacity(0.08), // 그림자 색상
+              blurRadius: 10, // 그림자 흐림 정도
+              offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '달성률',
+              style: AppTextStyles.getBody(context).copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: context.hp(1)),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // 배경 막대
+                Container(
+                  height: 10,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                Container(
+                  height: 10,
+                  width: MediaQuery.of(context).size.width * 0.9 * 0.47,
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                Positioned(
+                  left: (MediaQuery.of(context).size.width * 0.9 * 0.47) - 25,
+                  bottom: 15,
+                  child: Container(
+                    padding: context.paddingXS,
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Text(
+                      ' 7 / 15 ',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-            Divider(color: AppColors.backgroundSecondary(context)),
-            SizedBox(height: context.hp(1)),
+            SizedBox(height: context.hp(4)),
             Text(
-              '  목표 카드',
+              '연속 달성',
               style: AppTextStyles.getBody(context).copyWith(
-                fontFamily: 'Neo',
+                fontWeight: FontWeight.w600,
               ),
             ),
             SizedBox(height: context.hp(1)),
-            Container(
-              width: double.infinity,
-              padding: context.paddingSM,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    isDarkMode ? Colors.purple : Colors.purple.shade50,
-                    isDarkMode ? Colors.blueAccent : Colors.blue.shade100,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+            dayStatus([1, -1, 1, 1, 1, -1, -1, 1, 1, 1, 0, 0], context),
+            SizedBox(height: context.hp(4)),
+            Text(
+              '누적 활동 시간',
+              style: AppTextStyles.getBody(context).copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: context.hp(1)),
+            Row(
+              children: [
+                Text(
+                  '61h',
+                  style: AppTextStyles.getTimeDisplay(context).copyWith(
+                    fontFamily: 'chab',
+                    color: Colors.redAccent,
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(16.0),
-                boxShadow: [
-                  BoxShadow(
+                Text(
+                  ' | 100h',
+                  style: AppTextStyles.getTimeDisplay(context).copyWith(
+                    fontFamily: 'chab',
                     color: AppColors.backgroundTertiary(context),
-                    blurRadius: 8,
-                    offset: const Offset(2, 4),
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Image.asset(
-                        getIconImage('writing'),
-                        width: context.xl,
-                        height: context.xl,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: context.xl,
-                            height: context.xl,
-                            color: Colors.grey.withOpacity(0.2),
-                            child: Icon(Icons.broken_image, size: context.xl, color: Colors.grey),
-                          );
-                        },
-                      ),
-                      SizedBox(width: context.wp(2)),
-                      Text(
-                        '영단어 50개 암기',
-                        style: AppTextStyles.getBody(context).copyWith(
-                          fontFamily: 'Neo',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(color: Colors.white),
-                  SizedBox(height: context.hp(1)),
-                  Wrap(
-                    alignment: WrapAlignment.start,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: context.wp(2),
-                    runSpacing: context.hp(1),
-                    children: [
-                      _samPleCalendarBadge(label: '6월'),
-                      _samPleBadge(
-                        backgroundColor: AppColors.background(context),
-                        label: '매주',
-                        textColor: AppColors.textPrimary(context),
-                      ),
-                      _samPleBadge(
-                        backgroundColor: Colors.deepPurple,
-                        label: '영단어 50개 암기',
-                        textColor: Colors.white,
-                      ),
-                      _samPleBadge(
-                        backgroundColor: Colors.indigo,
-                        label: '2회',
-                        textColor: Colors.white,
-                      ),
-                      Text(
-                        '하기',
-                        style: TextStyle(
-                          fontSize: context.sm,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: context.hp(1)),
-                  Wrap(
-                    alignment: WrapAlignment.start,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: context.wp(2),
-                    runSpacing: context.hp(1),
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                        decoration: BoxDecoration(
-                          color: Colors.green[50],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '성공 조건 | 90% 이상',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: context.sm,
-                            color: Colors.green[700],
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(
-                              LucideIcons.alarmClock,
-                              size: context.md,
-                            ),
-                            SizedBox(width: context.wp(1)),
-                            Text(
-                              '화,목 14:00',
-                              style: TextStyle(
-                                fontSize: context.sm,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            SizedBox(height: context.hp(2)),
-            Padding(
-              padding: context.paddingHorizXS,
-              child: dayStatus([1, 1, 0, 0, 0, 0, 0, 0, 0, 0], context),
-            ),
-            SizedBox(height: context.hp(1)),
-            Padding(
-              padding: context.paddingHorizXS,
-              child: Wrap(
-                alignment: WrapAlignment.start,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: context.wp(2),
-                runSpacing: context.hp(1),
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        LucideIcons.checkCircle2,
-                        size: context.md,
-                        color: Colors.blueAccent,
+            SizedBox(
+              height: 30,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(show: false),
+                  titlesData: FlTitlesData(show: false),
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: [
+                        const FlSpot(0, 0), // 시작점
+                        const FlSpot(1, 10),
+                        const FlSpot(2, 25),
+                        const FlSpot(3, 20),
+                        const FlSpot(4, 30),
+                        const FlSpot(5, 40),
+                        const FlSpot(6, 35),
+                        const FlSpot(7, 45),
+                        const FlSpot(8, 60),
+                        const FlSpot(9, 65),
+                        const FlSpot(10, 70),
+                      ],
+                      isCurved: true,
+                      color: Colors.redAccent,
+                      barWidth: 2,
+                      isStrokeCapRound: true,
+                      dotData: const FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: Colors.redAccent.withOpacity(0.2),
                       ),
-                      SizedBox(width: context.wp(1)),
-                      Text(
-                        '2',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: Colors.blueAccent,
-                        ),
-                      ),
-                      Text(
-                        '/8회',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: Colors.grey.shade400,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '|',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: context.sm,
-                      color: Colors.grey,
                     ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        LucideIcons.lineChart,
-                        size: context.md,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(width: context.wp(1)),
-                      Text(
-                        '25% 달성',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '|',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: context.sm,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        LucideIcons.trendingUp,
-                        size: context.md,
-                        color: AppColors.primary(context),
-                      ),
-                      SizedBox(width: context.wp(1)),
-                      Text(
-                        '2주 연속 달성!',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: AppColors.primary(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                  minX: 0,
+                  maxX: 10,
+                  minY: 0,
+                  maxY: 100,
+                ),
               ),
             ),
           ],
@@ -971,58 +807,322 @@ class GoalFeatureIntroPage extends StatelessWidget {
       );
     }
 
+    Widget _buildDayWithReminder(BuildContext context, String day, bool isActive, Color? color) {
+      return Column(
+        children: [
+          // 요일 텍스트
+          Text(
+            day,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: isActive ? AppColors.textPrimary(context) : Colors.grey,
+            ),
+          ),
+          SizedBox(height: context.hp(1)),
+          // 알림 원형 아이콘
+          Container(
+            width: context.xl,
+            height: context.xl,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isActive ? color : Colors.transparent,
+              border: isActive
+                  ? null
+                  : Border.all(
+                      color: Colors.grey.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+            ),
+            child: isActive
+                ? Icon(
+                    LucideIcons.bell,
+                    size: context.sm,
+                    color: Colors.white,
+                  )
+                : null,
+          ),
+        ],
+      );
+    }
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
           child: Container(
-            decoration: BoxDecoration(color: AppColors.backgroundSecondary(context)),
+            decoration: BoxDecoration(color: AppColors.background(context)),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(height: context.hp(8)),
+                SizedBox(height: context.hp(4)),
                 // 제목
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '목표 기능을 준비중이에요',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.getHeadline(context).copyWith(
-                        color: AppColors.primary(context),
-                        fontFamily: 'Neo',
-                      ),
-                    ),
-                    SizedBox(width: context.wp(1)),
-                    Shimmer.fromColors(
-                      baseColor: Colors.orangeAccent,
-                      highlightColor: Colors.white,
-                      direction: ShimmerDirection.ltr,
-                      child: Image.asset(
-                        getIconImage('sparkles'),
-                        width: context.xxl,
-                        height: context.xxl,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: context.xl,
-                            height: context.xl,
-                            color: Colors.grey.withOpacity(0.2),
-                            child: Icon(
-                              Icons.broken_image,
-                              size: context.xl,
-                              color: Colors.grey,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: context.hp(2)),
-                Container(
-                  margin: context.paddingHorizSM,
-                  padding: context.paddingHorizSM,
+                Padding(
+                  padding: context.paddingSM,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '신규 기능 추가',
+                        style: TextStyle(color: Colors.blue, fontSize: 14.0),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Text(
+                            '목표 기능을\n준비 중이에요',
+                            style: AppTextStyles.getHeadline(context).copyWith(),
+                          ),
+                          SizedBox(width: context.wp(2)),
+                          Shimmer.fromColors(
+                            baseColor: Colors.orangeAccent,
+                            highlightColor: Colors.white,
+                            direction: ShimmerDirection.ltr,
+                            child: Image.asset(
+                              getIconImage('sparkles'),
+                              width: context.xxl,
+                              height: context.xxl,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: context.xl,
+                                  height: context.xl,
+                                  color: Colors.grey.withOpacity(0.2),
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    size: context.xl,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: context.hp(3)),
+                Shimmer.fromColors(
+                  baseColor: Colors.grey.shade400,
+                  highlightColor: AppColors.background(context),
+                  child: Text(
+                    '목표를 정하세요',
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: context.md,
+                    ),
+                  ),
+                ),
+                SizedBox(height: context.hp(1)),
+                CarouselSlider.builder(
+                  itemCount: goalSamples.length,
+                  options: CarouselOptions(
+                    height: 150,
+                    enableInfiniteScroll: true,
+                    viewportFraction: 0.5,
+                    enlargeCenterPage: false,
+                    autoPlay: true,
+                  ),
+                  itemBuilder: (BuildContext context, int index, int realIndex) {
+                    final goal = goalSamples[index];
+
+                    return Container(
+                      padding: context.paddingXS,
+                      margin: context.paddingXS,
+                      decoration: BoxDecoration(
+                        color: ColorService.hexToColor(goal['color']),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.textPrimary(context).withOpacity(0.08), // 그림자 색상
+                            blurRadius: 10, // 그림자 흐림 정도
+                            offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            getIconImage(goal['icon']),
+                            width: context.wp(15),
+                            height: context.wp(15),
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: context.xl,
+                                height: context.xl,
+                                color: Colors.grey.withOpacity(0.2),
+                                child: Icon(
+                                  Icons.broken_image,
+                                  size: context.xl,
+                                  color: Colors.grey,
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: context.hp(2)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  goal['title'],
+                                  style: AppTextStyles.getBody(context).copyWith(
+                                    color: Colors.white,
+                                    fontFamily: 'neo',
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                SizedBox(height: context.hp(5)),
+                Shimmer.fromColors(
+                  baseColor: Colors.grey.shade400,
+                  highlightColor: AppColors.background(context),
+                  child: Text(
+                    '목표 카드를 만드세요',
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: context.md,
+                    ),
+                  ),
+                ),
+                SizedBox(height: context.hp(1)),
+                goalCard(),
+                SizedBox(height: context.hp(5)),
+                Shimmer.fromColors(
+                  baseColor: Colors.grey.shade400,
+                  highlightColor: AppColors.background(context),
+                  child: Text(
+                    '목표를 추적하세요',
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: context.md,
+                    ),
+                  ),
+                ),
+                SizedBox(height: context.hp(1)),
+                goalChart(),
+                SizedBox(height: context.hp(5)),
+                Shimmer.fromColors(
+                  baseColor: Colors.grey.shade400,
+                  highlightColor: AppColors.background(context),
+                  child: Text(
+                    '목표를 관리하세요',
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: context.md,
+                    ),
+                  ),
+                ),
+                SizedBox(height: context.hp(1)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  margin: const EdgeInsets.symmetric(horizontal: 16.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16.0), // 둥근 모서리
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.textPrimary(context).withOpacity(0.08), // 그림자 색상
+                        blurRadius: 10, // 그림자 흐림 정도
+                        offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
+                      ),
+                    ],
+                  ),
+                  child: Container(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '알림 스케줄',
+                          style: AppTextStyles.getBody(context).copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: context.hp(2)),
+                        // 요일 표시 행
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildDayWithReminder(context, '월', true, Colors.blueAccent),
+                            _buildDayWithReminder(context, '화', true, Colors.blueAccent),
+                            _buildDayWithReminder(context, '수', true, Colors.blueAccent),
+                            _buildDayWithReminder(context, '목', false, Colors.transparent),
+                            _buildDayWithReminder(context, '금', true, Colors.orangeAccent),
+                            _buildDayWithReminder(context, '토', false, Colors.transparent),
+                            _buildDayWithReminder(context, '일', false, Colors.transparent),
+                          ],
+                        ),
+                        SizedBox(height: context.hp(2)),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.blueAccent,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    LucideIcons.bell,
+                                    size: context.sm,
+                                    color: Colors.white,
+                                  ),
+                                  SizedBox(width: context.wp(1)),
+                                  Text(
+                                    '오후 7:30',
+                                    style: AppTextStyles.getBody(context).copyWith(
+                                      fontSize: 12,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: context.wp(2)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.orangeAccent,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    LucideIcons.bell,
+                                    size: context.sm,
+                                    color: Colors.white,
+                                  ),
+                                  SizedBox(width: context.wp(1)),
+                                  Text(
+                                    '오후 9:30',
+                                    style: AppTextStyles.getBody(context).copyWith(
+                                      fontSize: 12,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: context.hp(10)),
+                Container(
+                  padding: context.paddingHorizSM,
+                  child: Column(
                     children: [
                       _buildIntroLine(context, '여러 개의 목표 카드 생성'),
                       SizedBox(height: context.hp(1)),
@@ -1040,33 +1140,8 @@ class GoalFeatureIntroPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                SizedBox(height: context.hp(8)),
-                Shimmer.fromColors(
-                  baseColor: Colors.grey.shade400,
-                  highlightColor: AppColors.background(context),
-                  child: Text(
-                    ' - 목표 기능은 이렇게 생겼어요 - ',
-                    style: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: context.md,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Neo',
-                    ),
-                  ),
-                ),
-                SizedBox(height: context.hp(2)),
-                _sampleGoalCard1(),
-                SizedBox(height: context.hp(4)),
-                _sampleGoalCard2(),
-                SizedBox(height: context.hp(1)),
-                Text(
-                  '목표 기능/디자인은 일부 다르게 출시될 수 있어요',
-                  style: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: context.sm,
-                  ),
-                ),
-                SizedBox(height: context.hp(10)),
+                SizedBox(height: context.hp(5)),
+
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -1090,7 +1165,7 @@ class GoalFeatureIntroPage extends StatelessWidget {
                       margin: context.paddingHorizSM,
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: () => _launchURL(),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueAccent,
                           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1116,29 +1191,6 @@ class GoalFeatureIntroPage extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildIntroLine(BuildContext context, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          LucideIcons.checkCircle,
-          size: context.lg,
-          color: AppColors.textPrimary(context),
-        ),
-        SizedBox(width: context.wp(2)),
-        Expanded(
-          child: Text(
-            text,
-            style: AppTextStyles.getBody(context).copyWith(
-              color: AppColors.textPrimary(context),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

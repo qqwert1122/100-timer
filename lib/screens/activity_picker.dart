@@ -10,10 +10,12 @@ import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/logger_config.dart';
+import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/time.formatter.dart';
 import 'package:provider/provider.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class ActivityPicker extends StatefulWidget {
   final String selectedActivity;
@@ -25,6 +27,8 @@ class ActivityPicker extends StatefulWidget {
     required this.onSelectActivity,
   });
 
+  static final GlobalKey listKey3 = GlobalKey(debugLabel: 'activityPicker');
+
   @override
   _ActivityPickerState createState() => _ActivityPickerState();
 }
@@ -34,7 +38,6 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
   late Future<List<Map<String, dynamic>>> _favoriteActivityListFuture;
   late final DatabaseService _dbService;
   late final StatsProvider _statsProvider;
-  late final defaultAcitivty;
 
   // 탭/페이지 컨트롤러
   late TabController _tabController;
@@ -58,9 +61,20 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
   // 편집 모드 (순서 변경 모드) 플래그
   bool isEditingOrder = false;
 
+  // Onboarding flag
+  bool _needShowOnboarding = false;
+
+  // Onboarding GlobalKey
+  final GlobalKey _addActivityKey = GlobalKey();
+  final GlobalKey _searchKey = GlobalKey();
+  final GlobalKey _listKey1 = GlobalKey();
+  final GlobalKey _listKey2 = GlobalKey();
+  final _listKey3 = ActivityPicker.listKey3;
+
   @override
   void initState() {
     super.initState();
+
     _statsProvider = Provider.of<StatsProvider>(context, listen: false);
     _dbService = Provider.of<DatabaseService>(context, listen: false);
     _tabController = TabController(length: 2, vsync: this);
@@ -83,8 +97,19 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
       setState(() {});
     });
 
-    _loadInitialData();
-    defaultAcitivty = _statsProvider.getDefaultActivity();
+    _loadInitialData().then(
+      (_) {
+        _needShowOnboarding = !PrefsService().getOnboarding('activityPicker');
+        if (_needShowOnboarding) {
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) {
+              if (!mounted) return;
+              _startShowcaseIfReady();
+            },
+          );
+        }
+      },
+    );
   }
 
   @override
@@ -95,6 +120,25 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
     searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _startShowcaseIfReady() {
+    // ① 현재 트리에 존재할 가능성이 있는 키만 추려서 배열 생성
+    final keys = <GlobalKey>[
+      if (_allActivities.length > 0) _listKey1,
+      if (_allActivities.length > 1) _listKey2,
+      if (_allActivities.length > 2) _listKey3,
+      _searchKey,
+      _addActivityKey,
+    ];
+
+    // ③ ShowCaseWidget 인스턴스 존재 여부 확인
+    final showcaseState = ShowCaseWidget.of(context);
+
+    // ④ 조건 만족 시 실행
+    if (keys.any((k) => k.currentContext != null)) {
+      showcaseState.startShowCase(keys);
+    } else {}
   }
 
   void _loadActivities() async {
@@ -129,7 +173,6 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
         _isLoading = false;
       });
     } catch (e) {
-      print('데이터 로드 오류: $e');
       setState(() {
         _isLoading = false;
       });
@@ -179,7 +222,13 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
       });
 
       if (widget.selectedActivity == activityName) {
-        widget.onSelectActivity(defaultAcitivty['activity_id'], '전체', 'category_rounded', '#F5F5F5');
+        final defaultAcitivty = await _statsProvider.getDefaultActivity();
+        widget.onSelectActivity(
+          defaultAcitivty!['activity_id'],
+          defaultAcitivty['activity_name'],
+          defaultAcitivty['activity_icon'],
+          defaultAcitivty['activity_color'],
+        );
       }
 
       Fluttertoast.showToast(
@@ -199,6 +248,7 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
+              backgroundColor: AppColors.background(context),
               title: Text('정말 삭제하시겠습니까?', style: AppTextStyles.getTitle(context).copyWith(color: Colors.redAccent)),
               content: Text(
                 '활동을 삭제할 경우 같은 이름으로 재생성 할 수는 있으나 복구할 수 없습니다.',
@@ -333,7 +383,7 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
   }) {
     final iconName = activity['activity_icon'];
     final iconData = getIconImage(iconName);
-    return Slidable(
+    Widget tile = Slidable(
       key: ValueKey(activity['activity_id']),
       closeOnScroll: true,
       enabled: activity['is_default'] != 1, // 기본 활동이면 슬라이드 비활성화
@@ -495,6 +545,8 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
         ),
       ),
     );
+
+    return tile;
   }
 
   /// ReorderableListView에서 사용하기 위한 래퍼 위젯 (key 포함)
@@ -574,11 +626,14 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
                   _favoriteActivities.length,
                   (index) {
                     final activity = _favoriteActivities[index];
-                    return _buildReorderableTile(
+
+                    Widget tile = _buildReorderableTile(
                       key: ValueKey(activity['activity_id']),
                       activity: activity,
                       isRecentList: false,
                     );
+
+                    return tile;
                   },
                 ),
               ),
@@ -613,11 +668,53 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
                 _allActivities.length,
                 (index) {
                   final activity = _allActivities[index];
-                  return _buildReorderableTile(
+
+                  Widget tile = _buildReorderableTile(
                     key: ValueKey(activity['activity_id']),
                     activity: activity,
                     isRecentList: false,
                   );
+
+                  if (index == 0) {
+                    tile = Showcase(
+                      key: _listKey1,
+                      description: '활동을 선택하세요',
+                      targetBorderRadius: BorderRadius.circular(16),
+                      targetShapeBorder: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      overlayOpacity: 0.5,
+                      child: tile,
+                    );
+                  }
+
+                  if (index == 1) {
+                    tile = Showcase(
+                      key: _listKey2,
+                      description: '좌우로 드래그해서 즐겨찾기/삭제',
+                      targetBorderRadius: BorderRadius.circular(16),
+                      targetShapeBorder: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      overlayOpacity: 0.5,
+                      child: tile,
+                    );
+                  }
+
+                  if (index == 2) {
+                    tile = Showcase(
+                      key: _listKey3,
+                      description: '길게 눌러 순서를 편집하세요',
+                      targetBorderRadius: BorderRadius.circular(16),
+                      targetShapeBorder: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      overlayOpacity: 0.5,
+                      child: tile,
+                    );
+                  }
+
+                  return tile;
                 },
               ),
             ),
@@ -697,28 +794,35 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
                 Text('활동', style: AppTextStyles.getTitle(context)),
                 Row(
                   children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        _navigateToAddActivityPage(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: context.paddingXS,
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.add_rounded, color: Colors.white),
-                          SizedBox(width: context.wp(1)),
-                          Text(
-                            '추가',
-                            style: AppTextStyles.getCaption(context).copyWith(
-                              color: Colors.white,
-                            ),
+                    Showcase(
+                      key: _addActivityKey,
+                      description: '활동을 새로 만들어보세요',
+                      targetBorderRadius: BorderRadius.circular(16),
+                      overlayOpacity: 0.5,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _navigateToAddActivityPage(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                        ],
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: context.paddingXS,
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.add_rounded, color: Colors.white),
+                            SizedBox(width: context.wp(1)),
+                            Text(
+                              '추가',
+                              style: AppTextStyles.getCaption(context).copyWith(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     SizedBox(width: context.wp(2)),
@@ -727,12 +831,13 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
                         setState(() {
                           isEditingOrder = !isEditingOrder;
                         });
-                        if (isEditingOrder)
+                        if (isEditingOrder) {
                           Fluttertoast.showToast(
                             msg: "드래그하여 위치 변경하세요",
                             toastLength: Toast.LENGTH_SHORT,
                             gravity: ToastGravity.BOTTOM,
                           );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isEditingOrder ? Colors.indigoAccent : AppColors.backgroundSecondary(context),
@@ -779,78 +884,90 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
           ),
           SizedBox(height: context.hp(1)),
           // 상단 검색 영역: 검색 버튼 또는 텍스트필드 전환
-          TextField(
-            controller: searchController,
-            textInputAction: TextInputAction.search,
-            onChanged: (query) {
-              // 기존에 실행 중인 디바운스 타이머가 있으면 취소
-              if (_debounce?.isActive ?? false) _debounce!.cancel();
-              _debounce = Timer(const Duration(milliseconds: 300), () {
-                // 300ms 후에 검색어가 있는지 확인 후 검색 실행
-                if (query.trim().isNotEmpty) {
-                  _onActivitySearch(query);
-                  setState(() {
-                    isSearching = true;
-                  });
-                } else {
-                  setState(() {
-                    filteredActivities = [];
-                    isSearching = false;
-                  });
-                }
-                print('Debounced search executed: $query');
-              });
-            },
-            onSubmitted: (query) {
-              // 사용자가 엔터를 누르면 즉시 디바운스 취소 후 검색 실행
-              if (_debounce?.isActive ?? false) _debounce!.cancel();
-              if (query.trim().isNotEmpty) {
-                _onActivitySearch(query);
-                setState(() {
-                  isSearching = true;
-                });
-              } else {
-                setState(() {
-                  filteredActivities = [];
-                  isSearching = false;
-                });
-              }
-              print('onSubmitted: $query');
-            },
-            decoration: InputDecoration(
-              hintText: "활동 이름을 검색하세요",
-              hintStyle: TextStyle(color: AppColors.textSecondary(context)),
-              border: InputBorder.none,
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide.none, // 테두리 없음
-                borderRadius: BorderRadius.circular(8), // 원하는 둥근 정도로 조정 가능
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide.none, // 포커스 상태에서도 테두리 없음
-                borderRadius: BorderRadius.circular(8), // 원하는 둥근 정도로 조정 가능
-              ),
-              filled: true,
-              fillColor: AppColors.backgroundSecondary(context),
-              contentPadding: EdgeInsets.symmetric(
-                vertical: context.xs,
-                horizontal: context.sm,
-              ),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _searchFocusNode.hasFocus || searchController.text.isNotEmpty ? Icons.clear : Icons.search_rounded,
-                ),
-                onPressed: () {
-                  // 검색 종료 시 초기화
-                  setState(() {
-                    isSearching = false;
-                    searchController.clear();
-                    filteredActivities = [];
-                  });
-                  FocusScope.of(context).unfocus(); // 키보드 숨기기
-                },
-              ),
-            ),
-          ),
+          _currentPageIndex == 0
+              ? Showcase(
+                  key: _searchKey,
+                  description: '활동을 검색해서 찾아보세요',
+                  targetBorderRadius: BorderRadius.circular(16),
+                  targetPadding: const EdgeInsets.all(1.0),
+                  targetShapeBorder: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  overlayOpacity: 0.5,
+                  child: TextField(
+                    controller: searchController,
+                    textInputAction: TextInputAction.search,
+                    onChanged: (query) {
+                      // 기존에 실행 중인 디바운스 타이머가 있으면 취소
+                      if (_debounce?.isActive ?? false) _debounce!.cancel();
+                      _debounce = Timer(const Duration(milliseconds: 300), () {
+                        // 300ms 후에 검색어가 있는지 확인 후 검색 실행
+                        if (query.trim().isNotEmpty) {
+                          _onActivitySearch(query);
+                          setState(() {
+                            isSearching = true;
+                          });
+                        } else {
+                          setState(() {
+                            filteredActivities = [];
+                            isSearching = false;
+                          });
+                        }
+                        print('Debounced search executed: $query');
+                      });
+                    },
+                    onSubmitted: (query) {
+                      // 사용자가 엔터를 누르면 즉시 디바운스 취소 후 검색 실행
+                      if (_debounce?.isActive ?? false) _debounce!.cancel();
+                      if (query.trim().isNotEmpty) {
+                        _onActivitySearch(query);
+                        setState(() {
+                          isSearching = true;
+                        });
+                      } else {
+                        setState(() {
+                          filteredActivities = [];
+                          isSearching = false;
+                        });
+                      }
+                      print('onSubmitted: $query');
+                    },
+                    decoration: InputDecoration(
+                      hintText: "활동 이름을 검색하세요",
+                      hintStyle: TextStyle(color: AppColors.textSecondary(context)),
+                      border: InputBorder.none,
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide.none, // 테두리 없음
+                        borderRadius: BorderRadius.circular(8), // 원하는 둥근 정도로 조정 가능
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide.none, // 포커스 상태에서도 테두리 없음
+                        borderRadius: BorderRadius.circular(8), // 원하는 둥근 정도로 조정 가능
+                      ),
+                      filled: true,
+                      fillColor: AppColors.backgroundSecondary(context),
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: context.xs,
+                        horizontal: context.sm,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _searchFocusNode.hasFocus || searchController.text.isNotEmpty ? Icons.clear : Icons.search_rounded,
+                        ),
+                        onPressed: () {
+                          // 검색 종료 시 초기화
+                          setState(() {
+                            isSearching = false;
+                            searchController.clear();
+                            filteredActivities = [];
+                          });
+                          FocusScope.of(context).unfocus(); // 키보드 숨기기
+                        },
+                      ),
+                    ),
+                  ),
+                )
+              : Container(),
           SizedBox(height: context.hp(2)),
           Expanded(
             child: PageView(

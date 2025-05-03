@@ -4,29 +4,27 @@ import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:project1/screens/activity_picker.dart';
-import 'package:project1/screens/session_history_sheet.dart';
-import 'package:project1/screens/setting_page.dart';
-import 'package:project1/screens/subscription_bottom_sheet.dart';
 import 'package:project1/screens/timer_running_page.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
-import 'package:project1/utils/icon_utils.dart';
-import 'package:project1/utils/stats_provider.dart';
-import 'package:project1/widgets/fluid_gradient_background.dart';
+import 'package:project1/utils/logger_config.dart';
+import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/widgets/focus_mode.dart';
-import 'package:project1/widgets/focus_mode_card.dart';
 import 'package:project1/widgets/text_indicator.dart';
 import 'package:project1/widgets/timer_info_card.dart';
 import 'package:project1/widgets/timer_page_header.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/utils/responsive_size.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class TimerPage extends StatefulWidget {
   final Map<String, dynamic> timerData;
 
   const TimerPage({super.key, required this.timerData});
+
+  static final GlobalKey playButtonKey = GlobalKey(debugLabel: 'timer');
 
   @override
   _TimerPageState createState() => _TimerPageState();
@@ -36,27 +34,49 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
   TimerProvider? _timerProvider; // TimerProvider 변수 추가
 
   final DraggableScrollableController _controller = DraggableScrollableController();
-  final ScrollController _sheetScrollController = ScrollController();
 
   late AnimationController _shimmerAnimationcontroller;
   late Animation<Alignment> _shimmerAnimation;
 
   final PageController _pageController = PageController(initialPage: 1);
-  final GlobalKey _playButtonKey = GlobalKey();
 
   int _currentPageIndex = 1;
   int? selectedIndex = 1;
-  double _sheetSize = 0.1; // 초기 크기
   double minSheetHeight = 0.1;
   double maxSheetHeight = 1.0;
   double _circleWidth = 30;
   double _circleHeight = 30;
+
+  // Onboarding flag
+  bool _needShowOnboarding = false;
+
+  // Onboarding GlobalKey
+  final GlobalKey _remainingSecondsKey = GlobalKey();
+  final GlobalKey _weeklyProgressCircleKey = GlobalKey();
+  final GlobalKey _activityListKey = GlobalKey();
+  final GlobalKey _modeTapKey = GlobalKey();
+  final __playButtonKey = TimerPage.playButtonKey;
 
   @override
   void initState() {
     super.initState();
     _timerProvider = Provider.of<TimerProvider>(context, listen: false); // provider init
     _initAnimations(); // animation init
+
+    _needShowOnboarding = !PrefsService().getOnboarding('timer');
+    if (_needShowOnboarding) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) {
+          ShowCaseWidget.of(context).startShowCase([
+            _remainingSecondsKey,
+            _weeklyProgressCircleKey,
+            _activityListKey,
+            _modeTapKey,
+            __playButtonKey,
+          ]);
+        },
+      );
+    }
   }
 
   @override
@@ -144,16 +164,15 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        builder: (BuildContext context) {
-          return ActivityPicker(
-            onSelectActivity:
-                (String selectedActivityListId, String selectedActivity, String selectedActivityIcon, String selectedActivityColor) {
-              timerProvider.setCurrentActivity(selectedActivityListId, selectedActivity, selectedActivityIcon, selectedActivityColor);
-              Navigator.pop(context);
-            },
-            selectedActivity: timerProvider.currentActivityName,
-          );
-        },
+        useRootNavigator: true,
+        builder: (_) => ActivityPicker(
+          onSelectActivity:
+              (String selectedActivityListId, String selectedActivity, String selectedActivityIcon, String selectedActivityColor) {
+            timerProvider.setCurrentActivity(selectedActivityListId, selectedActivity, selectedActivityIcon, selectedActivityColor);
+            Navigator.pop(context);
+          },
+          selectedActivity: timerProvider.currentActivityName,
+        ),
       );
     }
   }
@@ -190,10 +209,6 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
     });
   }
 
-  bool _canPop = false;
-  DateTime? _lastBackPressed;
-  Timer? _backPressTimer;
-
   @override
   Widget build(BuildContext context) {
     final timerProvider = Provider.of<TimerProvider>(context);
@@ -213,6 +228,9 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
               TimerInfoCard(
                 timerProvider: timerProvider,
                 showActivityModal: () => _showActivityModal(timerProvider),
+                remainingSecondsKey: _remainingSecondsKey,
+                weeklyProgressCircleKey: _weeklyProgressCircleKey,
+                activityListKey: _activityListKey,
               ),
               SizedBox(
                 height: context.hp(5),
@@ -320,80 +338,91 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                             ),
                             SizedBox(height: context.hp(3)),
                             // 플레이 버튼
-                            Center(
-                              child: AnimatedBuilder(
-                                animation: _shimmerAnimation,
-                                builder: (context, child) {
-                                  return Container(
-                                    key: _playButtonKey,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.orange,
-                                          Colors.pinkAccent,
-                                          Colors.red,
-                                          ColorService.hexToColor(
-                                            timerProvider.currentActivityColor,
+                            if (_currentPageIndex == 1)
+                              Center(
+                                child: Showcase(
+                                  key: __playButtonKey,
+                                  description: '이 버튼을 누르면 타이머가 시작돼요!',
+                                  targetBorderRadius: BorderRadius.circular(50),
+                                  targetShapeBorder: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  overlayOpacity: 0.5,
+                                  child: AnimatedBuilder(
+                                    animation: _shimmerAnimation,
+                                    builder: (context, child) {
+                                      return Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              Colors.orange,
+                                              Colors.pinkAccent,
+                                              Colors.red,
+                                              ColorService.hexToColor(
+                                                timerProvider.currentActivityColor,
+                                              ),
+                                            ],
+                                            begin: _shimmerAnimation.value,
+                                            end: Alignment(
+                                              -_shimmerAnimation.value.x,
+                                              -_shimmerAnimation.value.y,
+                                            ),
+                                            tileMode: TileMode.mirror,
                                           ),
-                                        ],
-                                        begin: _shimmerAnimation.value,
-                                        end: Alignment(
-                                          -_shimmerAnimation.value.x,
-                                          -_shimmerAnimation.value.y,
+                                          borderRadius: BorderRadius.circular(50),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.pinkAccent.withOpacity(0.5),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
                                         ),
-                                        tileMode: TileMode.mirror,
-                                      ),
-                                      borderRadius: BorderRadius.circular(50),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.pinkAccent.withOpacity(0.5),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
+                                        child: IconButton(
+                                          icon: const Icon(Icons.play_arrow_rounded),
+                                          iconSize: context.wp(20),
+                                          color: Colors.white,
+                                          onPressed: () async {
+                                            HapticFeedback.lightImpact();
+
+                                            try {
+                                              await timerProvider.startTimer(
+                                                activityId: timerProvider.currentActivityId!,
+                                                mode: 'NORMAL',
+                                                targetDuration: timerProvider.isWeeklyTargetExceeded
+                                                    ? null // 주간 목표 초과 시 무제한
+                                                    : timerProvider.remainingSeconds,
+                                              );
+                                            } catch (e) {
+                                              logger.e(
+                                                  'e:$e, activityId: ${timerProvider.currentActivityId},  isWeeklyTargetExceeded: ${timerProvider.isWeeklyTargetExceeded}');
+                                              Fluttertoast.showToast(
+                                                msg: "타이머 시작 중 오류가 발생했습니다",
+                                                toastLength: Toast.LENGTH_SHORT,
+                                                gravity: ToastGravity.TOP,
+                                                backgroundColor: Colors.redAccent.shade200,
+                                                textColor: Colors.white,
+                                                fontSize: context.md,
+                                              );
+                                              return;
+                                            }
+
+                                            // -------- 2. 페이지 전환 --------
+                                            if (!mounted) return; // 안전 확인
+                                            Navigator.of(context).pushReplacement(
+                                              PageRouteBuilder(
+                                                pageBuilder: (context, animation, _) => const TimerRunningPage(isNewSession: true),
+                                                transitionDuration: const Duration(milliseconds: 500),
+                                                reverseTransitionDuration: const Duration(milliseconds: 500),
+                                              ),
+                                            );
+                                          },
                                         ),
-                                      ],
-                                    ),
-                                    child: IconButton(
-                                      icon: const Icon(Icons.play_arrow_rounded),
-                                      iconSize: context.wp(20),
-                                      color: Colors.white,
-                                      onPressed: () async {
-                                        HapticFeedback.lightImpact();
-
-                                        try {
-                                          await timerProvider.startTimer(
-                                            activityId: timerProvider.currentActivityId!,
-                                            mode: 'NORMAL',
-                                            targetDuration: timerProvider.isWeeklyTargetExceeded
-                                                ? null // 주간 목표 초과 시 무제한
-                                                : timerProvider.remainingSeconds,
-                                          );
-                                        } catch (e) {
-                                          Fluttertoast.showToast(
-                                            msg: "타이머 시작 중 오류가 발생했습니다",
-                                            toastLength: Toast.LENGTH_SHORT,
-                                            gravity: ToastGravity.TOP,
-                                            backgroundColor: Colors.redAccent.shade200,
-                                            textColor: Colors.white,
-                                            fontSize: context.md,
-                                          );
-                                          return;
-                                        }
-
-                                        // -------- 2. 페이지 전환 --------
-                                        if (!mounted) return; // 안전 확인
-                                        Navigator.of(context).push(
-                                          PageRouteBuilder(
-                                            pageBuilder: (context, animation, _) => const TimerRunningPage(isNewSession: true),
-                                            transitionDuration: const Duration(milliseconds: 500),
-                                            reverseTransitionDuration: const Duration(milliseconds: 500),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  );
-                                },
+                                      );
+                                    },
+                                  ),
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),
@@ -405,71 +434,81 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
           ),
 
           /// 2) 하단 커스텀 네비게이션 바
+
           Positioned(
             left: 0,
             right: 0,
             bottom: context.hp(3), // 필요하다면 0으로 조절 가능
             child: Align(
               alignment: Alignment.center,
-              child: Container(
-                width: context.wp(30),
-                height: 50,
-                decoration: BoxDecoration(
-                  color: AppColors.background(context),
-                  borderRadius: BorderRadius.circular(35),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.textPrimary(context).withOpacity(0.3),
-                      blurRadius: 5,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+              child: Showcase(
+                key: _modeTapKey,
+                description: '타이머 모드를 선택해주세요',
+                targetBorderRadius: BorderRadius.circular(35),
+                targetShapeBorder: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // 애니메이션 원
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      left: _currentPageIndex * itemWidth + (itemWidth - _circleWidth) / 2,
-                      child: AnimatedContainer(
+                overlayOpacity: 0.5,
+                child: Container(
+                  width: context.wp(30),
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: AppColors.background(context),
+                    borderRadius: BorderRadius.circular(35),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.textPrimary(context).withOpacity(0.3),
+                        blurRadius: 5,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // 애니메이션 원
+                      AnimatedPositioned(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOut,
-                        width: _circleWidth,
-                        height: _circleHeight,
-                        decoration: BoxDecoration(
-                          color: Colors.redAccent,
-                          borderRadius: BorderRadius.circular(50),
+                        left: _currentPageIndex * itemWidth + (itemWidth - _circleWidth) / 2,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          width: _circleWidth,
+                          height: _circleHeight,
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent,
+                            borderRadius: BorderRadius.circular(50),
+                          ),
                         ),
                       ),
-                    ),
-                    // 아이콘 3개
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: List.generate(2, (index) {
-                        return GestureDetector(
-                          onTap: () {
-                            _onIconTap(index);
-                          },
-                          child: TweenAnimationBuilder<Color?>(
-                            tween: ColorTween(
-                              begin: _currentPageIndex == index ? Colors.grey[300] : Colors.white,
-                              end: _currentPageIndex == index ? Colors.white : Colors.grey[300],
-                            ),
-                            duration: const Duration(milliseconds: 300),
-                            builder: (context, color, child) {
-                              return Icon(
-                                _getIconForIndex(index),
-                                color: color,
-                                size: context.lg,
-                              );
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: List.generate(2, (index) {
+                          return GestureDetector(
+                            onTap: () {
+                              _onIconTap(index);
                             },
-                          ),
-                        );
-                      }),
-                    ),
-                  ],
+                            child: TweenAnimationBuilder<Color?>(
+                              tween: ColorTween(
+                                begin: _currentPageIndex == index ? Colors.grey[300] : Colors.white,
+                                end: _currentPageIndex == index ? Colors.white : Colors.grey[300],
+                              ),
+                              duration: const Duration(milliseconds: 300),
+                              builder: (context, color, child) {
+                                return Icon(
+                                  _getIconForIndex(index),
+                                  color: color,
+                                  size: context.lg,
+                                );
+                              },
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

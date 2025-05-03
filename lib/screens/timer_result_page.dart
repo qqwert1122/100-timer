@@ -143,6 +143,7 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
+              backgroundColor: AppColors.background(context),
               title: Text('정말 삭제하시겠습니까?', style: AppTextStyles.getTitle(context).copyWith(color: Colors.redAccent)),
               content: Text(
                 '활동 기록을 삭제할 경우 통계에 반영되지 않으며 복구할 수 없습니다.',
@@ -246,7 +247,7 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => TimerPage(timerData: widget.timerData),
+                                builder: (context) => const MainPage(),
                               ),
                             );
                           });
@@ -369,8 +370,9 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
           Padding(
             padding: context.paddingSM,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                SizedBox(height: context.hp(2)),
                 Image.asset(
                   getIconImage(timerProvider.currentActivityIcon),
                   width: context.xxxl,
@@ -418,7 +420,7 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                     ),
                   ],
                 ),
-                SizedBox(height: context.hp(4)),
+                SizedBox(height: context.hp(2)),
                 Align(
                   alignment: Alignment.center,
                   child: Shimmer.fromColors(

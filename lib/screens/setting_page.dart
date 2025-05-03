@@ -1,4 +1,3 @@
-import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,12 +8,14 @@ import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/notification_service.dart';
+import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
+import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/widgets/footer.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -26,9 +27,9 @@ class SettingPage extends StatefulWidget {
 }
 
 class _SettingPageState extends State<SettingPage> {
-  late SharedPreferences prefs;
   late final StatsProvider statsProvider;
   late final DatabaseService dbService;
+  late final TimerProvider timerProvider;
 
   // 설정 변수
   int selectedValue = 100; // 기본값 (시간 단위)
@@ -45,6 +46,7 @@ class _SettingPageState extends State<SettingPage> {
     super.initState();
     statsProvider = Provider.of<StatsProvider>(context, listen: false);
     dbService = Provider.of<DatabaseService>(context, listen: false);
+    timerProvider = Provider.of<TimerProvider>(context, listen: false);
     _initPrefs();
 
     // admob 광고 초기화
@@ -66,9 +68,7 @@ class _SettingPageState extends State<SettingPage> {
     _bannerAd1!.load();
   }
 
-  // SharedPreferences 초기화
   Future<void> _initPrefs() async {
-    prefs = await SharedPreferences.getInstance();
     _loadTotalSeconds(); // 초기화 후 데이터 로드
     _loadWakelockState(); // 화면 유지 상태도 로드
     _loadAlarmFlag();
@@ -76,7 +76,7 @@ class _SettingPageState extends State<SettingPage> {
 
   // 목표시간 불러오기/저장
   Future<void> _loadTotalSeconds() async {
-    final totalSeconds = prefs.getInt('totalSeconds') ?? 360000;
+    final totalSeconds = PrefsService().totalSeconds;
 
     if (mounted) {
       setState(() {
@@ -86,35 +86,36 @@ class _SettingPageState extends State<SettingPage> {
   }
 
   Future<void> _saveTotalSeconds(int hours) async {
-    final totalSeconds = hours * 3600;
-    await prefs.setInt('totalSeconds', totalSeconds);
+    PrefsService().totalSeconds = hours * 3600;
   }
 
   // Wakelock 상태 불러오기/저장
   Future<void> _loadWakelockState() async {
-    final storedKeepScreenOn = prefs.getBool('keepScreenOn') ?? false;
-    setState(() {
-      keepScreenOn = storedKeepScreenOn;
-    });
-    WakelockPlus.toggle(enable: keepScreenOn); // Wakelock 적용
+    final stored = PrefsService().keepScreenOn;
+    if (!mounted) return;
+    setState(() => keepScreenOn = stored);
+    WakelockPlus.toggle(enable: stored); // Wakelock 적용
   }
 
   Future<void> _saveWakelockState(bool value) async {
-    await prefs.setBool('keepScreenOn', value);
-    print('keepScreenOn : ${prefs.getBool('keepScreenOn')}');
+    PrefsService().keepScreenOn = value;
+    WakelockPlus.toggle(enable: value);
+    if (!mounted) return;
+    setState(() => keepScreenOn = value);
   }
 
   // 알람 설정 불러오기/저장
   Future<void> _loadAlarmFlag() async {
-    final storedAlarmFlag = prefs.getBool('alarmFlag') ?? true;
-    setState(() {
-      alarmFlag = storedAlarmFlag;
-    });
+    final stored = PrefsService().alarmFlag;
+    if (!mounted) return;
+    setState(() => alarmFlag = stored);
   }
 
   Future<void> _saveAlarmFlag(bool value) async {
-    await prefs.setBool('alarmFlag', value);
-    print('alarmFlag : ${prefs.getBool('alarmFlag')}');
+    PrefsService().alarmFlag = value;
+    if (!mounted) return;
+    setState(() => alarmFlag = value);
+    logger.d('alarmFlag : $value');
   }
 
   Future<void> _launchURL(String linkUrl) async {
@@ -202,6 +203,8 @@ class _SettingPageState extends State<SettingPage> {
                         sessions.map((session) => dbService.deleteSession(session['session_id'])),
                       );
 
+                      await timerProvider.refreshRemainingSeconds();
+
                       // 작업 완료 후 다이얼로그 닫기
                       Navigator.of(ctx).pop();
 
@@ -223,15 +226,15 @@ class _SettingPageState extends State<SettingPage> {
       },
     ];
 
-    final List<Map<String, dynamic>> utilityItems = [
-      {
-        'title': '동기화해요',
-        'icon': 'counter_clockwise',
-        'description': '디바이스와 서버의 시간을 동기화하세요',
-        'onTap': () async {},
-        'trailing': null,
-      },
-    ];
+    // final List<Map<String, dynamic>> utilityItems = [
+    //   {
+    //     'title': '동기화해요',
+    //     'icon': 'counter_clockwise',
+    //     'description': '디바이스와 서버의 시간을 동기화하세요',
+    //     'onTap': () async {},
+    //     'trailing': null,
+    //   },
+    // ];
 
     final List<Map<String, dynamic>> appSettingsItems = [
       {
@@ -241,14 +244,7 @@ class _SettingPageState extends State<SettingPage> {
         'onTap': () {},
         'trailing': CupertinoSwitch(
           value: keepScreenOn,
-          onChanged: (bool value) {
-            setState(() {
-              keepScreenOn = value;
-            });
-            WakelockPlus.toggle(enable: keepScreenOn);
-            _saveWakelockState(keepScreenOn);
-            print(prefs.getBool('keepScreenOn'));
-          },
+          onChanged: (bool value) => _saveWakelockState(value),
           activeColor: Colors.redAccent,
           trackColor: Colors.redAccent.withOpacity(0.1),
         ),
@@ -265,8 +261,7 @@ class _SettingPageState extends State<SettingPage> {
               final granted = await NotificationService().requestPermissions();
               if (!granted) return;
             }
-            setState(() => alarmFlag = value);
-            _saveAlarmFlag(value); // SharedPreferences 저장
+            _saveAlarmFlag(value);
           },
           activeColor: Colors.redAccent,
           trackColor: Colors.redAccent.withOpacity(0.1),
@@ -280,8 +275,7 @@ class _SettingPageState extends State<SettingPage> {
         'icon': 'email',
         'description': '궁금한 점을 문의하세요',
         'onTap': () async {
-          const String googleFormUrl =
-              'https://docs.google.com/forms/d/e/1FAIpQLSdo9bnrDgqAnpqX21c_cQDlLeDrmrOtLj7y2iwO-3cJkDLOjQ/viewform?usp=sf_link'; // 구글 폼 URL
+          const String googleFormUrl = 'https://forms.gle/thMpo1iGp97KjKXU8'; // 구글 폼 URL
           if (await canLaunchUrl(Uri.parse(googleFormUrl))) {
             await launchUrl(
               Uri.parse(googleFormUrl),
@@ -289,7 +283,7 @@ class _SettingPageState extends State<SettingPage> {
             );
           } else {
             const snackBar = SnackBar(
-              content: Text('구글 폼을 열 수 없습니다. 링크: https://forms.gle/your-form-id'),
+              content: Text('구글 폼을 열 수 없습니다. 링크: https://forms.gle/thMpo1iGp97KjKXU8g'),
             );
             ScaffoldMessenger.of(context).showSnackBar(snackBar);
           }
@@ -328,7 +322,7 @@ class _SettingPageState extends State<SettingPage> {
       {
         'title': '버전',
         'icon': 'info',
-        'description': '현재 버전 0.0.1 | 업데이트 날짜 2025-03-30',
+        'description': '현재 버전 0.0.2 | 업데이트 날짜 2025-05-03',
         'onTap': () {},
         'trailing': null,
       },
@@ -435,8 +429,8 @@ class _SettingPageState extends State<SettingPage> {
             buildCategory('타이머 설정', timerItems),
             SizedBox(height: context.hp(1)),
             buildCategory('앱 설정', appSettingsItems),
-            SizedBox(height: context.hp(1)),
-            buildCategory('유틸리티', utilityItems),
+            // SizedBox(height: context.hp(1)),
+            // buildCategory('유틸리티', utilityItems),
             SizedBox(height: context.hp(1)),
             buildCategory('정보', informationItems),
             const Footer(),

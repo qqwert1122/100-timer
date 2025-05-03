@@ -88,6 +88,7 @@ class DatabaseService {
         is_modified INTEGER DEFAULT 0,
         is_deleted INTEGER DEFAULT 0,
         is_ended INTEGER DEFAULT 0,
+        is_force_terminated IONTEGER DEFAULT 0,
         timezone TEXT,
         long_session_flag INTEGER
       ) 
@@ -164,7 +165,7 @@ class DatabaseService {
   // 타이머 생성
   Future<void> createTimer(Map<String, dynamic> timerData) async {
     // timerData를 입력받아서 db에 생성
-
+    logger.d('[databaseService] create Timer');
     final db = await database;
 
     try {
@@ -177,9 +178,7 @@ class DatabaseService {
         limit: 1,
       );
 
-      if (existingTimers.isNotEmpty) {
-        return;
-      }
+      if (existingTimers.isNotEmpty) return; // 이미 해당 주차 타이머가 있다면 return. 중복 생성 방지
 
       await db.insert(
         'timers',
@@ -187,7 +186,12 @@ class DatabaseService {
         conflictAlgorithm: ConflictAlgorithm.replace,
       ); // 충돌할 경우 대체
     } catch (e) {
-      // error log
+      logger.e('''
+        [databaseService]
+        - 위치 : createTimer
+        - 오류 유형: ${e.runtimeType}
+        - 메시지: ${e.toString()}
+      ''');
     }
   }
 
@@ -801,6 +805,33 @@ class DatabaseService {
           'duration': duration,
           'original_duration': duration,
           'session_state': 'ENDED',
+          'is_ended': 1,
+        };
+
+        await txn.update(
+          'sessions',
+          updateData,
+          where: 'session_id = ?',
+          whereArgs: [sessionId],
+        );
+      });
+    } catch (e) {
+      // error log
+    }
+  }
+
+  Future<void> terminateSession({required String sessionId}) async {
+    logger.d('### dbService ### : terminateSession({$sessionId})');
+    final db = await database;
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    try {
+      await db.transaction((txn) async {
+        final updateData = {
+          'last_updated_at': now,
+          'end_time': now,
+          'session_state': 'ENDED',
+          'is_ended': 1,
         };
 
         await txn.update(

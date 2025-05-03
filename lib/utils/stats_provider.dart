@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:project1/utils/database_service.dart';
+import 'package:project1/utils/logger_config.dart';
 
 class StatsProvider extends ChangeNotifier {
   DatabaseService _dbService;
@@ -17,6 +18,7 @@ class StatsProvider extends ChangeNotifier {
   Future<void> get initialized => _initializedCompleter.future;
 
   void initializeWithDB(DatabaseService db) {
+    logger.d('[statsProvider] statsProvider init');
     _dbService = db;
     _initializedCompleter.complete();
     notifyListeners();
@@ -92,6 +94,7 @@ class StatsProvider extends ChangeNotifier {
 
   Future<Map<String, dynamic>?> getDefaultActivity() async {
     try {
+      logger.d('[statsProvider] get DefaultActivity');
       final activities = await _dbService.getActivities();
       final defaultActivity = activities.firstWhere(
         (activity) => activity['is_default'] == 1,
@@ -100,7 +103,12 @@ class StatsProvider extends ChangeNotifier {
 
       return defaultActivity.isNotEmpty ? defaultActivity : null;
     } catch (e) {
-      // error log
+      logger.e('''
+        [statsProvider]
+        - 위치 : getDefaultActivity
+        - 오류 유형: ${e.runtimeType}
+        - 메시지: ${e.toString()}
+      ''');
       return null;
     }
   }
@@ -290,17 +298,19 @@ class StatsProvider extends ChangeNotifier {
 
   Future<int> getTotalDurationForCurrentWeek() async {
     try {
-      final weeklyRange = DateUtils.getWeeklyRange(weekOffset: 0);
-      DateTime startUtc = weeklyRange['startOfWeek']!.toUtc();
-      DateTime endUtc = weeklyRange['endOfWeek']!.toUtc();
+      logger.d('[statsProvider] get Total Duration For Current Week');
 
-      // 해당 주에 속하는 세션들을 데이터베이스에서 조회
+      final weeklyRange = DateUtils.getWeeklyRange(weekOffset: 0); // 이번주의 범위 가져오기
+      DateTime startUtc = weeklyRange['startOfWeek']!.toUtc(); // 이번주 월요일
+      DateTime endUtc = weeklyRange['endOfWeek']!.toUtc(); // 이번주 일요일
+
+      // 이번주 시작일과 종료일 사이의 sessions를 불러오기
       final sessions = await _dbService.getSessionsWithinDateRange(
         startDate: startUtc,
         endDate: endUtc,
       );
 
-      // 조회한 세션들의 duration(사용 시간)을 모두 합산
+      // 조회한 세션들의 duration을 모두 합산
       final totalDuration = sessions.fold<int>(
         0,
         (sum, session) => sum + (session['duration'] as int? ?? 0),
@@ -308,7 +318,12 @@ class StatsProvider extends ChangeNotifier {
 
       return totalDuration;
     } catch (e) {
-      // error log
+      logger.e('''
+        [statsProvider]
+        - 위치 : getTotalDurationForCurrentWeek
+        - 오류 유형: ${e.runtimeType}
+        - 메시지: ${e.toString()}
+      ''');
       return 0;
     }
   }
