@@ -27,30 +27,30 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
 
   List<Map<String, dynamic>> pomodoroItems = [
     {
-      'title': '10',
-      'value': 15,
-      'maxCount': 3,
+      'title': '30',
+      'value': 1800,
+      'maxCount': 5,
       'currentCount': 0,
       'gradientColors': [Colors.greenAccent, Colors.yellow],
     },
     {
-      'title': '30',
-      'value': 1800,
-      'maxCount': 3,
+      'title': '1',
+      'value': 3600,
+      'maxCount': 5,
       'currentCount': 0,
       'gradientColors': [Colors.yellowAccent, Colors.pink],
     },
     {
-      'title': '1',
-      'value': 3600,
-      'maxCount': 3,
+      'title': '2',
+      'value': 7200,
+      'maxCount': 5,
       'currentCount': 0,
       'gradientColors': [Colors.blueAccent, Colors.lime],
     },
     {
-      'title': '2',
-      'value': 7200,
-      'maxCount': 3,
+      'title': '4',
+      'value': 14400,
+      'maxCount': 5,
       'currentCount': 0,
       'gradientColors': [Colors.amber, Colors.red],
     },
@@ -191,7 +191,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                             ),
                             SizedBox(width: context.wp(1)),
                             Text(
-                              index <= 1 ? '분' : '시간',
+                              index == 0 ? '분' : '시간',
                               style: TextStyle(
                                 fontSize: context.sm,
                                 fontWeight: FontWeight.w200,

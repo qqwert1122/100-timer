@@ -88,7 +88,7 @@ class DatabaseService {
         is_modified INTEGER DEFAULT 0,
         is_deleted INTEGER DEFAULT 0,
         is_ended INTEGER DEFAULT 0,
-        is_force_terminated IONTEGER DEFAULT 0,
+        is_force_terminated INTEGER DEFAULT 0,
         timezone TEXT,
         long_session_flag INTEGER
       ) 
@@ -832,6 +832,7 @@ class DatabaseService {
           'end_time': now,
           'session_state': 'ENDED',
           'is_ended': 1,
+          'is_force_terminated': 1,
         };
 
         await txn.update(

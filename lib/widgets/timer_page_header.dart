@@ -63,34 +63,34 @@ class _TimerPageHeaderState extends State<TimerPageHeader> {
               ],
             ),
           ),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  _showSubscriptionPage();
-                },
-                child: Image.asset(
-                  getIconImage('crown'),
-                  width: context.wp(8),
-                  height: context.wp(8),
-                  errorBuilder: (context, error, stackTrace) {
-                    // 이미지를 로드하는 데 실패한 경우의 대체 표시
-                    return Container(
-                      width: context.xl,
-                      height: context.xl,
-                      color: Colors.grey.withOpacity(0.2),
-                      child: Icon(
-                        Icons.settings,
-                        size: context.xl,
-                        color: Colors.grey,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
+          // Row(
+          //   children: [
+          //     GestureDetector(
+          //       onTap: () {
+          //         HapticFeedback.lightImpact();
+          //         _showSubscriptionPage();
+          //       },
+          //       child: Image.asset(
+          //         getIconImage('crown'),
+          //         width: context.wp(8),
+          //         height: context.wp(8),
+          //         errorBuilder: (context, error, stackTrace) {
+          //           // 이미지를 로드하는 데 실패한 경우의 대체 표시
+          //           return Container(
+          //             width: context.xl,
+          //             height: context.xl,
+          //             color: Colors.grey.withOpacity(0.2),
+          //             child: Icon(
+          //               Icons.settings,
+          //               size: context.xl,
+          //               color: Colors.grey,
+          //             ),
+          //           );
+          //         },
+          //       ),
+          //     ),
+          //   ],
+          // ),
         ],
       ),
     );

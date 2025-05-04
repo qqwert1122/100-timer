@@ -133,6 +133,18 @@ const List<Map<String, dynamic>> creditList = [
     'link': 'https://pub.dev/packages/just_audio',
   },
   {
+    'category': '오픈 소스 라이브러리',
+    'title': 'carousel_slider',
+    'description': '이 어플리케이션은 carousel_slider 라이브러리를 사용했어요.',
+    'link': 'https://pub.dev/packages/carousel_slider',
+  },
+  {
+    'category': '오픈 소스 라이브러리',
+    'title': 'showcaseview',
+    'description': '이 어플리케이션은 showcaseview 라이브러리를 사용했어요.',
+    'link': 'https://pub.dev/packages/showcaseview',
+  },
+  {
     'category': '폰트',
     'title': '나눔휴먼,나눔스퀘어네오',
     'description': '이 어플리케이션은 나눔휴먼체, 나눔스퀘어네오체를 사용했어요',
@@ -174,5 +186,11 @@ const List<Map<String, dynamic>> creditList = [
     'description':
         '이 어플리케이션의 배경음악은 Universitat Pompeu Fabra Barcelona가 운영하는 freesound에서 CC0 음악파일을 사용했어요. Wheat in the Wind by bdvictor, City Traffic (Outdoor).wav by embracetheart, Rain.wav by idomusics, Big waves hit land.wav by straget, Birds Singing 03.wav by DCPoke',
     'link': 'https://freesound.org/',
+  },
+  {
+    'category': '목업',
+    'title': 'previewed.app',
+    'description': '이 어플리케이션의 홍보용 스크린샷 목업은 previewed.app을 사용했어요.',
+    'link': 'https://previewed.app/template/07C36340',
   },
 ];

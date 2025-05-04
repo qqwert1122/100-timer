@@ -41,13 +41,13 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
       int level = 0;
       // 초 단위 데이터를 시간 단위로 변환
       double hours = duration / 3600;
-      if (duration <= 1) {
+      if (duration <= 2) {
         level = 0;
-      } else if (hours <= 2) {
-        level = 1;
       } else if (hours <= 4) {
-        level = 2;
+        level = 1;
       } else if (hours <= 6) {
+        level = 2;
+      } else if (hours <= 8) {
         level = 3;
       } else {
         level = 4;
@@ -102,15 +102,15 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildLegendItem(context, "0시간", 0, isDarkMode),
+                      _buildLegendItem(context, "0시간~", 0, isDarkMode),
                       const SizedBox(width: 8),
-                      _buildLegendItem(context, "1시간", 1, isDarkMode),
+                      _buildLegendItem(context, "2시간~", 1, isDarkMode),
                       const SizedBox(width: 8),
-                      _buildLegendItem(context, "2시간", 2, isDarkMode),
+                      _buildLegendItem(context, "4시간~", 2, isDarkMode),
                       const SizedBox(width: 8),
-                      _buildLegendItem(context, "3시간", 3, isDarkMode),
+                      _buildLegendItem(context, "6시간~", 3, isDarkMode),
                       const SizedBox(width: 8),
-                      _buildLegendItem(context, "3시간+", 4, isDarkMode),
+                      _buildLegendItem(context, "8시간~", 4, isDarkMode),
                     ],
                   ),
                 ),

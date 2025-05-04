@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'dart:io' as io;
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -74,6 +74,7 @@ class NotificationService {
         NotificationPermission.Badge,
         NotificationPermission.Vibration,
         NotificationPermission.Light,
+        if (io.Platform.isAndroid) NotificationPermission.PreciseAlarms,
       ],
     );
 
