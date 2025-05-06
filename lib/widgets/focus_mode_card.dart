@@ -37,8 +37,7 @@ class _FocusModeCardState extends State<FocusModeCard> {
                   hours: _selectedMinutes.toInt() ~/ 60,
                   minutes: _selectedMinutes.toInt() % 60,
                   seconds: 0,
-                  style: TextStyle(
-                    fontSize: context.xl,
+                  style: AppTextStyles.getTimeDisplay(context).copyWith(
                     fontFamily: 'chab',
                   ),
                 ),
@@ -131,8 +130,10 @@ class AnimatedNumber extends StatelessWidget {
       height: 60,
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 1000),
-        switchInCurve: const Interval(0.5, 1.0, curve: Curves.easeInOut), // 새 숫자는 후반부에
-        switchOutCurve: const Interval(0.0, 0.5, curve: Curves.easeInOut), // 이전 숫자는 전반부에
+        switchInCurve:
+            const Interval(0.5, 1.0, curve: Curves.easeInOut), // 새 숫자는 후반부에
+        switchOutCurve:
+            const Interval(0.0, 0.5, curve: Curves.easeInOut), // 이전 숫자는 전반부에
         transitionBuilder: (Widget child, Animation<double> animation) {
           // 나가는 숫자의 애니메이션
           if (child.key != ValueKey<int>(number)) {

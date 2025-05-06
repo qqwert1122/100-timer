@@ -37,7 +37,8 @@ class TimerResultPage extends StatefulWidget {
 }
 
 // State 클래스에 TickerProviderStateMixin 추가
-class _TimerResultPageState extends State<TimerResultPage> with TickerProviderStateMixin {
+class _TimerResultPageState extends State<TimerResultPage>
+    with TickerProviderStateMixin {
   final NotificationService _notificationService = NotificationService();
   late final TimerProvider timerProvider;
   late final StatsProvider statsProvider;
@@ -58,7 +59,8 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
   @override
   void initState() {
     super.initState();
-    logger.d('@@@ timer_result_page : ${widget.timerData}, ${widget.sessionDuration}, ${widget.isSessionTargetExceeded}');
+    logger.d(
+        '@@@ timer_result_page : ${widget.timerData}, ${widget.sessionDuration}, ${widget.isSessionTargetExceeded}');
     timerProvider = Provider.of<TimerProvider>(context, listen: false);
     statsProvider = Provider.of<StatsProvider>(context, listen: false);
     dbService = Provider.of<DatabaseService>(context, listen: false);
@@ -144,21 +146,27 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
           builder: (BuildContext context) {
             return AlertDialog(
               backgroundColor: AppColors.background(context),
-              title: Text('정말 삭제하시겠습니까?', style: AppTextStyles.getTitle(context).copyWith(color: Colors.redAccent)),
+              title: Text('정말 삭제하시겠습니까?',
+                  style: AppTextStyles.getTitle(context)
+                      .copyWith(color: Colors.redAccent)),
               content: Text(
                 '활동 기록을 삭제할 경우 통계에 반영되지 않으며 복구할 수 없습니다.',
                 style: AppTextStyles.getBody(context),
               ),
               actions: <Widget>[
                 TextButton(
-                  child: Text('취소', style: AppTextStyles.getTitle(context).copyWith(color: Colors.grey)),
+                  child: Text('취소',
+                      style: AppTextStyles.getTitle(context)
+                          .copyWith(color: Colors.grey)),
                   onPressed: () {
                     HapticFeedback.lightImpact();
                     Navigator.of(context).pop(false);
                   },
                 ),
                 TextButton(
-                  child: Text('삭제', style: AppTextStyles.getTitle(context).copyWith(color: Colors.redAccent)),
+                  child: Text('삭제',
+                      style: AppTextStyles.getTitle(context)
+                          .copyWith(color: Colors.redAccent)),
                   onPressed: () {
                     HapticFeedback.lightImpact();
                     Navigator.of(context).pop(true);
@@ -201,7 +209,8 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                             top: -context.hp(1.5),
                             child: Transform.rotate(
                               angle: 0.05,
-                              child: _buildCard(context, Colors.blue.shade100, 0.5),
+                              child: _buildCard(
+                                  context, Colors.blue.shade100, 0.5),
                             ),
                           ),
                           Positioned(
@@ -209,13 +218,14 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                             top: -context.hp(1.5),
                             child: Transform.rotate(
                               angle: -0.05,
-                              child: _buildCard(context, Colors.deepPurple.shade100, 0.5),
+                              child: _buildCard(
+                                  context, Colors.deepPurple.shade100, 0.5),
                             ),
                           ),
                           _buildMainCard(context),
                         ],
                       ),
-                      SizedBox(height: context.hp(15)),
+                      SizedBox(height: context.hp(10)),
                     ],
                   ),
                 ),
@@ -225,7 +235,7 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
           Positioned(
             left: 0,
             right: 0,
-            bottom: 0,
+            bottom: 20,
             child: Container(
               padding: EdgeInsets.only(
                 left: context.spacing_sm,
@@ -239,10 +249,14 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                     child: ElevatedButton(
                         onPressed: () async {
                           HapticFeedback.lightImpact();
-                          final shouldDelete = await _showDeleteConfirmationDialog(context);
+                          final shouldDelete =
+                              await _showDeleteConfirmationDialog(context);
                           if (!shouldDelete) return;
 
-                          await dbService.deleteSession(widget.timerData['current_session_id']).then((_) {
+                          await dbService
+                              .deleteSession(
+                                  widget.timerData['current_session_id'])
+                              .then((_) {
                             // 갱신이 완료된 후 페이지 이동
                             Navigator.pushReplacement(
                               context,
@@ -253,16 +267,19 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                           });
                         },
                         style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.backgroundTertiary(context),
+                            backgroundColor:
+                                AppColors.backgroundTertiary(context),
                             foregroundColor: AppColors.textPrimary(context),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(context.wp(3)),
+                              borderRadius:
+                                  BorderRadius.circular(context.wp(3)),
                             ),
                             minimumSize: Size(0, context.hp(7))),
                         child: Icon(
                           LucideIcons.trash2,
                           size: context.lg,
+                          color: AppColors.textPrimary(context),
                         )),
                   ),
                   SizedBox(width: context.wp(2)),
@@ -293,9 +310,8 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                           minimumSize: Size(0, context.hp(7))),
                       child: Text(
                         '확인',
-                        style: TextStyle(
-                          fontSize: context.md,
-                          fontWeight: FontWeight.bold,
+                        style: AppTextStyles.getBody(context).copyWith(
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
                     ),
@@ -315,14 +331,15 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
       height: context.hp(50),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(context.wp(5)),
-        color: color.withOpacity(opacity),
+        color: color.withValues(alpha: opacity),
       ),
     );
   }
 
   Widget _buildMainCard(BuildContext context) {
     final timerProvider = Provider.of<TimerProvider>(context);
-    final activityColor = ColorService.hexToColor(timerProvider.currentActivityColor);
+    final activityColor =
+        ColorService.hexToColor(timerProvider.currentActivityColor);
 
     String formatTargetDuration() {
       return formatDuration(timerProvider.currentSessionTargetDuration!);
@@ -337,15 +354,15 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            activityColor.withOpacity(0.9),
-            activityColor.withOpacity(0.7),
-            activityColor.withOpacity(0.5),
+            activityColor.withValues(alpha: 0.9),
+            activityColor.withValues(alpha: 0.7),
+            activityColor.withValues(alpha: 0.5),
           ],
           stops: const [0.0, 0.6, 1.0],
         ),
         boxShadow: [
           BoxShadow(
-            color: activityColor.withOpacity(0.4),
+            color: activityColor.withValues(alpha: 0.4),
             spreadRadius: context.wp(1),
             blurRadius: context.wp(4),
             offset: Offset(0, context.hp(0.5)),
@@ -357,11 +374,11 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
           Shimmer.fromColors(
             period: const Duration(seconds: 2),
             baseColor: activityColor,
-            highlightColor: Colors.white.withOpacity(0.3),
+            highlightColor: Colors.white.withValues(alpha: 0.3),
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(32.0),
-                color: activityColor.withOpacity(0.5), // base fallback
+                color: activityColor.withValues(alpha: 0.5), // base fallback
               ),
               width: context.wp(90),
               height: context.hp(50),
@@ -388,13 +405,17 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                       children: [
                         Builder(
                           builder: (context) {
-                            final activityName = timerProvider.currentActivityName;
-                            final displayText = activityName.length > 6 ? '${activityName.substring(0, 6)}...' : activityName;
+                            final activityName =
+                                timerProvider.currentActivityName;
+                            final displayText = activityName.length > 8
+                                ? '${activityName.substring(0, 8)}...'
+                                : activityName;
 
                             return Text(
                               displayText,
-                              style: AppTextStyles.getHeadline(context).copyWith(
-                                color: ColorService.getTextColorForBackground(activityColor),
+                              style: AppTextStyles.getTitle(context).copyWith(
+                                color: ColorService.getTextColorForBackground(
+                                    activityColor),
                                 fontWeight: FontWeight.w900,
                                 fontFamily: 'Neo',
                               ),
@@ -404,14 +425,18 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                         SizedBox(width: context.wp(2)),
                         Builder(
                           builder: (context) {
-                            final activityName = timerProvider.currentActivityName;
-                            final displayText = activityName.length > 6 ? '활동 완료' : '활동을 완료했습니다 !';
+                            final activityName =
+                                timerProvider.currentActivityName;
+                            final displayText = activityName.length > 6
+                                ? '활동 완료'
+                                : '활동을 완료했습니다 !';
 
                             return Text(
                               displayText,
                               style: AppTextStyles.getTitle(context).copyWith(
                                 fontWeight: FontWeight.w900,
-                                color: ColorService.getTextColorForBackground(activityColor),
+                                color: ColorService.getTextColorForBackground(
+                                    activityColor),
                               ),
                             );
                           },
@@ -424,12 +449,14 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                 Align(
                   alignment: Alignment.center,
                   child: Shimmer.fromColors(
-                    baseColor: ColorService.getTextColorForBackground(activityColor),
+                    baseColor:
+                        ColorService.getTextColorForBackground(activityColor),
                     highlightColor: Colors.grey.shade100.withOpacity(0.2),
                     child: Text(
                       formatDuration(widget.sessionDuration),
-                      style: AppTextStyles.getHeadline(context).copyWith(
-                        color: ColorService.getTextColorForBackground(activityColor),
+                      style: AppTextStyles.getTitle(context).copyWith(
+                        color: ColorService.getTextColorForBackground(
+                            activityColor),
                         fontFamily: 'Neo',
                         fontSize: context.xxl,
                       ),

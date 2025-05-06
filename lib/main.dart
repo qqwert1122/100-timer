@@ -1,8 +1,6 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:project1/firebase_options.dart';
 import 'package:project1/screens/activity_log_page.dart';
 import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/main_page.dart';
@@ -26,29 +24,9 @@ import 'package:uuid/uuid.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // SharedPreferences 초기화 및 기본값 설정
-  await PrefsService().init();
+  await initializeDateFormatting('ko_KR');
 
-  // wakelock
-  WakelockPlus.toggle(enable: PrefsService().keepScreenOn);
-
-  await initializeDateFormatting('ko_KR', null);
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.android);
-
-  // 광고 초기화
-  MobileAds.instance.initialize();
-
-  // 알림 초기화
-  await NotificationService().initialize();
-
-  // 화면 방향 고정
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp, // 세로 위 방향만 허용
-  ]);
-
-  // 데이터베이스 초기
-  // final dbService = DatabaseService();
-  // await insertTestData(dbService);
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   runApp(
     MultiProvider(
@@ -65,7 +43,8 @@ void main() async {
             return statsProvider;
           },
         ),
-        ChangeNotifierProxyProvider2<DatabaseService, StatsProvider, TimerProvider>(
+        ChangeNotifierProxyProvider2<DatabaseService, StatsProvider,
+            TimerProvider>(
           create: (context) {
             final dbService = context.read<DatabaseService>();
             final statsProvider = context.read<StatsProvider>();
@@ -111,6 +90,23 @@ void main() async {
       ),
     ),
   );
+
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // ① SharedPreferences
+    await PrefsService().init();
+    WakelockPlus.toggle(enable: PrefsService().keepScreenOn);
+
+    // ③ Google Mobile Ads
+    await MobileAds.instance.initialize();
+
+    // ④ 알림
+    await NotificationService().initialize();
+
+    // 데이터베이스 초기
+    // final dbService = DatabaseService();
+    // await insertTestData(dbService);
+  });
+
   // 앱 설정 초기화 함수
 }
 
@@ -210,7 +206,8 @@ class _MyAppState extends State<MyApp> {
     ];
 
     for (var act in defaultActivities) {
-      bool duplicate = await _dbService.isActivityNameDuplicate(act['activity_name']);
+      bool duplicate =
+          await _dbService.isActivityNameDuplicate(act['activity_name']);
       if (!duplicate) {
         await _dbService.addActivity(
           activityName: act['activity_name'],
@@ -293,9 +290,14 @@ class _MyAppState extends State<MyApp> {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             logger.e('App init failed: ${snapshot.error}');
-            return const MainPage();
+            return Scaffold(
+              body: Center(
+                child: Text('초기화 오류: ${snapshot.error}'),
+              ),
+            );
           }
-          if (snapshot.connectionState == ConnectionState.waiting || !_timerProvider.isTimerProviderInit) {
+          if (snapshot.connectionState == ConnectionState.waiting ||
+              !_timerProvider.isTimerProviderInit) {
             return const Scaffold(
               body: Center(
                 child: SizedBox(

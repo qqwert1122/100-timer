@@ -20,6 +20,15 @@
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"
+        },
+        {
+            "name": "project1",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "00008110-000218193461401E",
+            "env": {
+              "FLUTTER_DEBUG_ENABLE": "true"
+            }
         }
     ]
 }

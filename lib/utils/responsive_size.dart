@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 extension ResponsiveSize on BuildContext {
   // 화면 사이즈 가져오기
-  double get width => MediaQuery.of(this).size.width;
-  double get height => MediaQuery.of(this).size.height;
+  MediaQueryData get _mq => MediaQuery.of(this);
+
+  double get width => _mq.size.width;
+  double get height => _mq.size.height;
 
   // 퍼센트 기준 너비/높이
   double wp(double percent) => width * percent / 100;

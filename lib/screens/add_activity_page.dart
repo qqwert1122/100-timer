@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/theme/app_color.dart';
+import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
@@ -38,7 +39,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // List of HEX color strings
   final List<String> baseColors = [
     // Red shades
-    '#E4003A', '#FF0000', '#FF4500', '#FF3EA5', '#FF4C4C', '#FF1493', '#FF69B4', '#FFAAAA',
+    '#E4003A', '#FF0000', '#FF4500', '#FF3EA5', '#FF4C4C', '#FF1493', '#FF69B4',
+    '#FFAAAA',
     // Orange shades
     '#EB5B00', '#FF8C00', '#FF7F50', '#FFD700',
     // Yellow shades
@@ -80,7 +82,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
     super.dispose();
   }
 
-  bool get isActivityNameValid => _activityNameController.text.trim().isNotEmpty && !isDuplicate;
+  bool get isActivityNameValid =>
+      _activityNameController.text.trim().isNotEmpty && !isDuplicate;
 
   bool get isIconSelected => _selectedIconName != null;
 
@@ -167,7 +170,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
           newActivityColor: colorValue,
           newIsFavorite: 0,
         );
-        Navigator.pop(context, {'name': activityName, 'icon': iconName, 'color': colorValue});
+        Navigator.pop(context,
+            {'name': activityName, 'icon': iconName, 'color': colorValue});
       } else {
         await dbService.addActivity(
           activityName: activityName,
@@ -184,7 +188,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
           textColor: Colors.white,
           fontSize: 14.0,
         );
-        Navigator.pop(context, {'name': activityName, 'icon': iconName, 'color': colorValue});
+        Navigator.pop(context,
+            {'name': activityName, 'icon': iconName, 'color': colorValue});
       }
     } catch (e) {
       Fluttertoast.showToast(
@@ -228,18 +233,22 @@ class _AddActivityPageState extends State<AddActivityPage> {
           // 'Back' button
           Expanded(
             child: ElevatedButton(
-              onPressed: _currentStep > 0 ? _prevStep : HapticFeedback.lightImpact,
+              onPressed:
+                  _currentStep > 0 ? _prevStep : HapticFeedback.lightImpact,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: _currentStep > 0 ? Colors.red : AppColors.backgroundSecondary(context),
+                backgroundColor: _currentStep > 0
+                    ? Colors.red
+                    : AppColors.backgroundSecondary(context),
+                foregroundColor: AppColors.background(context),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 '뒤로',
-                style: TextStyle(
-                  color: Colors.white,
+                style: AppTextStyles.getBody(context).copyWith(
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ),
@@ -248,18 +257,25 @@ class _AddActivityPageState extends State<AddActivityPage> {
           // 'Next' or 'Save' button
           Expanded(
             child: ElevatedButton(
-              onPressed: isNextButtonEnabled ? (_currentStep < 2 ? _nextStep : _submit) : HapticFeedback.lightImpact,
+              onPressed: isNextButtonEnabled
+                  ? (_currentStep < 2 ? _nextStep : _submit)
+                  : HapticFeedback.lightImpact,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: isNextButtonEnabled ? Colors.blueAccent : AppColors.backgroundSecondary(context),
+                backgroundColor: isNextButtonEnabled
+                    ? Colors.blueAccent
+                    : AppColors.backgroundSecondary(context),
+                foregroundColor: isNextButtonEnabled
+                    ? Colors.white
+                    : AppColors.background(context),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: Text(
                 nextButtonText,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: AppTextStyles.getBody(context).copyWith(
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ),
@@ -280,9 +296,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
           key: _formKey,
           child: TextFormField(
             controller: _activityNameController,
-            style: TextStyle(
-              color: isDarkMode ? Colors.white : Colors.black,
-            ),
+            style: AppTextStyles.getBody(context),
             maxLength: 15,
             decoration: InputDecoration(
               border: const UnderlineInputBorder(),
@@ -295,7 +309,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 borderSide: BorderSide(color: Colors.blueAccent),
               ),
               hintText: '예시. 영단어 암기',
-              hintStyle: TextStyle(color: Colors.grey.shade400),
+              hintStyle: AppTextStyles.getBody(context)
+                  .copyWith(color: Colors.grey.shade400),
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -307,7 +322,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
             },
             onChanged: (value) async {
               // 입력된 이름 변경 시 중복 확인
-              bool duplicate = await Provider.of<DatabaseService>(context, listen: false).isActivityNameDuplicate(value);
+              bool duplicate =
+                  await Provider.of<DatabaseService>(context, listen: false)
+                      .isActivityNameDuplicate(value);
               setState(() {
                 isDuplicate = duplicate;
               });
@@ -358,7 +375,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
           {'icon': getIconImage('hammer'), 'name': 'hammer'},
           {'icon': getIconImage('dollar'), 'name': 'dollar'},
           {'icon': getIconImage('bank'), 'name': 'bank'},
-          {'icon': getIconImage('classical_building'), 'name': 'classical_building'},
+          {
+            'icon': getIconImage('classical_building'),
+            'name': 'classical_building'
+          },
         ],
         '자기계발': [
           {'icon': getIconImage('writing'), 'name': 'writing'}, // 추천
@@ -442,10 +462,16 @@ class _AddActivityPageState extends State<AddActivityPage> {
           {'icon': getIconImage('clapping'), 'name': 'clapping'},
           {'icon': getIconImage('thumbs_up'), 'name': 'thumbs_up'},
           {'icon': getIconImage('thumbs_down'), 'name': 'thumbs_down'},
-          {'icon': getIconImage('sign_of_the_horns_light'), 'name': 'sign_of_the_horns_light'},
+          {
+            'icon': getIconImage('sign_of_the_horns_light'),
+            'name': 'sign_of_the_horns_light'
+          },
           {'icon': getIconImage('victory'), 'name': 'victory'},
           {'icon': getIconImage('cityscape'), 'name': 'cityscape'},
-          {'icon': getIconImage('cityscape_at_dusk'), 'name': 'cityscape_at_dusk'},
+          {
+            'icon': getIconImage('cityscape_at_dusk'),
+            'name': 'cityscape_at_dusk'
+          },
           {'icon': getIconImage('city_night'), 'name': 'city_night'},
           {'icon': getIconImage('sun'), 'name': 'sun'},
           {'icon': getIconImage('sunrise'), 'name': 'sunrise'},
@@ -475,9 +501,15 @@ class _AddActivityPageState extends State<AddActivityPage> {
           {'icon': getIconImage('money_wing'), 'name': 'money_wing'},
           {'icon': getIconImage('gear'), 'name': 'gear'},
           {'icon': getIconImage('hourglass_done'), 'name': 'hourglass_done'},
-          {'icon': getIconImage('hourglass_not_done'), 'name': 'hourglass_not_done'},
+          {
+            'icon': getIconImage('hourglass_not_done'),
+            'name': 'hourglass_not_done'
+          },
           {'icon': getIconImage('label'), 'name': 'label'},
-          {'icon': getIconImage('police_car_light'), 'name': 'police_car_light'},
+          {
+            'icon': getIconImage('police_car_light'),
+            'name': 'police_car_light'
+          },
           {'icon': getIconImage('shopping'), 'name': 'shopping'},
           {'icon': getIconImage('ticket'), 'name': 'ticket'},
           {'icon': getIconImage('unlocked'), 'name': 'unlocked'},
@@ -498,7 +530,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
         ],
         '도형': [
           {'icon': getIconImage('growing_heart'), 'name': 'growing_heart'},
-          {'icon': getIconImage('heart_exclamation'), 'name': 'heart_exclamation'},
+          {
+            'icon': getIconImage('heart_exclamation'),
+            'name': 'heart_exclamation'
+          },
           {'icon': getIconImage('two_heart'), 'name': 'two_heart'},
           {'icon': getIconImage('green_heart'), 'name': 'green_heart'},
           {'icon': getIconImage('yellow_heart'), 'name': 'yellow_heart'},
@@ -512,115 +547,14 @@ class _AddActivityPageState extends State<AddActivityPage> {
           {'icon': getIconImage('up_button'), 'name': 'up_button'},
           {'icon': getIconImage('shuffle'), 'name': 'shuffle'},
           {'icon': getIconImage('hundred'), 'name': 'hundred'},
-          {'icon': getIconImage('exclamation_question_mark'), 'name': 'exclamation_question_mark'},
+          {
+            'icon': getIconImage('exclamation_question_mark'),
+            'name': 'exclamation_question_mark'
+          },
           {'icon': getIconImage('green_circle'), 'name': 'green_circle'},
           {'icon': getIconImage('green_square'), 'name': 'green_square'},
         ],
       };
-// final Map<String, List<Map<String, dynamic>>> iconCategories = {
-//         '추천': [
-//           {'icon': getIconImage('category_rounded'), 'name': 'category_rounded'},
-//           {'icon': getIconImage('school_rounded'), 'name': 'school_rounded'},
-//           {'icon': getIconImage('library'), 'name': 'library'},
-//           {'icon': getIconImage('computer'), 'name': 'computer'},
-//           {'icon': getIconImage('edit'), 'name': 'edit'},
-//           {'icon': getIconImage('work_rounded'), 'name': 'work_rounded'},
-//           {'icon': getIconImage('art'), 'name': 'art'},
-//           {'icon': getIconImage('library_books'), 'name': 'library_books'},
-//           {'icon': getIconImage('language'), 'name': 'language'},
-//           {'icon': getIconImage('fitness_center_rounded'), 'name': 'fitness_center_rounded'},
-//         ],
-//         '자기계발': [
-//           {'icon': getIconImage('school_rounded'), 'name': 'school_rounded'},
-//           {'icon': getIconImage('library'), 'name': 'library'},
-//           {'icon': getIconImage('computer'), 'name': 'computer'},
-//           {'icon': getIconImage('edit'), 'name': 'edit'},
-//           {'icon': getIconImage('ideas'), 'name': 'ideas'},
-//           {'icon': getIconImage('tools'), 'name': 'tools'},
-//           {'icon': getIconImage('healing'), 'name': 'healing'},
-//           {'icon': getIconImage('spa'), 'name': 'spa'},
-//           {'icon': getIconImage('gavel'), 'name': 'gavel'},
-//           {'icon': getIconImage('group_work'), 'name': 'group_work'},
-//           {'icon': getIconImage('security'), 'name': 'security'},
-//           {'icon': getIconImage('volunteer'), 'name': 'volunteer'},
-//           {'icon': getIconImage('mentoring'), 'name': 'mentoring'},
-//           {'icon': getIconImage('library_books'), 'name': 'library_books'},
-//           {'icon': getIconImage('language'), 'name': 'language'},
-//         ],
-//         '업무': [
-//           {'icon': getIconImage('work_rounded'), 'name': 'work_rounded'},
-//           {'icon': getIconImage('business'), 'name': 'business'},
-//           {'icon': getIconImage('phone'), 'name': 'phone'},
-//           {'icon': getIconImage('email'), 'name': 'email'},
-//           {'icon': getIconImage('timeline'), 'name': 'timeline'},
-//           {'icon': getIconImage('chart'), 'name': 'chart'},
-//           {'icon': getIconImage('keyboard'), 'name': 'keyboard'},
-//           {'icon': getIconImage('money'), 'name': 'money'},
-//           {'icon': getIconImage('meeting'), 'name': 'meeting'},
-//           {'icon': getIconImage('analytics'), 'name': 'analytics'},
-//           {'icon': getIconImage('assignment'), 'name': 'assignment'},
-//           {'icon': getIconImage('person_add'), 'name': 'person_add'},
-//           {'icon': getIconImage('print'), 'name': 'print'},
-//           {'icon': getIconImage('folder_open'), 'name': 'folder_open'},
-//           {'icon': getIconImage('fact_check'), 'name': 'fact_check'},
-//           {'icon': getIconImage('science'), 'name': 'science'},
-//           {'icon': getIconImage('architecture'), 'name': 'architecture'},
-//           {'icon': getIconImage('art'), 'name': 'art'},
-//         ],
-//         '운동': [
-//           {'icon': getIconImage('fitness_center_rounded'), 'name': 'fitness_center_rounded'},
-//           {'icon': getIconImage('running'), 'name': 'running'},
-//           {'icon': getIconImage('bike'), 'name': 'bike'},
-//           {'icon': getIconImage('soccer'), 'name': 'soccer'},
-//           {'icon': getIconImage('park'), 'name': 'park'},
-//           {'icon': getIconImage('golf'), 'name': 'golf'},
-//           {'icon': getIconImage('swimming'), 'name': 'swimming'},
-//           {'icon': getIconImage('tennis'), 'name': 'tennis'},
-//           {'icon': getIconImage('basketball'), 'name': 'basketball'},
-//           {'icon': getIconImage('volleyball'), 'name': 'volleyball'},
-//           {'icon': getIconImage('mma'), 'name': 'mma'},
-//           {'icon': getIconImage('cricket'), 'name': 'cricket'},
-//           {'icon': getIconImage('esports'), 'name': 'esports'},
-//           {'icon': getIconImage('hiking'), 'name': 'hiking'},
-//         ],
-//         '일상': [
-//           {'icon': getIconImage('home'), 'name': 'home'},
-//           {'icon': getIconImage('restaurant'), 'name': 'restaurant'},
-//           {'icon': getIconImage('pets'), 'name': 'pets'},
-//           {'icon': getIconImage('cleaning'), 'name': 'cleaning'},
-//           {'icon': getIconImage('coffee'), 'name': 'coffee'},
-//           {'icon': getIconImage('hospital'), 'name': 'hospital'},
-//           {'icon': getIconImage('shopping'), 'name': 'shopping'},
-//           {'icon': getIconImage('movie'), 'name': 'movie'},
-//           {'icon': getIconImage('music'), 'name': 'music'},
-//           {'icon': getIconImage('flight'), 'name': 'flight'},
-//           {'icon': getIconImage('hotel'), 'name': 'hotel'},
-//           {'icon': getIconImage('camera'), 'name': 'camera'},
-//           {'icon': getIconImage('car'), 'name': 'car'},
-//           {'icon': getIconImage('boat'), 'name': 'boat'},
-//           {'icon': getIconImage('train'), 'name': 'train'},
-//           {'icon': getIconImage('subway'), 'name': 'subway'},
-//           {'icon': getIconImage('walk'), 'name': 'walk'},
-//           {'icon': getIconImage('cafe'), 'name': 'cafe'},
-//           {'icon': getIconImage('tv'), 'name': 'tv'},
-//           {'icon': getIconImage('gaming'), 'name': 'gaming'},
-//           {'icon': getIconImage('theater'), 'name': 'theater'},
-//           {'icon': getIconImage('radio'), 'name': 'radio'},
-//           {'icon': getIconImage('headset'), 'name': 'headset'},
-//           {'icon': getIconImage('mic'), 'name': 'mic'},
-//           {'icon': getIconImage('music_video'), 'name': 'music_video'},
-//           {'icon': getIconImage('bus'), 'name': 'bus'},
-//           {'icon': getIconImage('painting'), 'name': 'painting'},
-//           {'icon': getIconImage('map'), 'name': 'map'},
-//           {'icon': getIconImage('photo'), 'name': 'photo'},
-//           {'icon': getIconImage('beach'), 'name': 'beach'},
-//           {'icon': getIconImage('bubble_chart'), 'name': 'bubble_chart'},
-//           {'icon': getIconImage('wine_bar'), 'name': 'wine_bar'},
-//           {'icon': getIconImage('weather'), 'name': 'weather'},
-//           {'icon': getIconImage('kabaddi'), 'name': 'kabaddi'},
-//           {'icon': getIconImage('village'), 'name': 'village'},
-//         ],
-//       };
 
       return Padding(
         padding: const EdgeInsets.all(16),
@@ -636,7 +570,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
               children: [
                 Text(
                   categoryName,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  style: AppTextStyles.getBody(context)
+                      .copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 GridView.builder(
@@ -660,7 +595,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: _selectedIconName == iconName ? Colors.blue.withOpacity(0.3) : Colors.transparent,
+                          color: _selectedIconName == iconName
+                              ? Colors.blue.withOpacity(0.3)
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Image.asset(
@@ -699,9 +636,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 "선택된 색상",
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+                style: AppTextStyles.getBody(context)
+                    .copyWith(fontWeight: FontWeight.w900),
               ),
               const SizedBox(
                 width: 10,
@@ -744,7 +682,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                     ),
                     child: Column(
                       children: opacities.map((opacity) {
-                        Color colorWithOpacity = ColorService.hexToColor(baseColor).withOpacity(opacity);
+                        Color colorWithOpacity =
+                            ColorService.hexToColor(baseColor)
+                                .withOpacity(opacity);
 
                         return Container(
                           width: 30,
@@ -776,24 +716,19 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 child: ListTile(
                   leading: Icon(
                     Icons.info_outlined,
-                    color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+                    color: isDarkMode
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade700,
                   ),
                   title: Text(
                     '베이스컬러를 선택해주세요',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
-                    ),
+                    style: AppTextStyles.getBody(context),
                   ),
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       '활동을 오래할수록 색상이 점점 진해집니다.\n위에서 색상의 변화를 미리보고 마음에 드는 베이스 컬러를 선택해주세요.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
-                      ),
+                      style: AppTextStyles.getCaption(context),
                     ),
                   ),
                 ),
@@ -813,7 +748,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
         appBar: AppBar(
           title: Text(
             widget.isEdit ? '활동 수정' : '활동 추가',
-            style: const TextStyle(fontWeight: FontWeight.w400, fontSize: 18),
+            style: AppTextStyles.getTitle(context),
           ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -839,60 +774,51 @@ class _AddActivityPageState extends State<AddActivityPage> {
                   child: Stepper(
                     physics: const ClampingScrollPhysics(),
                     currentStep: _currentStep,
-                    controlsBuilder: (BuildContext context, ControlsDetails details) {
+                    controlsBuilder:
+                        (BuildContext context, ControlsDetails details) {
                       return const SizedBox();
                     },
                     steps: [
                       Step(
                         title: _currentStep == 0
-                            ? const Padding(
+                            ? Padding(
                                 padding: EdgeInsets.all(16),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '활동 이름을',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w600,
+                                      '활동 이름을\n입력해주세요',
+                                      style: AppTextStyles.getTitle(context)
+                                          .copyWith(
+                                        fontWeight: FontWeight.w900,
                                         color: Colors.blueAccent,
                                       ),
                                     ),
                                     Text(
-                                      '입력해주세요',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blueAccent,
-                                      ),
+                                      '15자 이내로 입력해주세요',
+                                      style: AppTextStyles.getCaption(context),
                                     ),
                                   ],
                                 ),
                               )
                             : Container(),
-                        content: _currentStep == 0 ? buildActivityName() : Container(),
+                        content: _currentStep == 0
+                            ? buildActivityName()
+                            : Container(),
                         isActive: _currentStep == 0,
                       ),
                       Step(
                         title: _currentStep == 1
-                            ? const Padding(
+                            ? Padding(
                                 padding: EdgeInsets.all(16),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '아이콘을',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blueAccent,
-                                      ),
-                                    ),
-                                    Text(
-                                      '선택해주세요',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w600,
+                                      '아이콘을\n선택해주세요',
+                                      style: AppTextStyles.getTitle(context)
+                                          .copyWith(
+                                        fontWeight: FontWeight.w900,
                                         color: Colors.blueAccent,
                                       ),
                                     ),
@@ -900,29 +826,23 @@ class _AddActivityPageState extends State<AddActivityPage> {
                                 ),
                               )
                             : Container(),
-                        content: _currentStep == 1 ? buildIconSelection() : Container(),
+                        content: _currentStep == 1
+                            ? buildIconSelection()
+                            : Container(),
                         isActive: _currentStep == 1,
                       ),
                       Step(
                         title: _currentStep == 2
-                            ? const Padding(
+                            ? Padding(
                                 padding: EdgeInsets.all(16),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '색상을',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blueAccent,
-                                      ),
-                                    ),
-                                    Text(
-                                      '선택해주세요',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w600,
+                                      '색상을\n선택해주세요',
+                                      style: AppTextStyles.getTitle(context)
+                                          .copyWith(
+                                        fontWeight: FontWeight.w900,
                                         color: Colors.blueAccent,
                                       ),
                                     ),
@@ -930,7 +850,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                                 ),
                               )
                             : Container(),
-                        content: _currentStep == 2 ? buildColorSelection() : Container(),
+                        content: _currentStep == 2
+                            ? buildColorSelection()
+                            : Container(),
                         isActive: _currentStep == 2,
                       ),
                     ],
@@ -938,7 +860,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 ),
               ),
             ),
-            buildNextAndBackButtons()
+            buildNextAndBackButtons(),
+            SizedBox(height: context.hp(2)),
           ],
         ),
       ),

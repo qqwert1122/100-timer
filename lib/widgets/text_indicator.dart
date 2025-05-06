@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/timer_provider.dart';
 
 class TextIndicator extends StatefulWidget {
@@ -15,7 +16,8 @@ class TextIndicator extends StatefulWidget {
   State<TextIndicator> createState() => _TextIndicatorState();
 }
 
-class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateMixin {
+class _TextIndicatorState extends State<TextIndicator>
+    with TickerProviderStateMixin {
   late AnimationController _textAnimationController;
   late Animation<Offset> _textAnimation;
   late Animation<double> _opacityAnimation;
@@ -98,7 +100,7 @@ class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateM
                     TextSpan(
                       text: '눌러서 ',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: context.md,
                         fontWeight: FontWeight.w600,
                         color: isDarkMode ? Colors.white : Colors.black,
                       ),
@@ -106,7 +108,7 @@ class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateM
                     TextSpan(
                       text: '시작',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: context.md,
                         fontWeight: FontWeight.w900,
                         color: Colors.redAccent.shade200,
                       ),
@@ -114,7 +116,7 @@ class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateM
                     TextSpan(
                       text: '하기',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: context.md,
                         fontWeight: FontWeight.w600,
                         color: isDarkMode ? Colors.white : Colors.black,
                       ),
@@ -127,7 +129,7 @@ class _TextIndicatorState extends State<TextIndicator> with TickerProviderStateM
                 formattedDate,
                 key: const ValueKey(true),
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: context.md,
                   fontWeight: FontWeight.w600,
                   color: isDarkMode ? Colors.white : Colors.black,
                 ),

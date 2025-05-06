@@ -16,7 +16,8 @@ class WeeklyActivityChart extends StatefulWidget {
   State<WeeklyActivityChart> createState() => _WeeklyActivityChartState();
 }
 
-class _WeeklyActivityChartState extends State<WeeklyActivityChart> with SingleTickerProviderStateMixin {
+class _WeeklyActivityChartState extends State<WeeklyActivityChart>
+    with SingleTickerProviderStateMixin {
   String selectedActivityName = "";
   int _lastOffset = 0;
   late AnimationController _animationController;
@@ -161,12 +162,14 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart> with SingleTi
             for (final data in chartData) {
               final activityName = data['activity_name'] as String;
               final minutes = data['minutes'] as double;
-              activityTotalMinutes[activityName] = (activityTotalMinutes[activityName] ?? 0) + minutes;
+              activityTotalMinutes[activityName] =
+                  (activityTotalMinutes[activityName] ?? 0) + minutes;
             }
 
             // 많이 쓴 순서대로 소팅
             List<String> sortedActivities = uniqueActivities.toList()
-              ..sort((a, b) => (activityTotalMinutes[b] ?? 0).compareTo(activityTotalMinutes[a] ?? 0));
+              ..sort((a, b) => (activityTotalMinutes[b] ?? 0)
+                  .compareTo(activityTotalMinutes[a] ?? 0));
 
             return Column(
               children: [
@@ -203,7 +206,8 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart> with SingleTi
                       // 총 사용 시간
                       Text(
                         totalUsageTime,
-                        style: AppTextStyles.getHeadline(context).copyWith(color: AppColors.textSecondary(context)),
+                        style: AppTextStyles.getHeadline(context)
+                            .copyWith(color: AppColors.textSecondary(context)),
                       ),
 
                       // 주간 막대 그래프
@@ -235,16 +239,20 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart> with SingleTi
                       direction: Axis.horizontal,
                       children: sortedActivities.map(
                         (activityName) {
-                          final colorStr = activityColors[activityName] ?? '#CCCCCC';
-                          final iconStr = activityIcons[activityName] ?? 'default_icon';
+                          final colorStr =
+                              activityColors[activityName] ?? '#CCCCCC';
+                          final iconStr =
+                              activityIcons[activityName] ?? 'default_icon';
                           final color = ColorService.hexToColor(colorStr);
 
                           // 활동별 총 시간 문자열
-                          final totalMinutes = activityTotalMinutes[activityName] ?? 0.0;
+                          final totalMinutes =
+                              activityTotalMinutes[activityName] ?? 0.0;
                           final timeStr = _formatMinutes(totalMinutes);
 
                           final isNothingSelected = selectedActivityName == "";
-                          final isSelected = selectedActivityName == activityName;
+                          final isSelected =
+                              selectedActivityName == activityName;
                           final shouldPaint = isNothingSelected || isSelected;
 
                           return GestureDetector(
@@ -278,7 +286,8 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart> with SingleTi
                                       width: context.xxl,
                                       height: context.xxl,
                                       decoration: BoxDecoration(
-                                        color: AppColors.background(context).withOpacity(shouldPaint ? 0 : 0.7),
+                                        color: AppColors.background(context)
+                                            .withOpacity(shouldPaint ? 0 : 0.7),
                                         shape: BoxShape.circle,
                                       ),
                                     ),
@@ -289,19 +298,21 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart> with SingleTi
                                 // 총 시간 표시
 
                                 Text(
-                                  activityName.length >= 6 ? '${activityName.substring(0, 6)}...' : activityName,
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary(context).withOpacity(shouldPaint ? 1 : 0.2),
-                                    fontSize: context.sm,
-                                    fontWeight: FontWeight.w600,
+                                  activityName.length >= 6
+                                      ? '${activityName.substring(0, 6)}...'
+                                      : activityName,
+                                  style: AppTextStyles.getCaption(context)
+                                      .copyWith(
+                                    color: AppColors.textPrimary(context)
+                                        .withOpacity(shouldPaint ? 1 : 0.2),
                                   ),
                                 ),
                                 Text(
                                   timeStr,
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary(context).withOpacity(shouldPaint ? 1 : 0.2),
-                                    fontSize: context.sm,
-                                    fontWeight: FontWeight.w400,
+                                  style: AppTextStyles.getCaption(context)
+                                      .copyWith(
+                                    color: AppColors.textPrimary(context)
+                                        .withOpacity(shouldPaint ? 1 : 0.2),
                                   ),
                                 ),
                               ],
@@ -444,7 +455,8 @@ class BarChartPainter extends CustomPainter {
 
       // 활동별로 많은 순서대로 막대를 쌓아 그린다
       final sortedActivities = dayData.keys.toList()
-        ..sort((a, b) => (dayData[b]!['minutes'] as double).compareTo(dayData[a]!['minutes'] as double));
+        ..sort((a, b) => (dayData[b]!['minutes'] as double)
+            .compareTo(dayData[a]!['minutes'] as double));
 
       for (final activityName in sortedActivities) {
         final activityData = dayData[activityName]!;
@@ -513,9 +525,12 @@ class BarChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant BarChartPainter oldDelegate) {
     // animationValue 변경이 있는지 확인하고 디버깅 출력
-    final shouldRedraw = oldDelegate.selectedActivityName != selectedActivityName || oldDelegate.animationValue != animationValue;
+    final shouldRedraw =
+        oldDelegate.selectedActivityName != selectedActivityName ||
+            oldDelegate.animationValue != animationValue;
 
-    print("애니메이션 값: $animationValue, 이전 값: ${oldDelegate.animationValue}, 다시 그리기: $shouldRedraw");
+    print(
+        "애니메이션 값: $animationValue, 이전 값: ${oldDelegate.animationValue}, 다시 그리기: $shouldRedraw");
 
     return shouldRedraw;
   }

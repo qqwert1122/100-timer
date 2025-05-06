@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:math';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path/path.dart';
 import 'package:project1/utils/logger_config.dart';
 import 'package:sqflite/sqflite.dart';
@@ -9,7 +8,6 @@ import 'package:uuid/uuid.dart';
 
 class DatabaseService {
   Database? _database;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   DatabaseService();
   /*
@@ -178,7 +176,8 @@ class DatabaseService {
         limit: 1,
       );
 
-      if (existingTimers.isNotEmpty) return; // 이미 해당 주차 타이머가 있다면 return. 중복 생성 방지
+      if (existingTimers.isNotEmpty)
+        return; // 이미 해당 주차 타이머가 있다면 return. 중복 생성 방지
 
       await db.insert(
         'timers',
@@ -217,7 +216,8 @@ class DatabaseService {
   }
 
   // 타이머 업데이트
-  Future<void> updateTimer(String timerId, Map<String, dynamic> updatedData) async {
+  Future<void> updateTimer(
+      String timerId, Map<String, dynamic> updatedData) async {
     final db = await database;
     String now = DateTime.now().toUtc().toIso8601String();
 
@@ -294,7 +294,8 @@ class DatabaseService {
     final activityId = const Uuid().v4();
     String now = DateTime.now().toUtc().toIso8601String();
 
-    final result = await db.rawQuery("SELECT MAX(sort_order) as maxSortOrder FROM activities WHERE is_deleted = 0");
+    final result = await db.rawQuery(
+        "SELECT MAX(sort_order) as maxSortOrder FROM activities WHERE is_deleted = 0");
     int sortOrder = 1;
     if (result.isNotEmpty && result.first["maxSortOrder"] != null) {
       // 조회된 최대값에 1을 더해 다음 순서를 지정합니다.
@@ -381,11 +382,12 @@ class DatabaseService {
       else if (newIsFavorite == 1) {
         // 현재 최대 favorite_order 값을 조회하여 +1 부여
         try {
-          final maxOrderResult =
-              await db.rawQuery('SELECT MAX(favorite_order) as max_order FROM activities WHERE is_favorite = 1 AND is_deleted = 0');
+          final maxOrderResult = await db.rawQuery(
+              'SELECT MAX(favorite_order) as max_order FROM activities WHERE is_favorite = 1 AND is_deleted = 0');
 
           int maxOrder = 0;
-          if (maxOrderResult.isNotEmpty && maxOrderResult[0]['max_order'] != null) {
+          if (maxOrderResult.isNotEmpty &&
+              maxOrderResult[0]['max_order'] != null) {
             maxOrder = maxOrderResult[0]['max_order'] as int;
           }
 
@@ -593,7 +595,11 @@ class DatabaseService {
 
     await db.update(
       'todos',
-      {'is_deleted': 1, 'deleted_at': DateTime.now().toIso8601String(), 'last_updated_at': DateTime.now().toIso8601String()},
+      {
+        'is_deleted': 1,
+        'deleted_at': DateTime.now().toIso8601String(),
+        'last_updated_at': DateTime.now().toIso8601String()
+      },
       where: 'todo_id = ?',
       whereArgs: [todoId],
     );
@@ -605,7 +611,10 @@ class DatabaseService {
 
     await db.update(
       'todos',
-      {'is_completed': isCompleted ? 1 : 0, 'last_updated_at': DateTime.now().toIso8601String()},
+      {
+        'is_completed': isCompleted ? 1 : 0,
+        'last_updated_at': DateTime.now().toIso8601String()
+      },
       where: 'todo_id = ?',
       whereArgs: [todoId],
     );
@@ -792,7 +801,8 @@ class DatabaseService {
     required String endTime,
     required int duration,
   }) async {
-    logger.d('### dbService ### : endSession({$sessionId, $endTime, $duration})');
+    logger
+        .d('### dbService ### : endSession({$sessionId, $endTime, $duration})');
     final db = await database;
     final now = DateTime.now().toUtc();
 

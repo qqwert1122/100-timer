@@ -2,10 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Project1</string>
+	<string>100 timer</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>100-Timer</string>
+	<string>100 Timer</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -22,8 +24,28 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-9503898094962699~7783086822</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>이 앱은 알림음을 위해 마이크 권한이 필요합니다</string>
+	<key>NSNotificationCenterUsageDescription</key>
+	<string>타이머 진행 상황과 완료를 알려드리기 위해 알림 센터 권한이 필요합니다</string>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>타이머 진행 상황을 알려드리기 위해 알림 권한이 필요합니다.</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+		<string>processing</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -41,41 +63,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	<key>FirebaseAppDelegateProxyEnabled</key>
-	<false/>
-
-	<!-- 알림을 위한 추가 설정 -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-		<string>remote-notification</string>
-		<string>processing</string>
-	</array>
-	<!-- 알림 권한 요청 시 표시되는 설명 -->
-	<key>NSUserNotificationUsageDescription</key>
-	<string>타이머 진행 상황을 알려드리기 위해 알림 권한이 필요합니다.</string>
-
-	<!-- 소리 권한 설명 -->
-	<key>NSMicrophoneUsageDescription</key>
-	<string>이 앱은 알림음을 위해 마이크 권한이 필요합니다</string>
-
-	<!-- 알림 센터 권한 설명 -->
-	<key>NSNotificationCenterUsageDescription</key>
-	<string>타이머 진행 상황과 완료를 알려드리기 위해 알림 센터 권한이 필요합니다</string>
-
-	<!-- url 링크 권한 설명 -->
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-  		<string>https</string>
-	</array>
-
-	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-9503898094962699~7783086822</string>
-
-
 </dict>
 </plist>

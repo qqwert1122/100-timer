@@ -38,7 +38,8 @@ class TimerRunningPage extends StatefulWidget {
   State<TimerRunningPage> createState() => _TimerRunningPageState();
 }
 
-class _TimerRunningPageState extends State<TimerRunningPage> with TickerProviderStateMixin, WidgetsBindingObserver {
+class _TimerRunningPageState extends State<TimerRunningPage>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   // 서비스 객체 (의존성 주입)
   late final DatabaseService _dbService; // 데이터베이스 서비스
   late final TimerProvider timerProvider; // 타이머 상태 관리 Provider
@@ -159,7 +160,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
     // 타이머 초과 케이스 처리
     if (isSessionTargetExceeded && !_hasShownCompletionDialog) {
-      logger.d('@@@ timer_running_page @@@ : _handleTimerStateChange() >> isSessionTargetExceeded');
+      logger.d(
+          '@@@ timer_running_page @@@ : _handleTimerStateChange() >> isSessionTargetExceeded');
       logger.d(
           'timerProvider.justFinishedByExceeding : ${timerProvider.justFinishedByExceeding}, _hasShownCompletionDialog : $_hasShownCompletionDialog');
       timerProvider.clearEventFlags();
@@ -169,7 +171,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
     // 타이머 중지 케이스 처리
     if (!isRunning && !isSessionTargetExceeded && currentState == 'STOP') {
-      logger.d('@@@ timer_running_page @@@ : _handleTimerStateChange() >> isSessionTarget Not Exceeded');
+      logger.d(
+          '@@@ timer_running_page @@@ : _handleTimerStateChange() >> isSessionTarget Not Exceeded');
       _navigateToResultPage(isSessionTargetExceeded: false);
     }
   }
@@ -178,7 +181,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   void _updateAnimationState(String state) {
     if (state == 'RUNNING') {
       setState(() {
-        _isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
+        _isDarkMode =
+            MediaQuery.of(context).platformBrightness == Brightness.dark;
         if (waves.isEmpty) {
           _initAnimations();
         } else {
@@ -193,7 +197,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
   // 결과 페이지로 이동하는 helper 메소드
   void _navigateToResultPage({required bool isSessionTargetExceeded}) {
-    logger.d('@@@ timer_running_page : _navigateToResultPage($isSessionTargetExceeded)');
+    logger.d(
+        '@@@ timer_running_page : _navigateToResultPage($isSessionTargetExceeded)');
     if (_isNavigating) return;
     _isNavigating = true;
 
@@ -203,7 +208,9 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
         MaterialPageRoute(
           builder: (context) => TimerResultPage(
             timerData: timerProvider.timerData!,
-            sessionDuration: isSessionTargetExceeded ? timerProvider.currentSessionTargetDuration! : timerProvider.currentSessionDuration,
+            sessionDuration: isSessionTargetExceeded
+                ? timerProvider.currentSessionTargetDuration!
+                : timerProvider.currentSessionDuration,
             isSessionTargetExceeded: isSessionTargetExceeded,
           ),
         ),
@@ -255,12 +262,14 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     super.didChangeDependencies();
     print('timer_running_page : didChangeDependencies');
 
-    final isRunning = Provider.of<TimerProvider>(context, listen: false).isRunning;
+    final isRunning =
+        Provider.of<TimerProvider>(context, listen: false).isRunning;
 
     // Initialize animations only if timer is running and not already initialized
     if (isRunning && !_isAnimationInitialized) {
       print('Initializing animations - Timer is running');
-      _isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
+      _isDarkMode =
+          MediaQuery.of(context).platformBrightness == Brightness.dark;
       _initAnimations();
       _isAnimationInitialized = true;
 
@@ -291,8 +300,10 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     return weekStart.toIso8601String().split('T').first;
   }
 
-  Future<void> _handleStop({bool isSessionTargetExceeded = false, int? targetDuration}) async {
-    logger.d('@@@ timer_running_page @@@ : handleStop({$isSessionTargetExceeded, $targetDuration})');
+  Future<void> _handleStop(
+      {bool isSessionTargetExceeded = false, int? targetDuration}) async {
+    logger.d(
+        '@@@ timer_running_page @@@ : handleStop({$isSessionTargetExceeded, $targetDuration})');
 
     final timer = timerProvider.timerData!;
     try {
@@ -306,7 +317,9 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
       await NotificationService().cancelCompletionNotification();
 
       // 세션 종료
-      await timerProvider.stopTimer(isSessionTargetExceeded: isSessionTargetExceeded, sessionId: timer['current_session_id']);
+      await timerProvider.stopTimer(
+          isSessionTargetExceeded: isSessionTargetExceeded,
+          sessionId: timer['current_session_id']);
 
       // 애니메이션 중지
       for (var wave in waves) {
@@ -319,7 +332,9 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
           MaterialPageRoute(
             builder: (context) => TimerResultPage(
               timerData: timer,
-              sessionDuration: isSessionTargetExceeded ? targetDuration! : timerProvider.currentSessionDuration,
+              sessionDuration: isSessionTargetExceeded
+                  ? targetDuration!
+                  : timerProvider.currentSessionDuration,
               isSessionTargetExceeded: isSessionTargetExceeded,
             ),
           ),
@@ -387,7 +402,9 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
       );
 
       waves.add(Wave(
-        color: _isDarkMode ? Colors.white.withOpacity(0.25 - i * 0.1) : Colors.redAccent.withOpacity(0.25 - i * 0.1),
+        color: _isDarkMode
+            ? Colors.white.withOpacity(0.25 - i * 0.1)
+            : Colors.redAccent.withOpacity(0.25 - i * 0.1),
         strokeWidth: 2.0 + (i * 2.0),
         maxRadius: 100.0 + (i * 5.0),
         minRadius: 100.0,
@@ -458,7 +475,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
         timerProvider.currentSessionTargetDuration != null) {
       if (turnOn) {
         // ✔ 알림 켜짐 → 잔여 시간으로 재예약
-        final remaining = timerProvider.currentSessionTargetDuration! - timerProvider.currentSessionDuration;
+        final remaining = timerProvider.currentSessionTargetDuration! -
+            timerProvider.currentSessionDuration;
         if (remaining > 0) {
           await NotificationService().scheduleActivityCompletionNotification(
             scheduledTime: DateTime.now().add(Duration(seconds: remaining)),
@@ -509,7 +527,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     return FutureBuilder<int>(
       // 활동 ID가 null이 아닌 경우에만 통계 데이터를 가져옴
       future: timerProvider.currentActivityId != null
-          ? statsProvider.getWeeklyDurationByActivity(timerProvider.currentActivityId!)
+          ? statsProvider
+              .getWeeklyDurationByActivity(timerProvider.currentActivityId!)
           : Future.value(0),
       builder: (context, snapshot) {
         // 데이터 로딩 중이거나 오류가 발생한 경우 로딩 표시
@@ -572,9 +591,9 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
             child: Text(
               message,
               key: ValueKey<int>(currentMessageIndex), // 고유 키를 사용하여 메시지 변경 감지
-              style: TextStyle(
-                fontSize: 18,
-                color: _isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+              style: AppTextStyles.getBody(context).copyWith(
+                fontWeight: FontWeight.w900,
+                color: AppColors.textSecondary(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -587,14 +606,18 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   Widget _buildProgressCircle(TimerProvider timerProvider) {
     double progress = 0.0;
 
-    if (timerProvider.currentSessionMode == 'PMDR' || !timerProvider.isWeeklyTargetExceeded) {
-      progress = 1 - (timerProvider.currentSessionDuration / timerProvider.currentSessionTargetDuration!);
+    if (timerProvider.currentSessionMode == 'PMDR' ||
+        !timerProvider.isWeeklyTargetExceeded) {
+      progress = 1 -
+          (timerProvider.currentSessionDuration /
+              timerProvider.currentSessionTargetDuration!);
     } else {
       // 주간 목표시간 초과달성 시 (1시간 기준 진행률 표시)
       progress = 1 - (timerProvider.currentSessionDuration / 3600);
     }
 
-    final activityColor = ColorService.hexToColor(timerProvider.currentActivityColor);
+    final activityColor =
+        ColorService.hexToColor(timerProvider.currentActivityColor);
     final activityName = timerProvider.currentActivityName;
     final activityIcon = timerProvider.currentActivityIcon;
     final isStateRunning = timerProvider.currentState == 'RUNNING';
@@ -624,7 +647,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                 return CircularProgressIndicator(
                   key: _circleKey,
                   value: animatedProgress,
-                  backgroundColor: _isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                  backgroundColor:
+                      _isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
                   valueColor: AlwaysStoppedAnimation<Color>(activityColor),
                   strokeWidth: 8,
                   strokeCap: StrokeCap.round,
@@ -655,10 +679,10 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
               ),
               SizedBox(width: context.hp(1)),
               Text(
-                (activityName).length > 6 ? '${(activityName).substring(0, 6)}...' : (activityName),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                (activityName).length > 6
+                    ? '${(activityName).substring(0, 6)}...'
+                    : (activityName),
+                style: AppTextStyles.getBody(context).copyWith(
                   color: activityColor,
                 ),
               ),
@@ -674,8 +698,11 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
 
     if (timerProvider.currentSessionMode == "PMDR") {
       // 뽀모도로 모드: 남은 시간 표시
-      final remainingSeconds = timerProvider.currentSessionTargetDuration! - timerProvider.currentSessionDuration;
-      duration = Duration(seconds: remainingSeconds.clamp(0, timerProvider.currentSessionTargetDuration!));
+      final remainingSeconds = timerProvider.currentSessionTargetDuration! -
+          timerProvider.currentSessionDuration;
+      duration = Duration(
+          seconds: remainingSeconds.clamp(
+              0, timerProvider.currentSessionTargetDuration!));
     } else {
       // 일반 모드: 경과 시간 표시
       duration = Duration(seconds: timerProvider.currentSessionDuration);
@@ -688,9 +715,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
       hours: hours,
       minutes: minutes,
       seconds: seconds,
-      style: TextStyle(
+      style: AppTextStyles.getTimeDisplay(context).copyWith(
         color: ColorService.hexToColor(timerProvider.currentActivityColor),
-        fontSize: 48,
         fontWeight: FontWeight.w500,
         fontFamily: 'chab',
       ),
@@ -780,8 +806,12 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                     targetBorderRadius: BorderRadius.circular(16),
                     overlayOpacity: 0.5,
                     child: Shimmer.fromColors(
-                      baseColor: _isMusicOn ? Colors.redAccent : AppColors.textPrimary(context),
-                      highlightColor: _isMusicOn ? Colors.yellowAccent : AppColors.textPrimary(context),
+                      baseColor: _isMusicOn
+                          ? Colors.redAccent
+                          : AppColors.textPrimary(context),
+                      highlightColor: _isMusicOn
+                          ? Colors.yellowAccent
+                          : AppColors.textPrimary(context),
                       child: IconButton(
                         onPressed: () {
                           _showMusicBottomSheet();
@@ -852,7 +882,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                         getIconImage('bulb'),
                         width: context.xl,
                         height: context.xl,
-                        color: _isLightOn ? null : AppColors.textPrimary(context),
+                        color:
+                            _isLightOn ? null : AppColors.textPrimary(context),
                         errorBuilder: (context, error, stackTrace) {
                           // 이미지를 로드하는 데 실패한 경우의 대체 표시
                           return Container(
@@ -902,17 +933,24 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16.0),
                   ),
-                  title: const Text("활동 종료"),
-                  content: const Text("활동을 마무리 하시겠어요?"),
+                  title: Text(
+                    "활동 종료",
+                    style: AppTextStyles.getTitle(context),
+                  ),
+                  content: Text(
+                    "활동을 마무리 하시겠어요?",
+                    style: AppTextStyles.getBody(context),
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () {
                         // 아니오: 모달창 닫기
                         Navigator.of(ctx).pop();
                       },
-                      child: const Text(
+                      child: Text(
                         "아니오",
-                        style: TextStyle(color: Colors.grey),
+                        style: AppTextStyles.getBody(context)
+                            .copyWith(color: Colors.grey),
                       ),
                     ),
                     TextButton(
@@ -920,18 +958,20 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                         Navigator.of(ctx).pop();
                         await _handleStop();
                       },
-                      child: const Text("네", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
+                      child: Text("네",
+                          style: AppTextStyles.getBody(context).copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: Colors.redAccent)),
                     ),
                   ],
                 );
               },
             );
           },
-          child: const Text(
+          child: Text(
             "활동 종료",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            style: AppTextStyles.getBody(context).copyWith(
+              fontWeight: FontWeight.w900,
             ),
           ),
         ),
@@ -946,7 +986,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     final buttonText = currentState == 'RUNNING' ? '잠깐 휴식' : '다시 시작';
 
     // 상태에 따른 버튼 색상
-    final backgroundColor = currentState == 'RUNNING' ? Colors.grey[200] : Colors.blueAccent;
+    final backgroundColor =
+        currentState == 'RUNNING' ? Colors.grey[200] : Colors.blueAccent;
 
     final fontColor = currentState == 'RUNNING' ? Colors.grey : Colors.white;
 
@@ -975,7 +1016,9 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
         // 재개 로직
         final sessionId = timerProvider.timerData?['current_session_id'];
         if (sessionId != null) {
-          timerProvider.resumeTimer(sessionId: sessionId, updateUIImmediately: true).then((_) {
+          timerProvider
+              .resumeTimer(sessionId: sessionId, updateUIImmediately: true)
+              .then((_) {
             if (mounted) {
               setState(() {
                 _isPendingStateChange = false;
@@ -1002,9 +1045,8 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
           onPressed: onPressed,
           child: Text(
             buttonText,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            style: AppTextStyles.getBody(context).copyWith(
+              fontWeight: FontWeight.w900,
               color: fontColor,
             ),
           ),
@@ -1080,8 +1122,10 @@ class AnimatedNumber extends StatelessWidget {
       height: 60,
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 500),
-        switchInCurve: const Interval(0.5, 1.0, curve: Curves.easeInOut), // 새 숫자는 후반부에
-        switchOutCurve: const Interval(0.0, 0.5, curve: Curves.easeInOut), // 이전 숫자는 전반부에
+        switchInCurve:
+            const Interval(0.5, 1.0, curve: Curves.easeInOut), // 새 숫자는 후반부에
+        switchOutCurve:
+            const Interval(0.0, 0.5, curve: Curves.easeInOut), // 이전 숫자는 전반부에
         transitionBuilder: (Widget child, Animation<double> animation) {
           // 나가는 숫자의 애니메이션
           if (child.key != ValueKey<int>(number)) {
@@ -1278,6 +1322,8 @@ class BackgroundPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(BackgroundPainter oldDelegate) {
-    return duration != oldDelegate.duration || baseColor != oldDelegate.baseColor || intensity != oldDelegate.intensity;
+    return duration != oldDelegate.duration ||
+        baseColor != oldDelegate.baseColor ||
+        intensity != oldDelegate.intensity;
   }
 }

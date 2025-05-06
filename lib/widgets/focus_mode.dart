@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/timer_running_page.dart';
+import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/notification_service.dart';
 import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/stats_provider.dart';
@@ -126,7 +127,9 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
               height: context.wp(2),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: index < currentCount ? Colors.white : Colors.white.withOpacity(0.3),
+                color: index < currentCount
+                    ? Colors.white
+                    : Colors.white.withOpacity(0.3),
                 border: Border.all(
                   color: Colors.white.withOpacity(0.5),
                   width: 1,
@@ -182,9 +185,8 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                           children: [
                             Text(
                               item['title'],
-                              style: TextStyle(
-                                fontSize: context.lg * 2,
-                                fontWeight: FontWeight.w400,
+                              style: AppTextStyles.getTimeDisplay(context)
+                                  .copyWith(
                                 color: Colors.white,
                                 fontFamily: 'chab',
                               ),
@@ -192,8 +194,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                             SizedBox(width: context.wp(1)),
                             Text(
                               index == 0 ? '분' : '시간',
-                              style: TextStyle(
-                                fontSize: context.sm,
+                              style: AppTextStyles.getBody(context).copyWith(
                                 fontWeight: FontWeight.w200,
                                 color: Colors.white,
                               ),

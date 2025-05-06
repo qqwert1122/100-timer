@@ -24,7 +24,13 @@ class _MusicBottomSheetState extends State<MusicBottomSheet> {
   late String currentMusic;
 
   // 음악 목록
-  final List<String> musicList = ['지저귀는 새', '파도', '비 내리는 날', '도시', '보리밭에 부는 바람'];
+  final List<String> musicList = [
+    '지저귀는 새',
+    '파도',
+    '비 내리는 날',
+    '도시',
+    '보리밭에 부는 바람'
+  ];
 
   @override
   void initState() {
@@ -93,14 +99,19 @@ class _MusicBottomSheetState extends State<MusicBottomSheet> {
                 return ListTile(
                   title: Text(
                     music,
-                    style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? Colors.redAccent : AppColors.textPrimary(context),
+                    style: AppTextStyles.getBody(context).copyWith(
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected
+                          ? Colors.redAccent
+                          : AppColors.textPrimary(context),
                     ),
                   ),
                   trailing: isSelected
-                      ? const Icon(Icons.pause_circle_filled_rounded, color: Colors.redAccent)
-                      : Icon(Icons.play_circle_fill_rounded, color: AppColors.textSecondary(context)),
+                      ? const Icon(Icons.pause_circle_filled_rounded,
+                          color: Colors.redAccent)
+                      : Icon(Icons.play_circle_fill_rounded,
+                          color: AppColors.textSecondary(context)),
                   onTap: () {
                     selectMusic(music);
                     Navigator.pop(context);

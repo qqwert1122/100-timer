@@ -29,7 +29,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     final List<Map<String, dynamic>> goalSamples = [
       {
@@ -151,9 +152,11 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
             Row(
               children: [
                 Container(
-                  width: context.xxxl,
-                  height: context.xxxl,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(50.0)),
+                  width: context.xxl,
+                  height: context.xxl,
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(50.0)),
                   child: Image.asset(
                     getIconImage('fitness'),
                     width: context.xl,
@@ -163,7 +166,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                         width: context.xl,
                         height: context.xl,
                         color: Colors.grey.withOpacity(0.2),
-                        child: Icon(Icons.broken_image, size: context.xl, color: Colors.grey),
+                        child: Icon(Icons.broken_image,
+                            size: context.xl, color: Colors.grey),
                       );
                     },
                   ),
@@ -198,7 +202,6 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                           '3개월',
                           style: AppTextStyles.getBody(context).copyWith(
                             fontWeight: FontWeight.w600,
-                            fontSize: 14.0,
                           ),
                         ),
                         Text(
@@ -206,14 +209,12 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                           style: AppTextStyles.getBody(context).copyWith(
                             color: Colors.grey,
                             fontWeight: FontWeight.w600,
-                            fontSize: 14.0,
                           ),
                         ),
                         Text(
                           '매주',
                           style: AppTextStyles.getBody(context).copyWith(
                             fontWeight: FontWeight.w600,
-                            fontSize: 14.0,
                           ),
                         ),
                         Text(
@@ -221,14 +222,12 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                           style: AppTextStyles.getBody(context).copyWith(
                             color: Colors.redAccent,
                             fontWeight: FontWeight.w600,
-                            fontSize: 14.0,
                           ),
                         ),
                         Text(
                           '3회',
                           style: AppTextStyles.getBody(context).copyWith(
                             fontWeight: FontWeight.w600,
-                            fontSize: 14.0,
                           ),
                         ),
                         Text(
@@ -236,7 +235,6 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                           style: AppTextStyles.getBody(context).copyWith(
                             color: Colors.grey,
                             fontWeight: FontWeight.w600,
-                            fontSize: 14.0,
                           ),
                         ),
                       ],
@@ -272,29 +270,16 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                       SizedBox(width: context.wp(1)),
                       Text(
                         '7',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
+                        style: AppTextStyles.getCaption(context).copyWith(
                           color: Colors.blueAccent,
                         ),
                       ),
-                      Text(
-                        '/15회',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: Colors.grey.shade400,
-                        ),
-                      ),
+                      Text('/15회', style: AppTextStyles.getCaption(context)),
                     ],
                   ),
                   Text(
                     '|',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: context.sm,
-                      color: Colors.grey,
-                    ),
+                    style: AppTextStyles.getCaption(context),
                   ),
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -309,11 +294,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                       SizedBox(width: context.wp(1)),
                       Text(
                         '47% 달성',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: Colors.grey,
-                        ),
+                        style: AppTextStyles.getCaption(context),
                       ),
                     ],
                   ),
@@ -342,11 +323,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                       SizedBox(width: context.wp(1)),
                       Text(
                         '누적 활동 시간   11h 32m',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: Colors.grey,
-                        ),
+                        style: AppTextStyles.getCaption(context),
                       ),
                     ],
                   ),
@@ -379,9 +356,11 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
             Row(
               children: [
                 Container(
-                  width: context.xxxl,
-                  height: context.xxxl,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(50.0)),
+                  width: context.xxl,
+                  height: context.xxl,
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(50.0)),
                   child: Image.asset(
                     getIconImage('running'),
                     width: context.xl,
@@ -391,7 +370,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                         width: context.xl,
                         height: context.xl,
                         color: Colors.grey.withOpacity(0.2),
-                        child: Icon(Icons.broken_image, size: context.xl, color: Colors.grey),
+                        child: Icon(Icons.broken_image,
+                            size: context.xl, color: Colors.grey),
                       );
                     },
                   ),
@@ -431,9 +411,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                             SizedBox(width: context.wp(1)),
                             Text(
                               '2025-12-31',
-                              style: AppTextStyles.getBody(context).copyWith(
+                              style: AppTextStyles.getCaption(context).copyWith(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 12.0,
                               ),
                             ),
                           ],
@@ -443,14 +422,12 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                           style: AppTextStyles.getBody(context).copyWith(
                             color: Colors.grey,
                             fontWeight: FontWeight.w600,
-                            fontSize: 14.0,
                           ),
                         ),
                         Text(
                           '매일',
                           style: AppTextStyles.getBody(context).copyWith(
                             fontWeight: FontWeight.w600,
-                            fontSize: 14.0,
                           ),
                         ),
                         Text(
@@ -458,14 +435,12 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                           style: AppTextStyles.getBody(context).copyWith(
                             color: Colors.redAccent,
                             fontWeight: FontWeight.w600,
-                            fontSize: 14.0,
                           ),
                         ),
                         Text(
                           '30분',
                           style: AppTextStyles.getBody(context).copyWith(
                             fontWeight: FontWeight.w600,
-                            fontSize: 14.0,
                           ),
                         ),
                         Text(
@@ -473,7 +448,6 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                           style: AppTextStyles.getBody(context).copyWith(
                             color: Colors.grey,
                             fontWeight: FontWeight.w600,
-                            fontSize: 14.0,
                           ),
                         ),
                       ],
@@ -509,29 +483,19 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                       SizedBox(width: context.wp(1)),
                       Text(
                         '6',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
+                        style: AppTextStyles.getCaption(context).copyWith(
                           color: Colors.blueAccent,
                         ),
                       ),
                       Text(
                         '/248회',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: Colors.grey.shade400,
-                        ),
+                        style: AppTextStyles.getCaption(context),
                       ),
                     ],
                   ),
                   Text(
                     '|',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: context.sm,
-                      color: Colors.grey,
-                    ),
+                    style: AppTextStyles.getCaption(context),
                   ),
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -546,11 +510,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                       SizedBox(width: context.wp(1)),
                       Text(
                         '2% 달성',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: Colors.grey,
-                        ),
+                        style: AppTextStyles.getCaption(context),
                       ),
                     ],
                   ),
@@ -579,11 +539,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                       SizedBox(width: context.wp(1)),
                       Text(
                         '누적 활동 시간   3h 11m',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: context.sm,
-                          color: Colors.grey,
-                        ),
+                        style: AppTextStyles.getCaption(context),
                       ),
                     ],
                   ),
@@ -715,13 +671,9 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                       color: Colors.black87,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Text(
+                    child: Text(
                       ' 7 / 15 ',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AppTextStyles.getCaption(context),
                     ),
                   ),
                 ),
@@ -807,15 +759,14 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
       );
     }
 
-    Widget _buildDayWithReminder(BuildContext context, String day, bool isActive, Color? color) {
+    Widget _buildDayWithReminder(
+        BuildContext context, String day, bool isActive, Color? color) {
       return Column(
         children: [
           // 요일 텍스트
           Text(
             day,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+            style: AppTextStyles.getCaption(context).copyWith(
               color: isActive ? AppColors.textPrimary(context) : Colors.grey,
             ),
           ),
@@ -861,16 +812,19 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         '신규 기능 추가',
-                        style: TextStyle(color: Colors.blue, fontSize: 14.0),
+                        style: AppTextStyles.getBody(context).copyWith(
+                          color: Colors.blueAccent,
+                        ),
                       ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           Text(
                             '목표 기능을\n준비 중이에요',
-                            style: AppTextStyles.getHeadline(context).copyWith(),
+                            style:
+                                AppTextStyles.getHeadline(context).copyWith(),
                           ),
                           SizedBox(width: context.wp(2)),
                           Shimmer.fromColors(
@@ -906,10 +860,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                   highlightColor: AppColors.background(context),
                   child: Text(
                     '목표를 정하세요',
-                    style: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: context.md,
-                    ),
+                    style: AppTextStyles.getBody(context),
                   ),
                 ),
                 SizedBox(height: context.hp(1)),
@@ -922,7 +873,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                     enlargeCenterPage: false,
                     autoPlay: true,
                   ),
-                  itemBuilder: (BuildContext context, int index, int realIndex) {
+                  itemBuilder:
+                      (BuildContext context, int index, int realIndex) {
                     final goal = goalSamples[index];
 
                     return Container(
@@ -933,7 +885,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.textPrimary(context).withOpacity(0.08), // 그림자 색상
+                            color: AppColors.textPrimary(context)
+                                .withOpacity(0.08), // 그림자 색상
                             blurRadius: 10, // 그림자 흐림 정도
                             offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
                           ),
@@ -967,7 +920,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                               Flexible(
                                 child: Text(
                                   goal['title'],
-                                  style: AppTextStyles.getBody(context).copyWith(
+                                  style:
+                                      AppTextStyles.getBody(context).copyWith(
                                     color: Colors.white,
                                     fontFamily: 'neo',
                                   ),
@@ -988,10 +942,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                   highlightColor: AppColors.background(context),
                   child: Text(
                     '목표 카드를 만드세요',
-                    style: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: context.md,
-                    ),
+                    style: AppTextStyles.getBody(context),
                   ),
                 ),
                 SizedBox(height: context.hp(1)),
@@ -1002,10 +953,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                   highlightColor: AppColors.background(context),
                   child: Text(
                     '목표를 추적하세요',
-                    style: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: context.md,
-                    ),
+                    style: AppTextStyles.getBody(context),
                   ),
                 ),
                 SizedBox(height: context.hp(1)),
@@ -1016,22 +964,21 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                   highlightColor: AppColors.background(context),
                   child: Text(
                     '목표를 관리하세요',
-                    style: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: context.md,
-                    ),
+                    style: AppTextStyles.getBody(context),
                   ),
                 ),
                 SizedBox(height: context.hp(1)),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   margin: const EdgeInsets.symmetric(horizontal: 16.0),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16.0), // 둥근 모서리
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.textPrimary(context).withOpacity(0.08), // 그림자 색상
+                        color: AppColors.textPrimary(context)
+                            .withOpacity(0.08), // 그림자 색상
                         blurRadius: 10, // 그림자 흐림 정도
                         offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
                       ),
@@ -1052,20 +999,28 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _buildDayWithReminder(context, '월', true, Colors.blueAccent),
-                            _buildDayWithReminder(context, '화', true, Colors.blueAccent),
-                            _buildDayWithReminder(context, '수', true, Colors.blueAccent),
-                            _buildDayWithReminder(context, '목', false, Colors.transparent),
-                            _buildDayWithReminder(context, '금', true, Colors.orangeAccent),
-                            _buildDayWithReminder(context, '토', false, Colors.transparent),
-                            _buildDayWithReminder(context, '일', false, Colors.transparent),
+                            _buildDayWithReminder(
+                                context, '월', true, Colors.blueAccent),
+                            _buildDayWithReminder(
+                                context, '화', true, Colors.blueAccent),
+                            _buildDayWithReminder(
+                                context, '수', true, Colors.blueAccent),
+                            _buildDayWithReminder(
+                                context, '목', false, Colors.transparent),
+                            _buildDayWithReminder(
+                                context, '금', true, Colors.orangeAccent),
+                            _buildDayWithReminder(
+                                context, '토', false, Colors.transparent),
+                            _buildDayWithReminder(
+                                context, '일', false, Colors.transparent),
                           ],
                         ),
                         SizedBox(height: context.hp(2)),
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.blueAccent,
                                 borderRadius: BorderRadius.circular(16),
@@ -1080,8 +1035,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                                   SizedBox(width: context.wp(1)),
                                   Text(
                                     '오후 7:30',
-                                    style: AppTextStyles.getBody(context).copyWith(
-                                      fontSize: 12,
+                                    style: AppTextStyles.getCaption(context)
+                                        .copyWith(
                                       color: Colors.white,
                                     ),
                                   ),
@@ -1090,7 +1045,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                             ),
                             SizedBox(width: context.wp(2)),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
                                 color: Colors.orangeAccent,
                                 borderRadius: BorderRadius.circular(16),
@@ -1105,8 +1061,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                                   SizedBox(width: context.wp(1)),
                                   Text(
                                     '오후 9:30',
-                                    style: AppTextStyles.getBody(context).copyWith(
-                                      fontSize: 12,
+                                    style: AppTextStyles.getCaption(context)
+                                        .copyWith(
                                       color: Colors.white,
                                     ),
                                   ),
@@ -1147,18 +1103,12 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                   children: [
                     Text(
                       '이 기능이 마음에 드시나요?',
-                      style: TextStyle(
-                        fontSize: context.md,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AppTextStyles.getBody(context),
                     ),
                     SizedBox(height: context.hp(0.5)),
                     Text(
                       '여러분의 의견을 들려주세요!',
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: context.sm,
-                      ),
+                      style: AppTextStyles.getCaption(context),
                     ),
                     SizedBox(height: context.hp(2)),
                     Container(
@@ -1173,7 +1123,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        icon: Icon(LucideIcons.send, size: context.lg, color: Colors.white),
+                        icon: Icon(LucideIcons.send,
+                            size: context.lg, color: Colors.white),
                         label: Text(
                           '출시되면 알려주세요',
                           style: AppTextStyles.getBody(context).copyWith(

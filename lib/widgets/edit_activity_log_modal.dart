@@ -7,6 +7,7 @@ import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
@@ -169,7 +170,8 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           ),
                           Expanded(
                             child: CupertinoPicker(
-                              scrollController: FixedExtentScrollController(initialItem: hours),
+                              scrollController: FixedExtentScrollController(
+                                  initialItem: hours),
                               itemExtent: 40,
                               onSelectedItemChanged: (int index) {
                                 setState(() {
@@ -180,10 +182,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                 return Center(
                                   child: Text(
                                     index.toString().padLeft(2, '0'),
-                                    style: TextStyle(
-                                      fontSize: context.lg,
-                                      color: AppColors.textPrimary(context),
-                                    ),
+                                    style: AppTextStyles.getBody(context),
                                   ),
                                 );
                               }),
@@ -206,7 +205,8 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           ),
                           Expanded(
                             child: CupertinoPicker(
-                              scrollController: FixedExtentScrollController(initialItem: minutes),
+                              scrollController: FixedExtentScrollController(
+                                  initialItem: minutes),
                               itemExtent: 40,
                               onSelectedItemChanged: (int index) {
                                 setState(() {
@@ -217,10 +217,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                 return Center(
                                   child: Text(
                                     index.toString().padLeft(2, '0'),
-                                    style: TextStyle(
-                                      fontSize: context.lg,
-                                      color: AppColors.textPrimary(context),
-                                    ),
+                                    style: AppTextStyles.getBody(context),
                                   ),
                                 );
                               }),
@@ -243,7 +240,8 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           ),
                           Expanded(
                             child: CupertinoPicker(
-                              scrollController: FixedExtentScrollController(initialItem: seconds),
+                              scrollController: FixedExtentScrollController(
+                                  initialItem: seconds),
                               itemExtent: 40,
                               onSelectedItemChanged: (int index) {
                                 setState(() {
@@ -254,10 +252,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                 return Center(
                                   child: Text(
                                     index.toString().padLeft(2, '0'),
-                                    style: TextStyle(
-                                      fontSize: context.lg,
-                                      color: AppColors.textPrimary(context),
-                                    ),
+                                    style: AppTextStyles.getBody(context),
                                   ),
                                 );
                               }),
@@ -285,11 +280,10 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         '취소',
-                        style: TextStyle(
+                        style: AppTextStyles.getBody(context).copyWith(
                           color: Colors.white,
-                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -305,7 +299,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           HapticFeedback.lightImpact();
                           Navigator.pop(context);
                         } catch (e) {
-                          print('Error updating activity time: $e');
+                          logger.d('Error updating activity time: $e');
                           // 에러 처리
                         }
                       },
@@ -316,17 +310,17 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         '확인',
-                        style: TextStyle(
+                        style: AppTextStyles.getBody(context).copyWith(
                           color: Colors.white,
-                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
+              SizedBox(height: context.hp(2)),
             ],
           ),
         );
@@ -398,7 +392,9 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                             color: Colors.transparent,
                             child: Container(
                               decoration: BoxDecoration(
-                                color: activity['activity_name'] == activityName ? Colors.red[50] : null,
+                                color: activity['activity_name'] == activityName
+                                    ? Colors.red[50]
+                                    : null,
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: ListTile(
@@ -425,9 +421,15 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                   children: [
                                     Text(
                                       activity['activity_name'],
-                                      style: AppTextStyles.getBody(context).copyWith(
-                                          fontWeight: FontWeight.w900,
-                                          color: activity['activity_name'] == activityName ? Colors.redAccent.shade200 : null),
+                                      style: AppTextStyles.getBody(context)
+                                          .copyWith(
+                                              fontWeight: FontWeight.w900,
+                                              color:
+                                                  activity['activity_name'] ==
+                                                          activityName
+                                                      ? Colors
+                                                          .redAccent.shade200
+                                                      : null),
                                     ),
                                     SizedBox(
                                       width: context.wp(4),
@@ -435,9 +437,11 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                     Container(
                                       width: 12,
                                       height: 12,
-                                      margin: const EdgeInsets.symmetric(vertical: 2.0),
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 2.0),
                                       decoration: BoxDecoration(
-                                        color: ColorService.hexToColor(activity['activity_color']),
+                                        color: ColorService.hexToColor(
+                                            activity['activity_color']),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                     ),
@@ -485,13 +489,16 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
           ),
           child: FutureBuilder(
             future: _sessionData,
-            builder: (BuildContext context, AsyncSnapshot<Map<String, dynamic>?> snapshot) {
+            builder: (BuildContext context,
+                AsyncSnapshot<Map<String, dynamic>?> snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(
                     child: CircularProgressIndicator(
                   color: AppColors.textPrimary(context),
                 ));
-              } else if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+              } else if (snapshot.hasError ||
+                  !snapshot.hasData ||
+                  snapshot.data == null) {
                 return const Center(child: Text('활동 기록을 찾을 수 없습니다.'));
               } else {
                 return Column(
@@ -549,7 +556,8 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.textSecondary(context).withOpacity(0.3),
+                              color: AppColors.textSecondary(context)
+                                  .withValues(alpha: 0.3),
                               spreadRadius: 1,
                               blurRadius: 4,
                               offset: const Offset(0, 2),
@@ -560,7 +568,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
-                              flex: 3,
+                              flex: 2,
                               child: Text(
                                 '활동',
                                 style: AppTextStyles.getBody(context).copyWith(
@@ -570,7 +578,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                               ),
                             ),
                             Expanded(
-                              flex: 6,
+                              flex: 7,
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
@@ -593,10 +601,12 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                   ),
                                   SizedBox(width: context.wp(2)),
                                   Text(
-                                    activityName,
-                                    style: AppTextStyles.getBody(context).copyWith(
+                                    activityName.length >= 10
+                                        ? '${activityName.substring(0, 10)}...'
+                                        : activityName,
+                                    style:
+                                        AppTextStyles.getBody(context).copyWith(
                                       fontWeight: FontWeight.w900,
-                                      fontFamily: 'Neo',
                                     ),
                                     textAlign: TextAlign.end,
                                   ),
@@ -610,8 +620,11 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                 child: Transform(
                                     // 중심을 기준으로 좌우 대칭(수평 반전)하기
                                     alignment: Alignment.center,
-                                    transform: Matrix4.identity()..scale(-1.0, 1.0),
-                                    child: Icon(Icons.arrow_back_ios_new_rounded, size: context.lg)),
+                                    transform: Matrix4.identity()
+                                      ..scale(-1.0, 1.0),
+                                    child: Icon(
+                                        Icons.arrow_back_ios_new_rounded,
+                                        size: context.lg)),
                               ),
                             ),
                           ],
@@ -633,7 +646,8 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.textSecondary(context).withOpacity(0.3),
+                              color: AppColors.textSecondary(context)
+                                  .withOpacity(0.3),
                               spreadRadius: 1,
                               blurRadius: 4,
                               offset: const Offset(0, 2),
@@ -657,9 +671,8 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                               flex: 6,
                               child: Text(
                                 duration,
-                                style: AppTextStyles.getTitle(context).copyWith(
+                                style: AppTextStyles.getBody(context).copyWith(
                                   fontWeight: FontWeight.w900,
-                                  fontFamily: 'Neo',
                                 ),
                                 textAlign: TextAlign.end,
                               ),
@@ -671,8 +684,11 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                 child: Transform(
                                     // 중심을 기준으로 좌우 대칭(수평 반전)하기
                                     alignment: Alignment.center,
-                                    transform: Matrix4.identity()..scale(-1.0, 1.0),
-                                    child: Icon(Icons.arrow_back_ios_new_rounded, size: context.lg)),
+                                    transform: Matrix4.identity()
+                                      ..scale(-1.0, 1.0),
+                                    child: Icon(
+                                        Icons.arrow_back_ios_new_rounded,
+                                        size: context.lg)),
                               ),
                             ),
                           ],
@@ -695,9 +711,12 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               '취소',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                              style: AppTextStyles.getBody(context).copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ),
                         ),
@@ -719,17 +738,18 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               '저장',
-                              style: TextStyle(
+                              style: AppTextStyles.getBody(context).copyWith(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ),
                         ),
                       ],
-                    )
+                    ),
+                    SizedBox(height: context.hp(2)),
                   ],
                 );
               }
