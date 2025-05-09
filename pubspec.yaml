@@ -49,8 +49,8 @@ dependencies:
   device_info_plus: ^11.1.1
   fl_chart: ^0.69.2
   cupertino_icons: ^1.0.6
-  lucide_icons : ^0.257.0
-  fluttertoast: ^8.2.8
+  lucide_icons: ^0.257.0
+  fluttertoast: ^8.2.12
   awesome_notifications: ^0.10.1
   just_audio: ^0.9.46
   google_mobile_ads: ^5.3.1

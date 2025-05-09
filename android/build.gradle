@@ -10,7 +10,7 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:8.1.3' // Android Gradle Plugin 버전 확인 및 필요 시 업데이트
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" // Kotlin Gradle Plugin 추가        
-        classpath 'com.google.gms:google-services:4.4.2' 
+        // classpath 'com.google.gms:google-services:4.4.2' 
     }
 }
 
