@@ -15,6 +15,7 @@ import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/widgets/footer.dart';
+import 'package:project1/widgets/total_seconds_cards.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -135,7 +136,14 @@ class _SettingPageState extends State<SettingPage> {
         'description': '다른 시간을 도전하세요\n바뀐 시간은 다음주부터 적용돼요',
         'onTap': () {},
         'trailing': GestureDetector(
-          onTap: () => _showPicker(context),
+          // onTap: () => _showPicker(context),
+          onTap: () {
+            showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return const TotalSecondsCards();
+                });
+          },
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -258,12 +266,12 @@ class _SettingPageState extends State<SettingPage> {
           value: keepScreenOn,
           onChanged: (bool value) => _saveWakelockState(value),
           activeTrackColor: Colors.redAccent,
-          inactiveTrackColor: Colors.redAccent.withValues(alpha:  0.1),
+          inactiveTrackColor: Colors.redAccent.withValues(alpha: 0.1),
         ),
       },
       {
         'title': '알림을 켜요',
-        'icon': 'alarm',
+        'icon': 'bell',
         'description': '활동에 관련된 푸시 알림을 받아요',
         'onTap': () {},
         'trailing': CupertinoSwitch(

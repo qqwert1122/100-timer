@@ -13,7 +13,7 @@ class _AlarmPageState extends State<AlarmPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          '알림',
+          '알림 설정',
           style: TextStyle(fontWeight: FontWeight.w400, fontSize: 18),
         ),
       ),
