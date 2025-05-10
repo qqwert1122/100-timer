@@ -407,7 +407,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                     return Container(
                                       width: context.xl,
                                       height: context.xl,
-                                      color: Colors.grey.withOpacity(0.2),
+                                      color: Colors.grey.withValues(alpha: 0.2),
                                       child: Icon(
                                         Icons.broken_image,
                                         size: context.xl,
@@ -590,7 +590,8 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                       return Container(
                                         width: context.xl,
                                         height: context.xl,
-                                        color: Colors.grey.withOpacity(0.2),
+                                        color:
+                                            Colors.grey.withValues(alpha: 0.2),
                                         child: Icon(
                                           Icons.broken_image,
                                           size: context.xl,
@@ -647,7 +648,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.textSecondary(context)
-                                  .withOpacity(0.3),
+                                  .withValues(alpha: 0.3),
                               spreadRadius: 1,
                               blurRadius: 4,
                               offset: const Offset(0, 2),

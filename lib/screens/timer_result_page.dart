@@ -451,7 +451,7 @@ class _TimerResultPageState extends State<TimerResultPage>
                   child: Shimmer.fromColors(
                     baseColor:
                         ColorService.getTextColorForBackground(activityColor),
-                    highlightColor: Colors.grey.shade100.withOpacity(0.2),
+                    highlightColor: Colors.grey.shade100.withValues(alpha: 0.2),
                     child: Text(
                       formatDuration(widget.sessionDuration),
                       style: AppTextStyles.getTitle(context).copyWith(

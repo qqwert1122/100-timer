@@ -110,8 +110,8 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart>
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               return Shimmer.fromColors(
-                baseColor: Colors.grey.shade300.withOpacity(0.2),
-                highlightColor: Colors.grey.shade100.withOpacity(0.2),
+                baseColor: Colors.grey.shade300.withValues(alpha: 0.2),
+                highlightColor: Colors.grey.shade100.withValues(alpha: 0.2),
                 child: Container(
                   width: context.wp(100),
                   height: context.hp(30),
@@ -271,7 +271,7 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart>
                                       width: context.xxl,
                                       height: context.xxl,
                                       decoration: BoxDecoration(
-                                        color: color.withOpacity(0.2),
+                                        color: color.withValues(alpha: 0.2),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Center(
@@ -287,7 +287,8 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart>
                                       height: context.xxl,
                                       decoration: BoxDecoration(
                                         color: AppColors.background(context)
-                                            .withOpacity(shouldPaint ? 0 : 0.7),
+                                            .withValues(
+                                                alpha: shouldPaint ? 0 : 0.7),
                                         shape: BoxShape.circle,
                                       ),
                                     ),
@@ -304,7 +305,8 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart>
                                   style: AppTextStyles.getCaption(context)
                                       .copyWith(
                                     color: AppColors.textPrimary(context)
-                                        .withOpacity(shouldPaint ? 1 : 0.2),
+                                        .withValues(
+                                            alpha: shouldPaint ? 1 : 0.2),
                                   ),
                                 ),
                                 Text(
@@ -312,7 +314,8 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart>
                                   style: AppTextStyles.getCaption(context)
                                       .copyWith(
                                     color: AppColors.textPrimary(context)
-                                        .withOpacity(shouldPaint ? 1 : 0.2),
+                                        .withValues(
+                                            alpha: shouldPaint ? 1 : 0.2),
                                   ),
                                 ),
                               ],
@@ -400,10 +403,10 @@ class BarChartPainter extends CustomPainter {
 
     // 격자선/기준선 페인트
     final Paint gridPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.2)
+      ..color = Colors.grey.withValues(alpha: 0.2)
       ..strokeWidth = 1;
     final Paint linePaint = Paint()
-      ..color = Colors.grey.withOpacity(0.5)
+      ..color = Colors.grey.withValues(alpha: 0.5)
       ..strokeWidth = 1;
 
     // 가로선 3개
@@ -474,7 +477,7 @@ class BarChartPainter extends CustomPainter {
         } else {
           // 다른 활동이 선택된 경우 회색 또는 투명도 낮추기
           final originalColor = ColorService.hexToColor(colorStr);
-          final targetColor = Colors.grey.withOpacity(0.5);
+          final targetColor = Colors.grey.withValues(alpha: 0.5);
 
           // 시작 색상에서 목표 색상으로 보간
           color = Color.lerp(originalColor, targetColor, animationValue)!;
@@ -497,7 +500,7 @@ class BarChartPainter extends CustomPainter {
           ..close();
 
         // 그림자 효과
-        canvas.drawShadow(path, Colors.black.withOpacity(0.1), 2, true);
+        canvas.drawShadow(path, Colors.black.withValues(alpha: 0.1), 2, true);
 
         // 직사형 막대
         final RRect roundRect = RRect.fromRectAndRadius(
@@ -508,7 +511,7 @@ class BarChartPainter extends CustomPainter {
 
         // 막대 윗부분 하이라이트
         final Paint highlightPaint = Paint()
-          ..color = Colors.white.withOpacity(0.3)
+          ..color = Colors.white.withValues(alpha: 0.3)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1;
         final Path highlightPath = Path()

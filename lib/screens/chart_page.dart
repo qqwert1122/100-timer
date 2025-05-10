@@ -138,7 +138,8 @@ class _ChartPageState extends State<ChartPage> {
     if (!mounted || _scrollController == null) return;
 
     // 오프셋 섹션이 상단에 도달했는지 확인 (임계값 설정)
-    double offsetSectionThreshold = context.hp(8) + 5 + context.xl + context.hp(2);
+    double offsetSectionThreshold =
+        context.hp(8) + 5 + context.xl + context.hp(2);
     bool shouldPin = _scrollController!.offset > offsetSectionThreshold;
 
     if (shouldPin != _isOffsetSectionPinned) {
@@ -282,7 +283,7 @@ class _ChartPageState extends State<ChartPage> {
               margin: EdgeInsets.symmetric(horizontal: context.hp(2)),
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               decoration: BoxDecoration(
-                color: AppColors.background(context).withOpacity(0.2),
+                color: AppColors.background(context).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16.0),
               ),
               child: Row(
@@ -315,7 +316,8 @@ class _ChartPageState extends State<ChartPage> {
                   ),
                   Text(
                     stats.getSelectedWeekLabel(),
-                    style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
+                    style: AppTextStyles.getBody(context)
+                        .copyWith(fontWeight: FontWeight.w900),
                   ),
                   IconButton(
                     icon: Icon(
@@ -343,7 +345,8 @@ class _ChartPageState extends State<ChartPage> {
 
                             // 데이터 로드 및 스크롤 위치 복원
                             WidgetsBinding.instance.addPostFrameCallback((_) {
-                              _preloadDataAndRestoreScroll(currentScrollPosition);
+                              _preloadDataAndRestoreScroll(
+                                  currentScrollPosition);
                             });
                           },
                   ),
@@ -369,7 +372,8 @@ class _ChartPageState extends State<ChartPage> {
     // 데이터 로드 완료 후 스크롤 위치 복원
     if (mounted && _scrollController?.hasClients == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollController!.jumpTo(scrollPosition.clamp(0.0, _scrollController!.position.maxScrollExtent));
+        _scrollController!.jumpTo(scrollPosition.clamp(
+            0.0, _scrollController!.position.maxScrollExtent));
 
         // 리스너 재연결
         _scrollController?.addListener(_onScroll);
@@ -407,11 +411,14 @@ class _ChartPageState extends State<ChartPage> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("활동 완료 시간", style: AppTextStyles.getTitle(context)),
+                            Text("활동 완료 시간",
+                                style: AppTextStyles.getTitle(context)),
                             SizedBox(height: context.hp(1)),
                             Shimmer.fromColors(
-                              baseColor: Colors.grey.shade300.withOpacity(0.2),
-                              highlightColor: Colors.grey.shade100.withOpacity(0.2),
+                              baseColor:
+                                  Colors.grey.shade300.withValues(alpha: 0.2),
+                              highlightColor:
+                                  Colors.grey.shade100.withValues(alpha: 0.2),
                               child: Container(
                                 width: context.wp(50),
                                 height: context.hp(7),
@@ -424,7 +431,8 @@ class _ChartPageState extends State<ChartPage> {
                           ],
                         ),
                         Shimmer.fromColors(
-                          baseColor: Colors.grey.shade300.withOpacity(0.2),
+                          baseColor:
+                              Colors.grey.shade300.withValues(alpha: 0.2),
                           highlightColor: Colors.grey.shade100,
                           child: Container(
                             width: context.wp(24), // diameter = 2 * radius
@@ -458,13 +466,15 @@ class _ChartPageState extends State<ChartPage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("활동 완료 시간", style: AppTextStyles.getTitle(context)),
+                          Text("활동 완료 시간",
+                              style: AppTextStyles.getTitle(context)),
                           SizedBox(height: context.hp(1)),
                           Row(
                             children: [
                               Text(
                                 formattedDuration,
-                                style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                style: AppTextStyles.getTimeDisplay(context)
+                                    .copyWith(
                                   fontFamily: 'chab',
                                   color: Colors.redAccent,
                                 ),
@@ -474,12 +484,14 @@ class _ChartPageState extends State<ChartPage> {
                                 width: 1,
                                 height: context.hp(2),
                                 color: Colors.grey.shade400,
-                                margin: EdgeInsets.symmetric(horizontal: context.wp(1)),
+                                margin: EdgeInsets.symmetric(
+                                    horizontal: context.wp(1)),
                               ),
                               SizedBox(width: context.wp(1)),
                               Text(
                                 '${tagetDuration}h',
-                                style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                style: AppTextStyles.getTimeDisplay(context)
+                                    .copyWith(
                                   fontFamily: 'chab',
                                   color: Colors.grey.shade300,
                                 ),
@@ -526,7 +538,8 @@ class _ChartPageState extends State<ChartPage> {
     );
   }
 
-  Widget _buildHeatmapSection(BuildContext context, TimerProvider timerProvider) {
+  Widget _buildHeatmapSection(
+      BuildContext context, TimerProvider timerProvider) {
     return Container(
       padding: context.paddingSM,
       decoration: BoxDecoration(
@@ -555,7 +568,8 @@ class _ChartPageState extends State<ChartPage> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  ToggleTotalViewSwtich(value: showAllHours, onChanged: _toggleShowAllHours),
+                  ToggleTotalViewSwtich(
+                      value: showAllHours, onChanged: _toggleShowAllHours),
                   SizedBox(width: context.wp(4)),
                   SizedBox(
                     width: 25,
@@ -571,7 +585,8 @@ class _ChartPageState extends State<ChartPage> {
                         timerProvider.initializeHeatMapData();
                         rerenderingHeatmap();
                       },
-                      child: Icon(Icons.refresh, color: AppColors.textPrimary(context), size: 18),
+                      child: Icon(Icons.refresh,
+                          color: AppColors.textPrimary(context), size: 18),
                     ),
                   )
                 ],
@@ -587,8 +602,8 @@ class _ChartPageState extends State<ChartPage> {
                   showAllHours: showAllHours,
                 )
               : Shimmer.fromColors(
-                  baseColor: Colors.grey.shade300.withOpacity(0.2),
-                  highlightColor: Colors.grey.shade100.withOpacity(0.2),
+                  baseColor: Colors.grey.shade300.withValues(alpha: 0.2),
+                  highlightColor: Colors.grey.shade100.withValues(alpha: 0.2),
                   child: Container(
                     width: context.wp(90),
                     height: context.hp(68),
@@ -604,7 +619,8 @@ class _ChartPageState extends State<ChartPage> {
     );
   }
 
-  Widget _buildActivityTimeSection(BuildContext context, TimerProvider timerProvider) {
+  Widget _buildActivityTimeSection(
+      BuildContext context, TimerProvider timerProvider) {
     return Container(
       // padding: context.paddingSM,
       decoration: BoxDecoration(
@@ -675,12 +691,15 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => maxHeight;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     return SizedBox.expand(child: child);
   }
 
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return maxHeight != oldDelegate.maxHeight || minHeight != oldDelegate.minHeight || child != oldDelegate.child;
+    return maxHeight != oldDelegate.maxHeight ||
+        minHeight != oldDelegate.minHeight ||
+        child != oldDelegate.child;
   }
 }

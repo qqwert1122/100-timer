@@ -111,7 +111,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   width: 1,
                 ),
                 color: AppColors.backgroundSecondary(context),
@@ -140,7 +140,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
           borderRadius: BorderRadius.circular(16.0),
           boxShadow: [
             BoxShadow(
-              color: AppColors.textPrimary(context).withOpacity(0.08), // 그림자 색상
+              color: AppColors.textPrimary(context)
+                  .withValues(alpha: 0.08), // 그림자 색상
               blurRadius: 10, // 그림자 흐림 정도
               offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
             ),
@@ -165,7 +166,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                       return Container(
                         width: context.xl,
                         height: context.xl,
-                        color: Colors.grey.withOpacity(0.2),
+                        color: Colors.grey.withValues(alpha: 0.2),
                         child: Icon(Icons.broken_image,
                             size: context.xl, color: Colors.grey),
                       );
@@ -344,7 +345,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
           borderRadius: BorderRadius.circular(16.0),
           boxShadow: [
             BoxShadow(
-              color: AppColors.textPrimary(context).withOpacity(0.08), // 그림자 색상
+              color: AppColors.textPrimary(context)
+                  .withValues(alpha: 0.08), // 그림자 색상
               blurRadius: 10, // 그림자 흐림 정도
               offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
             ),
@@ -369,7 +371,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                       return Container(
                         width: context.xl,
                         height: context.xl,
-                        color: Colors.grey.withOpacity(0.2),
+                        color: Colors.grey.withValues(alpha: 0.2),
                         child: Icon(Icons.broken_image,
                             size: context.xl, color: Colors.grey),
                       );
@@ -560,7 +562,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
           borderRadius: BorderRadius.circular(16.0), // 둥근 모서리
           boxShadow: [
             BoxShadow(
-              color: AppColors.textPrimary(context).withOpacity(0.08), // 그림자 색상
+              color: AppColors.textPrimary(context)
+                  .withValues(alpha: 0.08), // 그림자 색상
               blurRadius: 10, // 그림자 흐림 정도
               offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
             ),
@@ -595,7 +598,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                     return Container(
                       width: context.xl,
                       height: context.xl,
-                      color: Colors.grey.withOpacity(0.2),
+                      color: Colors.grey.withValues(alpha: 0.2),
                       child: Icon(
                         Icons.broken_image,
                         size: context.xl,
@@ -626,7 +629,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
           borderRadius: BorderRadius.circular(16.0), // 둥근 모서리
           boxShadow: [
             BoxShadow(
-              color: AppColors.textPrimary(context).withOpacity(0.08), // 그림자 색상
+              color: AppColors.textPrimary(context)
+                  .withValues(alpha: 0.08), // 그림자 색상
               blurRadius: 10, // 그림자 흐림 정도
               offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
             ),
@@ -743,7 +747,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                       dotData: const FlDotData(show: false),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: Colors.redAccent.withOpacity(0.2),
+                        color: Colors.redAccent.withValues(alpha: 0.2),
                       ),
                     ),
                   ],
@@ -781,7 +785,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
               border: isActive
                   ? null
                   : Border.all(
-                      color: Colors.grey.withOpacity(0.3),
+                      color: Colors.grey.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
             ),
@@ -839,7 +843,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                                 return Container(
                                   width: context.xl,
                                   height: context.xl,
-                                  color: Colors.grey.withOpacity(0.2),
+                                  color: Colors.grey.withValues(alpha: 0.2),
                                   child: Icon(
                                     Icons.broken_image,
                                     size: context.xl,
@@ -886,7 +890,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                         boxShadow: [
                           BoxShadow(
                             color: AppColors.textPrimary(context)
-                                .withOpacity(0.08), // 그림자 색상
+                                .withValues(alpha: 0.08), // 그림자 색상
                             blurRadius: 10, // 그림자 흐림 정도
                             offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
                           ),
@@ -904,7 +908,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                               return Container(
                                 width: context.xl,
                                 height: context.xl,
-                                color: Colors.grey.withOpacity(0.2),
+                                color: Colors.grey.withValues(alpha: 0.2),
                                 child: Icon(
                                   Icons.broken_image,
                                   size: context.xl,
@@ -978,7 +982,7 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.textPrimary(context)
-                            .withOpacity(0.08), // 그림자 색상
+                            .withValues(alpha: 0.08), // 그림자 색상
                         blurRadius: 10, // 그림자 흐림 정도
                         offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
                       ),

@@ -392,7 +392,7 @@ class _TimerPageState extends State<TimerPage>
                                           boxShadow: [
                                             BoxShadow(
                                               color: Colors.pinkAccent
-                                                  .withOpacity(0.5),
+                                                  .withValues(alpha: 0.5),
                                               blurRadius: 8,
                                               offset: const Offset(0, 4),
                                             ),
@@ -490,7 +490,8 @@ class _TimerPageState extends State<TimerPage>
                     borderRadius: BorderRadius.circular(35),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.textPrimary(context).withOpacity(0.3),
+                        color: AppColors.textPrimary(context)
+                            .withValues(alpha: 0.3),
                         blurRadius: 5,
                         offset: const Offset(0, 3),
                       ),

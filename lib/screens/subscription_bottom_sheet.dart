@@ -10,7 +10,8 @@ class SubscriptionBottomSheet extends StatefulWidget {
   const SubscriptionBottomSheet({super.key});
 
   @override
-  State<SubscriptionBottomSheet> createState() => _SubscriptionBottomSheetState();
+  State<SubscriptionBottomSheet> createState() =>
+      _SubscriptionBottomSheetState();
 }
 
 class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
@@ -53,9 +54,20 @@ class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final List<Map<String, String>> testimonials = [
-      {"name": "민지(27세)", "text": "매일 조금씩 영어 공부하는 시간을 모으다 보니 어느새 외국인 친구와 대화가 됐어요! 작은 성취감이 정말 큰 기쁨이 되더라구요 😊"},
-      {"name": "준혁(31세)", "text": "넷플릭스만 보던 저녁 시간에 책 읽기 도전! 일년 동안 쌓인 책이 벽을 이루고 친구들이 제 서재를 부러워해요 📚"},
-      {"name": "소연(25세)", "text": "매일 15분씩 그림 연습한 결과, 이제 친구들 프사를 그려줄 수 있게 됐어요! 작은 부업까지 생겼답니다 🎨"}
+      {
+        "name": "민지(27세)",
+        "text":
+            "매일 조금씩 영어 공부하는 시간을 모으다 보니 어느새 외국인 친구와 대화가 됐어요! 작은 성취감이 정말 큰 기쁨이 되더라구요 😊"
+      },
+      {
+        "name": "준혁(31세)",
+        "text":
+            "넷플릭스만 보던 저녁 시간에 책 읽기 도전! 일년 동안 쌓인 책이 벽을 이루고 친구들이 제 서재를 부러워해요 📚"
+      },
+      {
+        "name": "소연(25세)",
+        "text": "매일 15분씩 그림 연습한 결과, 이제 친구들 프사를 그려줄 수 있게 됐어요! 작은 부업까지 생겼답니다 🎨"
+      }
     ];
 
     return Container(
@@ -103,7 +115,7 @@ class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
                     width: context.wp(100),
                     padding: EdgeInsets.all(context.sm),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -134,11 +146,16 @@ class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
-                  _buildFeatureCard(context, '귀여운 AI 친구', '당신의 시간 사용을 분석해주는 작은 비서', Icons.smart_toy),
-                  _buildFeatureCard(context, '컬러풀 성장 그래프', '당신의 노력이 예쁜 그래프로 변신!', Icons.show_chart),
-                  _buildFeatureCard(context, '맞춤형 도전 미션', '오늘은 독서 30분 어때요?', Icons.emoji_events),
-                  _buildFeatureCard(context, '응원 커뮤니티', '같은 목표를 가진 친구들과 함께 으쌰으쌰!', Icons.groups),
-                  _buildFeatureCard(context, '습관 형성 스티커판', '21일 동안 모으는 귀여운 디지털 스티커', Icons.stars),
+                  _buildFeatureCard(context, '귀여운 AI 친구',
+                      '당신의 시간 사용을 분석해주는 작은 비서', Icons.smart_toy),
+                  _buildFeatureCard(context, '컬러풀 성장 그래프',
+                      '당신의 노력이 예쁜 그래프로 변신!', Icons.show_chart),
+                  _buildFeatureCard(context, '맞춤형 도전 미션', '오늘은 독서 30분 어때요?',
+                      Icons.emoji_events),
+                  _buildFeatureCard(context, '응원 커뮤니티',
+                      '같은 목표를 가진 친구들과 함께 으쌰으쌰!', Icons.groups),
+                  _buildFeatureCard(context, '습관 형성 스티커판',
+                      '21일 동안 모으는 귀여운 디지털 스티커', Icons.stars),
                 ],
               ),
             ),
@@ -177,7 +194,7 @@ class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
                       width: MediaQuery.of(context).size.width,
                       margin: EdgeInsets.symmetric(horizontal: 5.0),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(15),
                       ),
                       padding: EdgeInsets.all(context.md),
@@ -192,7 +209,8 @@ class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
                           SizedBox(height: 10),
                           Text(
                             "- ${item["name"]!}",
-                            style: AppTextStyles.getCaption(context).copyWith(fontWeight: FontWeight.bold),
+                            style: AppTextStyles.getCaption(context)
+                                .copyWith(fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -210,7 +228,9 @@ class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
                   margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: _currentCarouselIndex == entry.key ? Colors.white : Colors.white.withOpacity(0.4),
+                    color: _currentCarouselIndex == entry.key
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.4),
                   ),
                 );
               }).toList(),
@@ -225,7 +245,7 @@ class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: Offset(0, 5),
                   ),
@@ -260,14 +280,18 @@ class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
                             child: Container(
                               padding: EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: !_yearlySelected ? const Color(0xFFFF8E3C) : Colors.transparent,
+                                color: !_yearlySelected
+                                    ? const Color(0xFFFF8E3C)
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(30),
                               ),
                               child: Text(
                                 '한 달 놀이',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: !_yearlySelected ? Colors.white : Colors.black54,
+                                  color: !_yearlySelected
+                                      ? Colors.white
+                                      : Colors.black54,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -284,14 +308,18 @@ class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
                             child: Container(
                               padding: EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: _yearlySelected ? const Color(0xFFFF6B6B) : Colors.transparent,
+                                color: _yearlySelected
+                                    ? const Color(0xFFFF6B6B)
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(30),
                               ),
                               child: Text(
                                 '일 년 놀이 (25% 할인)',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: _yearlySelected ? Colors.white : Colors.black54,
+                                  color: _yearlySelected
+                                      ? Colors.white
+                                      : Colors.black54,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -311,7 +339,9 @@ class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
                           _yearlySelected ? '89,000원/년' : '9,900원/월',
                           style: AppTextStyles.getHeadline(context).copyWith(
                             fontWeight: FontWeight.bold,
-                            color: _yearlySelected ? const Color(0xFFFF6B6B) : const Color(0xFFFF8E3C),
+                            color: _yearlySelected
+                                ? const Color(0xFFFF6B6B)
+                                : const Color(0xFFFF8E3C),
                           ),
                         ),
                         if (_yearlySelected)
@@ -340,7 +370,9 @@ class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
                     child: ElevatedButton(
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _yearlySelected ? const Color(0xFFFF6B6B) : const Color(0xFFFF8E3C),
+                        backgroundColor: _yearlySelected
+                            ? const Color(0xFFFF6B6B)
+                            : const Color(0xFFFF8E3C),
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -426,17 +458,18 @@ class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
     );
   }
 
-  Widget _buildFeatureCard(BuildContext context, String title, String description, IconData icon) {
+  Widget _buildFeatureCard(
+      BuildContext context, String title, String description, IconData icon) {
     return Container(
       width: context.wp(60),
       margin: EdgeInsets.only(right: context.sm),
       padding: EdgeInsets.all(context.md),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 5,
             offset: Offset(0, 3),
           ),

@@ -528,7 +528,7 @@ class _ActivityLogPageState extends State<ActivityLogPage>
                         return Container(
                           width: context.xl,
                           height: context.xl,
-                          color: Colors.grey.withOpacity(0.2),
+                          color: Colors.grey.withValues(alpha: 0.2),
                           child: Icon(
                             Icons.broken_image,
                             size: context.xl,

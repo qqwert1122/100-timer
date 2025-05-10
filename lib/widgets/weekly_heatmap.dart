@@ -200,7 +200,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
                     Color baseColor =
                         activityColorMap[dominantActivityId] ?? Colors.blue;
                     double intensity = (dominantMinutes / 60.0).clamp(0.2, 1.0);
-                    Color color = baseColor.withOpacity(intensity);
+                    Color color = baseColor.withValues(alpha: intensity);
 
                     String activityName =
                         activityNames[dominantActivityId] ?? '알 수 없는 활동';
@@ -275,8 +275,8 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
   Widget build(BuildContext context) {
     if (isLoading) {
       return Shimmer.fromColors(
-        baseColor: Colors.grey.shade300.withOpacity(0.2),
-        highlightColor: Colors.grey.shade100.withOpacity(0.2),
+        baseColor: Colors.grey.shade300.withValues(alpha: 0.2),
+        highlightColor: Colors.grey.shade100.withValues(alpha: 0.2),
         child: Container(
           width: context.wp(90),
           height: context.hp(68),

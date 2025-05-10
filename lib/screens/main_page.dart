@@ -84,7 +84,7 @@ class _MainPageState extends State<MainPage> {
               decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(
-                    color: Colors.grey.withOpacity(0.2), // 경계선 색상
+                    color: Colors.grey.withValues(alpha: 0.2), // 경계선 색상
                     width: 1,
                   ),
                 ),

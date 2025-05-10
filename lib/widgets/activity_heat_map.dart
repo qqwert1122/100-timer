@@ -72,10 +72,13 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
                   colorMode: ColorMode.color,
                   colorsets: {
                     0: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
-                    1: ColorService.hexToColor("#32CD32").withOpacity(0.25),
-                    2: ColorService.hexToColor("#32CD32").withOpacity(0.5),
-                    3: ColorService.hexToColor("#32CD32").withOpacity(0.75),
-                    4: ColorService.hexToColor("#32CD32").withOpacity(1),
+                    1: ColorService.hexToColor("#32CD32")
+                        .withValues(alpha: 0.25),
+                    2: ColorService.hexToColor("#32CD32")
+                        .withValues(alpha: 0.5),
+                    3: ColorService.hexToColor("#32CD32")
+                        .withValues(alpha: 0.75),
+                    4: ColorService.hexToColor("#32CD32").withValues(alpha: 1),
                   },
                   defaultColor:
                       isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
@@ -139,7 +142,8 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
           decoration: BoxDecoration(
             color: level == 0
                 ? (isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200)
-                : ColorService.hexToColor("#32CD32").withOpacity(level * 0.25),
+                : ColorService.hexToColor("#32CD32")
+                    .withValues(alpha: level * 0.25),
             borderRadius: BorderRadius.circular(2),
           ),
         ),

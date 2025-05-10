@@ -41,7 +41,7 @@ class _AlarmMessageState extends State<AlarmMessage> {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3), // 그림자 색상 (흰색)
+                color: Colors.black.withValues(alpha: 0.3), // 그림자 색상 (흰색)
                 spreadRadius: 2, // 그림자가 퍼지는 정도
                 blurRadius: 10, // 그림자 흐림 정도
                 offset: const Offset(0, 5), // 그림자 위치 (x, y)
@@ -88,17 +88,21 @@ class _AlarmMessageState extends State<AlarmMessage> {
                         child: TextButton(
                           onPressed: () {},
                           style: ButtonStyle(
-                            foregroundColor: WidgetStateProperty.all(Colors.white), // 텍스트 색상
-                            backgroundColor: WidgetStateProperty.all(Colors.blueAccent.shade400), // 배경색
+                            foregroundColor:
+                                WidgetStateProperty.all(Colors.white), // 텍스트 색상
+                            backgroundColor: WidgetStateProperty.all(
+                                Colors.blueAccent.shade400), // 배경색
                             shape: WidgetStateProperty.all(
                               RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12.0), // 둥근 모서리 반경
+                                borderRadius:
+                                    BorderRadius.circular(12.0), // 둥근 모서리 반경
                               ),
                             ),
                           ),
                           child: const Text(
                             '기록 수정하러 가기',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w900),
                           ),
                         ),
                       ),

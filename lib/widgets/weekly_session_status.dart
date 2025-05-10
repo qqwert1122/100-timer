@@ -58,8 +58,8 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
                     ),
                     SizedBox(height: context.hp(3)),
                     Shimmer.fromColors(
-                      baseColor: Colors.grey.shade300.withOpacity(0.2),
-                      highlightColor: Colors.grey.shade100.withOpacity(0.2),
+                      baseColor: Colors.grey.shade300.withValues(alpha: 0.2),
+                      highlightColor: Colors.grey.shade100.withValues(alpha: 0.2),
                       child: Container(
                         width: context.wp(90),
                         height: context.hp(9),

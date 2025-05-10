@@ -219,7 +219,9 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                             Row(
                               children: [
                                 IconButton(
-                                  icon: Icon(isDetailMode ? Icons.label : Icons.label_outline_rounded),
+                                  icon: Icon(isDetailMode
+                                      ? Icons.label
+                                      : Icons.label_outline_rounded),
                                   color: Colors.grey,
                                   onPressed: () {
                                     setState(() {
@@ -228,7 +230,8 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                                   },
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.add_circle_outline_rounded),
+                                  icon: const Icon(
+                                      Icons.add_circle_outline_rounded),
                                   color: Colors.blue,
                                   onPressed: () {
                                     showModalBottomSheet(
@@ -236,9 +239,11 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                                       isScrollControlled: true,
                                       backgroundColor: Colors.white,
                                       shape: const RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                        borderRadius: BorderRadius.vertical(
+                                            top: Radius.circular(20)),
                                       ),
-                                      builder: (context) => const AddTodoSheet(),
+                                      builder: (context) =>
+                                          const AddTodoSheet(),
                                     ).then((result) {
                                       if (result == true) {
                                         // Todo 목록 새로고침
@@ -257,23 +262,29 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                         FutureBuilder<List<Map<String, dynamic>>>(
                           future: todosFuture,
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator());
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
                             } else if (snapshot.hasError) {
                               // 에러 로그 출력
-                              debugPrint('Error loading todos: ${snapshot.error}');
+                              debugPrint(
+                                  'Error loading todos: ${snapshot.error}');
                               return Center(
                                 child: Text(
                                   '할 일을 불러오는 중 오류가 발생했습니다.\n${snapshot.error}', // 오류 내용 표시
-                                  style: AppTextStyles.getBody(context).copyWith(color: Colors.red),
+                                  style: AppTextStyles.getBody(context)
+                                      .copyWith(color: Colors.red),
                                   textAlign: TextAlign.center,
                                 ),
                               );
-                            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            } else if (!snapshot.hasData ||
+                                snapshot.data!.isEmpty) {
                               return Center(
                                 child: Text(
                                   '할 일을 추가하세요',
-                                  style: AppTextStyles.getBody(context).copyWith(color: Colors.grey),
+                                  style: AppTextStyles.getBody(context)
+                                      .copyWith(color: Colors.grey),
                                 ),
                               );
                             }
@@ -285,7 +296,8 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                               onReorder: (oldIndex, newIndex) {
                                 setState(() {
                                   // 복제한 리스트 사용
-                                  final mutableTodos = List<Map<String, dynamic>>.from(todos);
+                                  final mutableTodos =
+                                      List<Map<String, dynamic>>.from(todos);
 
                                   if (newIndex > oldIndex) {
                                     newIndex -= 1;
@@ -303,7 +315,8 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                               proxyDecorator: (child, index, animation) {
                                 return AnimatedBuilder(
                                   animation: animation,
-                                  builder: (BuildContext context, Widget? child) {
+                                  builder:
+                                      (BuildContext context, Widget? child) {
                                     return Material(
                                       elevation: 0,
                                       color: Colors.transparent,
@@ -315,11 +328,13 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                               },
                               itemBuilder: (context, index) {
                                 final todo = todos[index];
-                                final isPending = pendingTodos.containsKey(todo['todo_id']); // 완료 대기 상태 확인
+                                final isPending = pendingTodos.containsKey(
+                                    todo['todo_id']); // 완료 대기 상태 확인
 
                                 return Container(
                                   key: ValueKey(todo['todo_id']),
-                                  margin: EdgeInsets.only(bottom: context.hp(2)),
+                                  margin:
+                                      EdgeInsets.only(bottom: context.hp(2)),
                                   child: Slidable(
                                     endActionPane: ActionPane(
                                       motion: const ScrollMotion(),
@@ -328,16 +343,19 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                                           backgroundColor: Colors.redAccent,
                                           foregroundColor: Colors.white,
                                           onPressed: (context) async {
-                                            await _dbService.deleteTodo(todo['todo_id']);
+                                            await _dbService
+                                                .deleteTodo(todo['todo_id']);
                                             _refreshTodos();
                                           },
-                                          child: Icon(Icons.delete_rounded, size: context.lg),
+                                          child: Icon(Icons.delete_rounded,
+                                              size: context.lg),
                                         ),
                                         CustomSlidableAction(
                                           backgroundColor: Colors.blueAccent,
                                           foregroundColor: Colors.white,
                                           onPressed: (context) async {},
-                                          child: Icon(Icons.edit_document, size: context.lg),
+                                          child: Icon(Icons.edit_document,
+                                              size: context.lg),
                                         ),
                                       ],
                                     ),
@@ -352,24 +370,30 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                                         boxShadow: [
                                           BoxShadow(
                                             blurRadius: 2,
-                                            color: AppColors.backgroundSecondary(context),
+                                            color:
+                                                AppColors.backgroundSecondary(
+                                                    context),
                                             offset: const Offset(0, 4),
                                           ),
                                         ],
                                       ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           ListTile(
                                             leading: Stack(
                                               children: [
                                                 Checkbox(
-                                                  value: isPending || todo['is_completed'] == 1,
+                                                  value: isPending ||
+                                                      todo['is_completed'] == 1,
                                                   onChanged: (bool? value) {
                                                     if (value == true) {
-                                                      markAsPending(todo['todo_id']); // 완료 대기 상태로 설정
+                                                      markAsPending(todo[
+                                                          'todo_id']); // 완료 대기 상태로 설정
                                                     } else {
-                                                      cancelCompletion(todo['todo_id']); // 완료 취소
+                                                      cancelCompletion(todo[
+                                                          'todo_id']); // 완료 취소
                                                     }
                                                   },
                                                   shape: const CircleBorder(),
@@ -379,12 +403,14 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                                                   Positioned.fill(
                                                     child: GestureDetector(
                                                       onTap: () {
-                                                        cancelCompletion(todo['todo_id']); // Lottie를 눌러 완료 취소
+                                                        cancelCompletion(todo[
+                                                            'todo_id']); // Lottie를 눌러 완료 취소
                                                       },
                                                       child: Lottie.asset(
                                                         'assets/images/check_orange.json', // Lottie 파일 경로
                                                         repeat: false,
-                                                        errorBuilder: (context, error, stackTrace) {
+                                                        errorBuilder: (context,
+                                                            error, stackTrace) {
                                                           return const Icon(
                                                             Icons.error,
                                                             color: Colors.red,
@@ -397,61 +423,94 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                                               ],
                                             ),
                                             title: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Text(
                                                   todo['todo_name'] ?? "",
                                                   style: TextStyle(
                                                     color: isPending
                                                         ? Colors.grey.shade300
-                                                        : AppColors.textPrimary(context), // 다크모드에 따라 적절한 텍스트 색상 사용
+                                                        : AppColors.textPrimary(
+                                                            context), // 다크모드에 따라 적절한 텍스트 색상 사용
                                                   ),
                                                 ),
                                                 Text(
                                                   todo['todo_detail'],
-                                                  style: AppTextStyles.getCaption(context).copyWith(
+                                                  style:
+                                                      AppTextStyles.getCaption(
+                                                              context)
+                                                          .copyWith(
                                                     color: isPending
                                                         ? Colors.grey.shade300
-                                                        : AppColors.textSecondary(context), // 부제목은 보조 색상 사용
+                                                        : AppColors.textSecondary(
+                                                            context), // 부제목은 보조 색상 사용
                                                   ),
                                                 ),
                                                 isDetailMode
                                                     ? Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
                                                         children: [
-                                                          SizedBox(height: context.hp(1)),
+                                                          SizedBox(
+                                                              height: context
+                                                                  .hp(1)),
                                                           Row(
                                                             children: [
                                                               Container(
-                                                                width: context.sm, // 원형의 너비와 높이
-                                                                height: context.sm,
-                                                                decoration: BoxDecoration(
-                                                                  shape: BoxShape.circle, // 원형으로 설정
-                                                                  color: _getPriorityColor(todo['priority']), // 우선순위에 따른 색상
+                                                                width: context
+                                                                    .sm, // 원형의 너비와 높이
+                                                                height:
+                                                                    context.sm,
+                                                                decoration:
+                                                                    BoxDecoration(
+                                                                  shape: BoxShape
+                                                                      .circle, // 원형으로 설정
+                                                                  color: _getPriorityColor(
+                                                                      todo[
+                                                                          'priority']), // 우선순위에 따른 색상
                                                                 ),
                                                               ),
                                                               SizedBox(
-                                                                width: context.wp(2),
+                                                                width: context
+                                                                    .wp(2),
                                                               ),
                                                               Container(
-                                                                  padding: context.paddingHorizXS,
-                                                                  decoration: BoxDecoration(
-                                                                    borderRadius: BorderRadius.circular(16),
-                                                                    color: ColorService.hexToColor(todo['activity_color']),
+                                                                  padding: context
+                                                                      .paddingHorizXS,
+                                                                  decoration:
+                                                                      BoxDecoration(
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                            16),
+                                                                    color: ColorService
+                                                                        .hexToColor(
+                                                                            todo['activity_color']),
                                                                   ),
                                                                   child: Row(
                                                                     children: [
-                                                                      Image.asset(
-                                                                        getIconImage(todo['activity_icon']),
-                                                                        width: context.xl,
-                                                                        height: context.xl,
-                                                                        errorBuilder: (context, error, stackTrace) {
+                                                                      Image
+                                                                          .asset(
+                                                                        getIconImage(
+                                                                            todo['activity_icon']),
+                                                                        width: context
+                                                                            .xl,
+                                                                        height:
+                                                                            context.xl,
+                                                                        errorBuilder: (context,
+                                                                            error,
+                                                                            stackTrace) {
                                                                           // 이미지를 로드하는 데 실패한 경우의 대체 표시
                                                                           return Container(
-                                                                            width: context.xl,
-                                                                            height: context.xl,
-                                                                            color: Colors.grey.withOpacity(0.2),
-                                                                            child: Icon(
+                                                                            width:
+                                                                                context.xl,
+                                                                            height:
+                                                                                context.xl,
+                                                                            color:
+                                                                                Colors.grey.withValues(alpha: 0.2),
+                                                                            child:
+                                                                                Icon(
                                                                               Icons.broken_image,
                                                                               size: context.xl,
                                                                               color: Colors.grey,
@@ -459,28 +518,42 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                                                                           );
                                                                         },
                                                                       ),
-                                                                      SizedBox(width: context.wp(1)),
+                                                                      SizedBox(
+                                                                          width:
+                                                                              context.wp(1)),
                                                                       Text(
-                                                                        todo['activity_name'],
-                                                                        style:
-                                                                            AppTextStyles.getCaption(context).copyWith(color: Colors.white),
+                                                                        todo[
+                                                                            'activity_name'],
+                                                                        style: AppTextStyles.getCaption(context).copyWith(
+                                                                            color:
+                                                                                Colors.white),
                                                                       ),
                                                                     ],
                                                                   )),
                                                               SizedBox(
-                                                                width: context.wp(2),
+                                                                width: context
+                                                                    .wp(2),
                                                               ),
-                                                              todo['due_date'] != null
+                                                              todo['due_date'] !=
+                                                                      null
                                                                   ? Container(
-                                                                      padding: context.paddingHorizXS,
-                                                                      decoration: BoxDecoration(
-                                                                        borderRadius: BorderRadius.circular(16),
-                                                                        color: getDeadlineColor(todo['due_date']),
+                                                                      padding:
+                                                                          context
+                                                                              .paddingHorizXS,
+                                                                      decoration:
+                                                                          BoxDecoration(
+                                                                        borderRadius:
+                                                                            BorderRadius.circular(16),
+                                                                        color: getDeadlineColor(
+                                                                            todo['due_date']),
                                                                       ),
-                                                                      child: Text(
-                                                                        getDeadlineLabel(todo['due_date']),
-                                                                        style:
-                                                                            AppTextStyles.getCaption(context).copyWith(color: Colors.white),
+                                                                      child:
+                                                                          Text(
+                                                                        getDeadlineLabel(
+                                                                            todo['due_date']),
+                                                                        style: AppTextStyles.getCaption(context).copyWith(
+                                                                            color:
+                                                                                Colors.white),
                                                                       ),
                                                                     )
                                                                   : Container(),
@@ -499,7 +572,8 @@ class _TodoState extends State<Todo> with SingleTickerProviderStateMixin {
                                                 color: Colors.redAccent,
                                               ),
                                               child: IconButton(
-                                                icon: const Icon(Icons.play_arrow),
+                                                icon: const Icon(
+                                                    Icons.play_arrow),
                                                 iconSize: context.lg,
                                                 color: Colors.white,
                                                 padding: EdgeInsets.zero,

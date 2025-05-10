@@ -64,25 +64,7 @@
                     android:scheme="kakaoe61da8880887bcab5a697b74091d0b84"/> <!-- 네이티브 앱 키 입력 -->
             </intent-filter>
         </activity>
-         <!-- Awesome Notifications Broadcast Receivers -->
-        <receiver android:name="me.carda.awesome_notifications.notifications.broadcastReceivers.DismissedNotificationReceiver"
-            android:exported="false"/>
-        
-        <receiver android:name="me.carda.awesome_notifications.notifications.broadcastReceivers.ScheduledNotificationReceiver"
-            android:exported="false"/>
-        
-        <receiver android:name="me.carda.awesome_notifications.notifications.broadcastReceivers.KeepOnTopNotificationReceiver"
-            android:exported="false"/>
-        
-        <receiver android:name="me.carda.awesome_notifications.notifications.broadcastReceivers.ActionButtonsReceiver"
-            android:exported="false"/>
-        
-        <receiver android:name="me.carda.awesome_notifications.notifications.broadcastReceivers.AwesomeNotificationsReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
-            </intent-filter>
-        </receiver>
+       
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

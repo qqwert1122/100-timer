@@ -10,7 +10,8 @@ class MemberPage extends StatefulWidget {
   State<MemberPage> createState() => _MemberPageState();
 }
 
-class _MemberPageState extends State<MemberPage> with SingleTickerProviderStateMixin {
+class _MemberPageState extends State<MemberPage>
+    with SingleTickerProviderStateMixin {
   Map<String, dynamic>? selectedUser;
   Map<String, dynamic>? targetUser;
 
@@ -18,18 +19,78 @@ class _MemberPageState extends State<MemberPage> with SingleTickerProviderStateM
   late Animation<double> _animation;
 
   List<Map<String, dynamic>> userList = [
-    {"name": "조서은", "total_seconds": 360000, "remaining_seconds": 1100, "is_running": true},
-    {"name": "양조현", "total_seconds": 360000, "remaining_seconds": 28035, "is_running": true},
-    {"name": "Alice", "total_seconds": 360000, "remaining_seconds": 288440, "is_running": true},
-    {"name": "Bob", "total_seconds": 360000, "remaining_seconds": 84159, "is_running": true},
-    {"name": "Charlie", "total_seconds": 360000, "remaining_seconds": 187662, "is_running": false},
-    {"name": "Diana", "total_seconds": 360000, "remaining_seconds": 166945, "is_running": true},
-    {"name": "Ethan", "total_seconds": 360000, "remaining_seconds": 238012, "is_running": false},
-    {"name": "Fiona", "total_seconds": 360000, "remaining_seconds": 42382, "is_running": false},
-    {"name": "George", "total_seconds": 360000, "remaining_seconds": 290661, "is_running": false},
-    {"name": "Hannah", "total_seconds": 360000, "remaining_seconds": 156370, "is_running": false},
-    {"name": "Ian", "total_seconds": 360000, "remaining_seconds": 38744, "is_running": true},
-    {"name": "Julia", "total_seconds": 360000, "remaining_seconds": 305169, "is_running": false}
+    {
+      "name": "조서은",
+      "total_seconds": 360000,
+      "remaining_seconds": 1100,
+      "is_running": true
+    },
+    {
+      "name": "양조현",
+      "total_seconds": 360000,
+      "remaining_seconds": 28035,
+      "is_running": true
+    },
+    {
+      "name": "Alice",
+      "total_seconds": 360000,
+      "remaining_seconds": 288440,
+      "is_running": true
+    },
+    {
+      "name": "Bob",
+      "total_seconds": 360000,
+      "remaining_seconds": 84159,
+      "is_running": true
+    },
+    {
+      "name": "Charlie",
+      "total_seconds": 360000,
+      "remaining_seconds": 187662,
+      "is_running": false
+    },
+    {
+      "name": "Diana",
+      "total_seconds": 360000,
+      "remaining_seconds": 166945,
+      "is_running": true
+    },
+    {
+      "name": "Ethan",
+      "total_seconds": 360000,
+      "remaining_seconds": 238012,
+      "is_running": false
+    },
+    {
+      "name": "Fiona",
+      "total_seconds": 360000,
+      "remaining_seconds": 42382,
+      "is_running": false
+    },
+    {
+      "name": "George",
+      "total_seconds": 360000,
+      "remaining_seconds": 290661,
+      "is_running": false
+    },
+    {
+      "name": "Hannah",
+      "total_seconds": 360000,
+      "remaining_seconds": 156370,
+      "is_running": false
+    },
+    {
+      "name": "Ian",
+      "total_seconds": 360000,
+      "remaining_seconds": 38744,
+      "is_running": true
+    },
+    {
+      "name": "Julia",
+      "total_seconds": 360000,
+      "remaining_seconds": 305169,
+      "is_running": false
+    }
   ];
 
   @override
@@ -79,7 +140,8 @@ class _MemberPageState extends State<MemberPage> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('멤버', style: TextStyle(fontWeight: FontWeight.w400, fontSize: 18)),
+        title: const Text('멤버',
+            style: TextStyle(fontWeight: FontWeight.w400, fontSize: 18)),
       ),
       body: Column(
         children: [
@@ -109,7 +171,8 @@ class _MemberPageState extends State<MemberPage> with SingleTickerProviderStateM
                   child: AnimatedBuilder(
                     animation: _animation,
                     builder: (context, child) {
-                      double angle = _animation.value * 2 * pi; // 0에서 360도(2π 라디안)까지 회전
+                      double angle =
+                          _animation.value * 2 * pi; // 0에서 360도(2π 라디안)까지 회전
                       Widget displayedWidget;
 
                       if (_animation.value < 0.5) {
@@ -193,12 +256,14 @@ class MemberWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double percentage = (user['total_seconds'] - user['remaining_seconds']) / user['total_seconds']; // 진행률 계산
+    double percentage = (user['total_seconds'] - user['remaining_seconds']) /
+        user['total_seconds']; // 진행률 계산
     final bool isRunning = user['is_running'];
 
     String formattedTime(int remainingSeconds) {
       final hours = (remainingSeconds ~/ 3600).toString().padLeft(2, '0');
-      final minutes = ((remainingSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
+      final minutes =
+          ((remainingSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
       return '$hours시간 $minutes분';
     }
 
@@ -243,19 +308,24 @@ class MemberWidget extends StatelessWidget {
                       children: [
                         Text(
                           user['name'],
-                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: isRunning ? null : Colors.grey[300]),
+                          style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                              color: isRunning ? null : Colors.grey[300]),
                         ),
                         isTop && isRunning
                             ? Padding(
                                 padding: const EdgeInsets.only(left: 4),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 2, horizontal: 4),
                                   decoration: BoxDecoration(
                                     color: Colors.redAccent,
                                     borderRadius: BorderRadius.circular(16.0),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
+                                        color:
+                                            Colors.black.withValues(alpha: 0.2),
                                         spreadRadius: 2,
                                         blurRadius: 4,
                                         offset: const Offset(0, 2),
@@ -264,7 +334,8 @@ class MemberWidget extends StatelessWidget {
                                   ),
                                   child: const Text(
                                     '활동중',
-                                    style: TextStyle(color: Colors.white, fontSize: 12),
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 12),
                                   ),
                                 ),
                               )
@@ -297,7 +368,8 @@ class HalfCirclePainter extends CustomPainter {
   final bool isTop;
   final bool isRunning;
 
-  HalfCirclePainter(this.percentage, {this.isTop = false, this.isRunning = false});
+  HalfCirclePainter(this.percentage,
+      {this.isTop = false, this.isRunning = false});
 
   @override
   void paint(Canvas canvas, Size size) {

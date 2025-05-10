@@ -313,15 +313,19 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                         itemCount: activities.length,
                         itemBuilder: (context, index) {
                           final activity = activities[index];
-                          final isSelected = activity['activity_id'] == _selectedActivityId;
+                          final isSelected =
+                              activity['activity_id'] == _selectedActivityId;
 
                           return GestureDetector(
                             onTap: () {
                               setState(() {
                                 _selectedActivityId = activity['activity_id'];
-                                _selectedActivityName = activity['activity_name'];
-                                _selectedActivityIcon = activity['activity_icon'];
-                                _selectedActivityColor = activity['activity_color'];
+                                _selectedActivityName =
+                                    activity['activity_name'];
+                                _selectedActivityIcon =
+                                    activity['activity_icon'];
+                                _selectedActivityColor =
+                                    activity['activity_color'];
                               });
                             },
                             child: AnimatedContainer(
@@ -330,7 +334,8 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                               margin: context.paddingXS,
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? ColorService.hexToColor(activity['activity_color'])
+                                    ? ColorService.hexToColor(
+                                        activity['activity_color'])
                                     : AppColors.backgroundSecondary(context),
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
@@ -354,7 +359,8 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                                       return Container(
                                         width: context.xl,
                                         height: context.xl,
-                                        color: Colors.grey.withOpacity(0.2),
+                                        color:
+                                            Colors.grey.withValues(alpha: 0.2),
                                         child: Icon(
                                           Icons.broken_image,
                                           size: context.xl,
@@ -366,9 +372,13 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                                   SizedBox(width: context.wp(2)),
                                   Text(
                                     activity['activity_name'],
-                                    style: AppTextStyles.getCaption(context).copyWith(
-                                      color: isSelected ? Colors.white : Colors.grey,
-                                      fontWeight: isSelected ? FontWeight.bold : null,
+                                    style: AppTextStyles.getCaption(context)
+                                        .copyWith(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.grey,
+                                      fontWeight:
+                                          isSelected ? FontWeight.bold : null,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -405,7 +415,8 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                           Container(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: Text(
-                              DateFormat('yyyy/MM/dd').format(_selectedDeadline!),
+                              DateFormat('yyyy/MM/dd')
+                                  .format(_selectedDeadline!),
                               style: AppTextStyles.getCaption(context).copyWith(
                                 color: Colors.blue,
                                 fontWeight: FontWeight.bold,
@@ -422,22 +433,26 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                     children: [
                       _buildDeadlineButton(
                         '1일 내',
-                        () => _setDeadline(DateTime.now().add(const Duration(days: 1))),
+                        () => _setDeadline(
+                            DateTime.now().add(const Duration(days: 1))),
                       ),
                       const SizedBox(width: 8),
                       _buildDeadlineButton(
                         '3일 내',
-                        () => _setDeadline(DateTime.now().add(const Duration(days: 3))),
+                        () => _setDeadline(
+                            DateTime.now().add(const Duration(days: 3))),
                       ),
                       const SizedBox(width: 8),
                       _buildDeadlineButton(
                         '7일 내',
-                        () => _setDeadline(DateTime.now().add(const Duration(days: 7))),
+                        () => _setDeadline(
+                            DateTime.now().add(const Duration(days: 7))),
                       ),
                       const SizedBox(width: 8),
                       _buildDeadlineButton(
                         '한달 내',
-                        () => _setDeadline(DateTime.now().add(const Duration(days: 30))),
+                        () => _setDeadline(
+                            DateTime.now().add(const Duration(days: 30))),
                       ),
                       const SizedBox(width: 8),
                       _buildDeadlineButton(
@@ -468,13 +483,16 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                 Row(
                   children: priorities
                       .map((priority) => GestureDetector(
-                            onTap: () => setState(() => _priority = priority['value']),
+                            onTap: () =>
+                                setState(() => _priority = priority['value']),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
                               margin: context.paddingXS,
                               padding: context.paddingXS,
                               decoration: BoxDecoration(
-                                color: _priority == priority['value'] ? priority['color'] : AppColors.backgroundSecondary(context),
+                                color: _priority == priority['value']
+                                    ? priority['color']
+                                    : AppColors.backgroundSecondary(context),
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
                                   BoxShadow(
@@ -486,9 +504,14 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
                               ),
                               child: Text(
                                 '  ${priority['label']}  ',
-                                style: AppTextStyles.getCaption(context).copyWith(
-                                  color: _priority == priority['value'] ? Colors.white : Colors.grey,
-                                  fontWeight: _priority == priority['value'] ? FontWeight.bold : null,
+                                style:
+                                    AppTextStyles.getCaption(context).copyWith(
+                                  color: _priority == priority['value']
+                                      ? Colors.white
+                                      : Colors.grey,
+                                  fontWeight: _priority == priority['value']
+                                      ? FontWeight.bold
+                                      : null,
                                 ),
                               ),
                             ),
@@ -527,8 +550,11 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
     );
   }
 
-  Widget _buildDeadlineButton(String label, VoidCallback onTap, {IconData? icon, bool isCalendarButton = false}) {
-    final isSelected = !isCalendarButton && _selectedDeadline != null && label == _getDeadlineLabel(_selectedDeadline!);
+  Widget _buildDeadlineButton(String label, VoidCallback onTap,
+      {IconData? icon, bool isCalendarButton = false}) {
+    final isSelected = !isCalendarButton &&
+        _selectedDeadline != null &&
+        label == _getDeadlineLabel(_selectedDeadline!);
 
     return GestureDetector(
       onTap: onTap,
@@ -536,7 +562,8 @@ class _AddTodoSheetState extends State<AddTodoSheet> {
         duration: const Duration(milliseconds: 300),
         padding: context.paddingXS,
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue : AppColors.backgroundSecondary(context),
+          color:
+              isSelected ? Colors.blue : AppColors.backgroundSecondary(context),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(

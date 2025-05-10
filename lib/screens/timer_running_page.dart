@@ -403,8 +403,8 @@ class _TimerRunningPageState extends State<TimerRunningPage>
 
       waves.add(Wave(
         color: _isDarkMode
-            ? Colors.white.withOpacity(0.25 - i * 0.1)
-            : Colors.redAccent.withOpacity(0.25 - i * 0.1),
+            ? Colors.white.withValues(alpha: 0.25 - i * 0.1)
+            : Colors.redAccent.withValues(alpha: 0.25 - i * 0.1),
         strokeWidth: 2.0 + (i * 2.0),
         maxRadius: 100.0 + (i * 5.0),
         minRadius: 100.0,
@@ -668,7 +668,7 @@ class _TimerRunningPageState extends State<TimerRunningPage>
                   return Container(
                     width: 24,
                     height: 24,
-                    color: Colors.grey.withOpacity(0.2),
+                    color: Colors.grey.withValues(alpha: 0.2),
                     child: const Icon(
                       Icons.broken_image,
                       size: 16,
@@ -826,7 +826,7 @@ class _TimerRunningPageState extends State<TimerRunningPage>
                             return Container(
                               width: context.xl,
                               height: context.xl,
-                              color: Colors.grey.withOpacity(0.2),
+                              color: Colors.grey.withValues(alpha: 0.2),
                               child: Icon(
                                 Icons.broken_image,
                                 size: context.xl,
@@ -857,7 +857,7 @@ class _TimerRunningPageState extends State<TimerRunningPage>
                           return Container(
                             width: context.xl,
                             height: context.xl,
-                            color: Colors.grey.withOpacity(0.2),
+                            color: Colors.grey.withValues(alpha: 0.2),
                             child: Icon(
                               Icons.broken_image,
                               size: context.xl,
@@ -889,7 +889,7 @@ class _TimerRunningPageState extends State<TimerRunningPage>
                           return Container(
                             width: context.xl,
                             height: context.xl,
-                            color: Colors.grey.withOpacity(0.2),
+                            color: Colors.grey.withValues(alpha: 0.2),
                             child: Icon(
                               Icons.broken_image,
                               size: context.xl,
@@ -1089,7 +1089,7 @@ class WavePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     for (var wave in waves) {
       final paint = Paint()
-        ..color = baseColor.withOpacity(wave.opacityAnimation.value)
+        ..color = baseColor.withValues(alpha: wave.opacityAnimation.value)
         ..style = PaintingStyle.stroke
         ..strokeWidth = wave.strokeWidth;
 
@@ -1283,9 +1283,9 @@ class BackgroundPainter extends CustomPainter {
       center: Alignment.center,
       radius: 1.5,
       colors: [
-        baseColor.withOpacity(opacity * 0.3),
-        baseColor.withOpacity(opacity * 0.1),
-        baseColor.withOpacity(0),
+        baseColor.withValues(alpha: opacity * 0.3),
+        baseColor.withValues(alpha: opacity * 0.1),
+        baseColor.withValues(alpha: 0),
       ],
     );
 
@@ -1294,8 +1294,8 @@ class BackgroundPainter extends CustomPainter {
       center: const Alignment(0.3, -0.3),
       radius: 1.2,
       colors: [
-        baseColor.withOpacity(opacity * 0.2),
-        baseColor.withOpacity(0),
+        baseColor.withValues(alpha: opacity * 0.2),
+        baseColor.withValues(alpha: 0),
       ],
     );
 
@@ -1303,8 +1303,8 @@ class BackgroundPainter extends CustomPainter {
       center: const Alignment(-0.3, 0.3),
       radius: 1.2,
       colors: [
-        baseColor.withOpacity(opacity * 0.15),
-        baseColor.withOpacity(0),
+        baseColor.withValues(alpha: opacity * 0.15),
+        baseColor.withValues(alpha: 0),
       ],
     );
 

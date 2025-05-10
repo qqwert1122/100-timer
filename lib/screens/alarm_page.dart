@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 
-class NoticePage extends StatefulWidget {
-  const NoticePage({super.key});
+class AlarmPage extends StatefulWidget {
+  const AlarmPage({super.key});
 
   @override
-  State<NoticePage> createState() => _NoticePageState();
+  State<AlarmPage> createState() => _AlarmPageState();
 }
 
-class _NoticePageState extends State<NoticePage> {
+class _AlarmPageState extends State<AlarmPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          '공지사항',
+          '알림',
           style: TextStyle(fontWeight: FontWeight.w400, fontSize: 18),
         ),
       ),

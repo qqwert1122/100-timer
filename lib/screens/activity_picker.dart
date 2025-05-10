@@ -504,7 +504,7 @@ class _ActivityPickerState extends State<ActivityPicker>
                 return Container(
                   width: context.xl,
                   height: context.xl,
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   child: const Icon(
                     Icons.broken_image,
                     size: 40,

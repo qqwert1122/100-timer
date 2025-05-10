@@ -258,7 +258,7 @@ class _SettingPageState extends State<SettingPage> {
           value: keepScreenOn,
           onChanged: (bool value) => _saveWakelockState(value),
           activeTrackColor: Colors.redAccent,
-          inactiveTrackColor: Colors.redAccent.withOpacity(0.1),
+          inactiveTrackColor: Colors.redAccent.withValues(alpha:  0.1),
         ),
       },
       {
@@ -276,7 +276,7 @@ class _SettingPageState extends State<SettingPage> {
             _saveAlarmFlag(value);
           },
           activeTrackColor: Colors.redAccent,
-          inactiveTrackColor: Colors.redAccent.withOpacity(0.1),
+          inactiveTrackColor: Colors.redAccent.withValues(alpha: 0.1),
         ),
       },
     ];
@@ -383,7 +383,7 @@ class _SettingPageState extends State<SettingPage> {
                             return Container(
                               width: context.xl,
                               height: context.xl,
-                              color: Colors.grey.withOpacity(0.2),
+                              color: Colors.grey.withValues(alpha: 0.2),
                               child: Icon(
                                 Icons.broken_image,
                                 size: context.xl,
@@ -563,7 +563,7 @@ class _SettingPageState extends State<SettingPage> {
                       return Container(
                         width: context.xl,
                         height: context.xl,
-                        color: Colors.grey.withOpacity(0.2),
+                        color: Colors.grey.withValues(alpha: 0.2),
                         child: Icon(
                           Icons.broken_image,
                           size: context.xl,

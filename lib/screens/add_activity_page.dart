@@ -596,7 +596,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: _selectedIconName == iconName
-                              ? Colors.blue.withOpacity(0.3)
+                              ? Colors.blue.withValues(alpha: 0.3)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -609,7 +609,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                             return Container(
                               width: context.xl,
                               height: context.xl,
-                              color: Colors.grey.withOpacity(0.2),
+                              color: Colors.grey.withValues(alpha: 0.2),
                               child: Icon(
                                 Icons.broken_image,
                                 size: context.xl,
@@ -684,7 +684,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                       children: opacities.map((opacity) {
                         Color colorWithOpacity =
                             ColorService.hexToColor(baseColor)
-                                .withOpacity(opacity);
+                                .withValues(alpha: opacity);
 
                         return Container(
                           width: 30,
