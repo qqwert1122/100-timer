@@ -87,8 +87,10 @@ android {
             force 'com.google.errorprone:error_prone_annotations:2.20.0'
             
             // awesome_notifications와 충돌하는 다른 라이브러리 고정
-            force 'androidx.core:core:1.10.1'
             force 'androidx.lifecycle:lifecycle-runtime:2.6.1'
+
+            force "androidx.core:core:1.13.1"
+            force "androidx.core:core-ktx:1.13.1"
         }
     }
 
@@ -97,6 +99,17 @@ android {
         javaMaxHeapSize "4g"
         preDexLibraries = false
     }
+
+    dependencies {
+        implementation "com.google.android.gms:play-services-ads:24.1.0"
+        implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+        constraints {
+            implementation("androidx.core:core:1.13.1")
+            implementation("androidx.core:core-ktx:1.13.1")
+        }
+    }   
+
 }
 
 flutter {

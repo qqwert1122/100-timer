@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ad-services-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 앱이 ‘광고 ID 제한’ 정책을 준수한다는 선언 -->
+    <allow-all-services enabled="true" />
+</ad-services-config>
