@@ -138,6 +138,7 @@ class _SettingPageState extends State<SettingPage> {
         'trailing': GestureDetector(
           // onTap: () => _showPicker(context),
           onTap: () {
+            HapticFeedback.lightImpact();
             showDialog(
                 context: context,
                 builder: (BuildContext context) {

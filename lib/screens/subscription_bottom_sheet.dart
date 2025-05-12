@@ -235,6 +235,7 @@ class _SubscriptionBottomSheetState extends State<SubscriptionBottomSheet> {
                 );
               }).toList(),
             ),
+
             SizedBox(height: context.hp(3)),
 
             // 구독 옵션

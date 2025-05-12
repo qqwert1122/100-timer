@@ -9,6 +9,7 @@ import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
+import 'package:project1/widgets/total_seconds_cards.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -171,21 +172,43 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
                             child: Consumer<TimerProvider>(
                               builder: (context, provider, child) {
                                 if (timerProvider!.isWeeklyTargetExceeded) {
-                                  return Text(
-                                    _formatTime(duration),
-                                    style: AppTextStyles.getTimeDisplay(context)
-                                        .copyWith(
-                                      color: Colors.blueAccent,
-                                      fontFamily: 'chab',
+                                  return GestureDetector(
+                                    onTap: () {
+                                      HapticFeedback.lightImpact();
+                                      showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return const TotalSecondsCards();
+                                          });
+                                    },
+                                    child: Text(
+                                      _formatTime(duration),
+                                      style:
+                                          AppTextStyles.getTimeDisplay(context)
+                                              .copyWith(
+                                        color: Colors.blueAccent,
+                                        fontFamily: 'chab',
+                                      ),
                                     ),
                                   );
                                 } else {
-                                  return Text(
-                                    provider.formattedTime,
-                                    style: AppTextStyles.getTimeDisplay(context)
-                                        .copyWith(
-                                      color: AppColors.primary(context),
-                                      fontFamily: 'chab',
+                                  return GestureDetector(
+                                    onTap: () {
+                                      HapticFeedback.lightImpact();
+                                      showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return const TotalSecondsCards();
+                                          });
+                                    },
+                                    child: Text(
+                                      provider.formattedTime,
+                                      style:
+                                          AppTextStyles.getTimeDisplay(context)
+                                              .copyWith(
+                                        color: AppColors.primary(context),
+                                        fontFamily: 'chab',
+                                      ),
                                     ),
                                   );
                                 }
