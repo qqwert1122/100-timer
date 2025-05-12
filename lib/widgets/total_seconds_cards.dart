@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
+import 'package:project1/utils/database_service.dart';
+import 'package:project1/utils/date_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/logger_config.dart';
+import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/responsive_size.dart';
+import 'package:project1/utils/timer_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 class TotalSecondsCards extends StatefulWidget {
   const TotalSecondsCards({super.key});
@@ -14,101 +23,128 @@ class TotalSecondsCards extends StatefulWidget {
 }
 
 class _TotalSecondsCardsState extends State<TotalSecondsCards> {
-  final CarouselController _controller = CarouselController();
+  late DatabaseService _dbService;
+  late TimerProvider _timerProvider;
+  final prefsService = PrefsService();
+  int currentTotalSeconds = PrefsService().totalSeconds;
+  late int initialCardIndex;
   double _page = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _dbService = Provider.of<DatabaseService>(context, listen: false);
+    _timerProvider = Provider.of<TimerProvider>(context, listen: false);
+    initialCardIndex = _findCardIndexByValue(currentTotalSeconds);
+    _page = initialCardIndex.toDouble();
+  }
+
+  int _findCardIndexByValue(int value) {
+    // 정확히 일치하는 값 찾기
+    for (int i = 0; i < _cards.length; i++) {
+      if (_cards[i].value == value) {
+        return i;
+      }
+    }
+
+    // 정확히 일치하는 값이 없으면 가장 가까운 값 찾기
+    int closestIndex = 0;
+    int minDiff = (value - _cards[0].value).abs();
+
+    for (int i = 1; i < _cards.length; i++) {
+      int diff = (value - _cards[i].value).abs();
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIndex = i;
+      }
+    }
+
+    return closestIndex;
+  }
+
+  void changeThisWeekTotalSeconds(int index) async {
+    try {
+      // timer update
+      final thisWeek = DateService.getCurrentWeekStart();
+      final timerId = await _dbService.getTimerId(thisWeek);
+
+      if (timerId == null) {
+        Fluttertoast.showToast(
+          msg: "타이머가 존재하지 않습니다",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.redAccent.shade200,
+          textColor: Colors.white,
+          fontSize: 14.0,
+        );
+        return;
+      }
+
+      await _dbService.updateTimer(timerId, {'total_seconds': _cards[index].value});
+      _timerProvider.refreshRemainingSeconds();
+      Fluttertoast.showToast(
+        msg: "${_cards[index].title}으로 목표가 변경되었습니다",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.blueAccent,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      logger.e('e: $e');
+      Fluttertoast.showToast(
+        msg: "목표 변경 중 오류가 발생했습니다",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    }
+  }
+
+  void changePrefTotalSeconds(int index) {
+    prefsService.totalSeconds = _cards[index].value;
+  }
 
   List<TotalSecondsCardData> get _cards => const [
         TotalSecondsCardData(
           emoji: 'trophy',
           title: '주 100시간',
           subtitle: '모든 생산적인 활동을 기록해요',
-          value: 100,
+          value: 360000,
+        ),
+        TotalSecondsCardData(
+          emoji: 'fire',
+          title: '주 80시간',
+          subtitle: '하루 11~12시간씩,\n몰입하는 루틴을 만들어봐요',
+          value: 288000,
         ),
         TotalSecondsCardData(
           emoji: 'high_voltage',
-          title: '주 80시간',
-          subtitle: '하루 11~12시간씩,\n몰입하는 루틴을 만들어봐요',
-          value: 80,
+          title: '주 60시간',
+          subtitle: '하루 8시간,\n일주일 동안 꾸준히 실천해요',
+          value: 216000,
         ),
         TotalSecondsCardData(
           emoji: 'sparkles',
-          title: '주 60시간',
-          subtitle: '하루 8시간,\n일주일 동안 꾸준히 실천해요',
-          value: 60,
-        ),
-        TotalSecondsCardData(
-          emoji: 'star',
           title: '주 40시간',
           subtitle: '하루 5~6시간씩,\n일과 후 자기계발에 집중해요',
-          value: 40,
+          value: 144000,
         ),
         TotalSecondsCardData(
           emoji: 'clapping',
           title: '주 20시간',
           subtitle: '하루 2~3시간씩,\n작은 루틴부터 시작해요',
-          value: 20,
+          value: 72000,
         ),
       ];
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.pop(context), // 모달 전체 탭 시 닫기
-      child: Center(
-        child: CarouselSlider.builder(
-          itemCount: _cards.length,
-          options: CarouselOptions(
-            viewportFraction: 0.8,
-            enlargeCenterPage: true,
-            onScrolled: (pos) => setState(() => _page = pos ?? 0.0),
-          ),
-          itemBuilder: (context, index, realIndex) {
-            final double offset = _page - index;
-            final double angle = offset * 0.12;
-
-            return Column(
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    height: 50,
-                    width: 50,
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.background(context),
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                    child: Icon(LucideIcons.x,
-                        size: context.xl,
-                        color: AppColors.textPrimary(context)),
-                  ),
-                ),
-                SizedBox(height: context.hp(2)),
-                Transform.rotate(
-                  angle: angle,
-                  child: Container(
-                    height: context.hp(50),
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    child: _TotalSecondsCard(card: _cards[index]),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _TotalSecondsCard extends StatelessWidget {
-  final TotalSecondsCardData card;
-  const _TotalSecondsCard({required this.card});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget buildTotalSecondsCard(BuildContext context, TotalSecondsCardData card, int index) {
     return Card(
+      color: AppColors.background(context),
       margin: const EdgeInsets.symmetric(horizontal: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
@@ -120,12 +156,33 @@ class _TotalSecondsCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: context.hp(1)),
-                Text(
-                  card.title,
-                  style: AppTextStyles.getHeadline(context).copyWith(
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Neo',
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      card.title,
+                      style: AppTextStyles.getHeadline(context).copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Neo',
+                      ),
+                    ),
+                    SizedBox(width: context.wp(2)),
+                    card.value == currentTotalSeconds
+                        ? Row(
+                            children: [
+                              Text(
+                                '선택됨',
+                                style: AppTextStyles.getBody(context).copyWith(color: Colors.redAccent),
+                              ),
+                              SizedBox(width: context.wp(1)),
+                              Icon(
+                                LucideIcons.checkCircle,
+                                size: context.lg,
+                                color: Colors.redAccent,
+                              ),
+                            ],
+                          )
+                        : const SizedBox(),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -208,11 +265,13 @@ class _TotalSecondsCard extends StatelessWidget {
             ),
             Column(
               children: [
-                Container(
-                  margin: context.paddingHorizXS,
+                SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      changeThisWeekTotalSeconds(index);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -230,11 +289,14 @@ class _TotalSecondsCard extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: context.hp(1)),
-                Container(
-                  margin: context.paddingHorizXS,
+                SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      changeThisWeekTotalSeconds(index);
+                      changePrefTotalSeconds(index);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.deepPurple,
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -254,6 +316,65 @@ class _TotalSecondsCard extends StatelessWidget {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.pop(context), // 모달 전체 탭 시 닫기
+      child: Center(
+        child: SizedBox(
+          height: context.hp(100),
+          child: CarouselSlider.builder(
+            itemCount: _cards.length,
+            options: CarouselOptions(
+              height: context.hp(70),
+              viewportFraction: 0.8,
+              enlargeCenterPage: true,
+              padEnds: true,
+              enableInfiniteScroll: false,
+              initialPage: initialCardIndex,
+              onScrolled: (pos) => setState(() => _page = pos ?? 0.0),
+            ),
+            itemBuilder: (context, index, realIndex) {
+              final double offset = _page - index;
+              final double angle = offset * 0.12;
+
+              return Column(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      height: 50,
+                      width: 50,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.background(context),
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: Icon(LucideIcons.x, size: context.xl, color: AppColors.textPrimary(context)),
+                    ),
+                  ),
+                  SizedBox(height: context.hp(2)),
+                  Transform.rotate(
+                    angle: angle,
+                    child: Container(
+                      height: context.hp(50),
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      child: buildTotalSecondsCard(context, _cards[index], index),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

@@ -30,12 +30,10 @@ class TimerPage extends StatefulWidget {
   _TimerPageState createState() => _TimerPageState();
 }
 
-class _TimerPageState extends State<TimerPage>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
+class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, WidgetsBindingObserver {
   TimerProvider? _timerProvider; // TimerProvider 변수 추가
 
-  final DraggableScrollableController _controller =
-      DraggableScrollableController();
+  final DraggableScrollableController _controller = DraggableScrollableController();
 
   late AnimationController _shimmerAnimationcontroller;
   late Animation<Alignment> _shimmerAnimation;
@@ -62,8 +60,7 @@ class _TimerPageState extends State<TimerPage>
   @override
   void initState() {
     super.initState();
-    _timerProvider =
-        Provider.of<TimerProvider>(context, listen: false); // provider init
+    _timerProvider = Provider.of<TimerProvider>(context, listen: false); // provider init
     _initAnimations(); // animation init
 
     _needShowOnboarding = !PrefsService().getOnboarding('timer');
@@ -169,12 +166,9 @@ class _TimerPageState extends State<TimerPage>
         isScrollControlled: true,
         useRootNavigator: true,
         builder: (_) => ActivityPicker(
-          onSelectActivity: (String selectedActivityListId,
-              String selectedActivity,
-              String selectedActivityIcon,
-              String selectedActivityColor) {
-            timerProvider.setCurrentActivity(selectedActivityListId,
-                selectedActivity, selectedActivityIcon, selectedActivityColor);
+          onSelectActivity:
+              (String selectedActivityListId, String selectedActivity, String selectedActivityIcon, String selectedActivityColor) {
+            timerProvider.setCurrentActivity(selectedActivityListId, selectedActivity, selectedActivityIcon, selectedActivityColor);
             Navigator.pop(context);
           },
           selectedActivity: timerProvider.currentActivityName,
@@ -245,9 +239,7 @@ class _TimerPageState extends State<TimerPage>
                   children: [
                     // 타이머 모드의 상단 제목
                     AnimatedAlign(
-                      alignment: _currentPageIndex == 1
-                          ? Alignment.centerLeft
-                          : Alignment.center,
+                      alignment: _currentPageIndex == 1 ? Alignment.centerLeft : Alignment.center,
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeInOut,
                       // 아래 AnimatedSwitcher는 “아이콘만” ↔ “아이콘+텍스트” 전환용
@@ -260,10 +252,8 @@ class _TimerPageState extends State<TimerPage>
                             ? GestureDetector(
                                 onTap: () => _onIconTap(0),
                                 child: Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: context.lg),
-                                  child: Icon(Icons.arrow_back_ios_rounded,
-                                      size: context.lg),
+                                  padding: EdgeInsets.symmetric(horizontal: context.lg),
+                                  child: Icon(Icons.arrow_back_ios_rounded, size: context.lg),
                                 ),
                               )
                             : Row(
@@ -274,8 +264,7 @@ class _TimerPageState extends State<TimerPage>
                                   SizedBox(width: context.wp(2)),
                                   Text(
                                     "집중 모드",
-                                    style:
-                                        AppTextStyles.getBody(context).copyWith(
+                                    style: AppTextStyles.getBody(context).copyWith(
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
@@ -286,9 +275,7 @@ class _TimerPageState extends State<TimerPage>
                     AnimatedAlign(
                       // 오른쪽 페이지가 활성화되면(center)에 위치하여 텍스트 포함,
                       // 왼쪽 페이지가 활성화되면(right) 구석에 아이콘만 표시
-                      alignment: _currentPageIndex == 1
-                          ? Alignment.center
-                          : Alignment.centerRight,
+                      alignment: _currentPageIndex == 1 ? Alignment.center : Alignment.centerRight,
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeInOut,
                       child: AnimatedSwitcher(
@@ -304,8 +291,7 @@ class _TimerPageState extends State<TimerPage>
                                   SizedBox(width: context.wp(2)),
                                   Text(
                                     "일반 모드",
-                                    style:
-                                        AppTextStyles.getBody(context).copyWith(
+                                    style: AppTextStyles.getBody(context).copyWith(
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
@@ -318,10 +304,8 @@ class _TimerPageState extends State<TimerPage>
                                 child: GestureDetector(
                                   onTap: () => _onIconTap(1),
                                   child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: context.lg),
-                                    child: Icon(Icons.arrow_back_ios_rounded,
-                                        size: context.lg),
+                                    padding: EdgeInsets.symmetric(horizontal: context.lg),
+                                    child: Icon(Icons.arrow_back_ios_rounded, size: context.lg),
                                   ),
                                 ),
                               ),
@@ -350,8 +334,7 @@ class _TimerPageState extends State<TimerPage>
                             SizedBox(height: context.hp(10)),
                             // 시간 표시 인디케이터
                             Center(
-                              child:
-                                  TextIndicator(timerProvider: timerProvider),
+                              child: TextIndicator(timerProvider: timerProvider),
                             ),
                             SizedBox(height: context.hp(3)),
                             // 플레이 버튼
@@ -376,8 +359,7 @@ class _TimerPageState extends State<TimerPage>
                                               Colors.pinkAccent,
                                               Colors.red,
                                               ColorService.hexToColor(
-                                                timerProvider
-                                                    .currentActivityColor,
+                                                timerProvider.currentActivityColor,
                                               ),
                                             ],
                                             begin: _shimmerAnimation.value,
@@ -385,22 +367,19 @@ class _TimerPageState extends State<TimerPage>
                                               -_shimmerAnimation.value.x,
                                               -_shimmerAnimation.value.y,
                                             ),
-                                            tileMode: TileMode.mirror,
+                                            tileMode: TileMode.clamp,
                                           ),
-                                          borderRadius:
-                                              BorderRadius.circular(50),
+                                          borderRadius: BorderRadius.circular(50),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.pinkAccent
-                                                  .withValues(alpha: 0.5),
+                                              color: Colors.pinkAccent.withValues(alpha: 0.5),
                                               blurRadius: 8,
                                               offset: const Offset(0, 4),
                                             ),
                                           ],
                                         ),
                                         child: IconButton(
-                                          icon: const Icon(
-                                              Icons.play_arrow_rounded),
+                                          icon: const Icon(Icons.play_arrow_rounded),
                                           iconSize: context.wp(20),
                                           color: Colors.white,
                                           onPressed: () async {
@@ -408,14 +387,11 @@ class _TimerPageState extends State<TimerPage>
 
                                             try {
                                               await timerProvider.startTimer(
-                                                activityId: timerProvider
-                                                    .currentActivityId!,
+                                                activityId: timerProvider.currentActivityId!,
                                                 mode: 'NORMAL',
-                                                targetDuration: timerProvider
-                                                        .isWeeklyTargetExceeded
+                                                targetDuration: timerProvider.isWeeklyTargetExceeded
                                                     ? null // 주간 목표 초과 시 무제한
-                                                    : timerProvider
-                                                        .remainingSeconds,
+                                                    : timerProvider.remainingSeconds,
                                               );
                                             } catch (e) {
                                               logger.e(
@@ -424,8 +400,7 @@ class _TimerPageState extends State<TimerPage>
                                                 msg: "타이머 시작 중 오류가 발생했습니다",
                                                 toastLength: Toast.LENGTH_SHORT,
                                                 gravity: ToastGravity.TOP,
-                                                backgroundColor:
-                                                    Colors.redAccent.shade200,
+                                                backgroundColor: Colors.redAccent.shade200,
                                                 textColor: Colors.white,
                                                 fontSize: context.md,
                                               );
@@ -434,19 +409,11 @@ class _TimerPageState extends State<TimerPage>
 
                                             // -------- 2. 페이지 전환 --------
                                             if (!mounted) return; // 안전 확인
-                                            Navigator.of(context)
-                                                .pushReplacement(
+                                            Navigator.of(context).pushReplacement(
                                               PageRouteBuilder(
-                                                pageBuilder:
-                                                    (context, animation, _) =>
-                                                        const TimerRunningPage(
-                                                            isNewSession: true),
-                                                transitionDuration:
-                                                    const Duration(
-                                                        milliseconds: 500),
-                                                reverseTransitionDuration:
-                                                    const Duration(
-                                                        milliseconds: 500),
+                                                pageBuilder: (context, animation, _) => const TimerRunningPage(isNewSession: true),
+                                                transitionDuration: const Duration(milliseconds: 500),
+                                                reverseTransitionDuration: const Duration(milliseconds: 500),
                                               ),
                                             );
                                           },
@@ -490,8 +457,7 @@ class _TimerPageState extends State<TimerPage>
                     borderRadius: BorderRadius.circular(35),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.textPrimary(context)
-                            .withValues(alpha: 0.3),
+                        color: AppColors.textPrimary(context).withValues(alpha: 0.3),
                         blurRadius: 5,
                         offset: const Offset(0, 3),
                       ),
@@ -504,8 +470,7 @@ class _TimerPageState extends State<TimerPage>
                       AnimatedPositioned(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOut,
-                        left: _currentPageIndex * itemWidth +
-                            (itemWidth - _circleWidth) / 2,
+                        left: _currentPageIndex * itemWidth + (itemWidth - _circleWidth) / 2,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
@@ -527,12 +492,8 @@ class _TimerPageState extends State<TimerPage>
                             },
                             child: TweenAnimationBuilder<Color?>(
                               tween: ColorTween(
-                                begin: _currentPageIndex == index
-                                    ? Colors.grey[300]
-                                    : Colors.white,
-                                end: _currentPageIndex == index
-                                    ? Colors.white
-                                    : Colors.grey[300],
+                                begin: _currentPageIndex == index ? Colors.grey[300] : Colors.white,
+                                end: _currentPageIndex == index ? Colors.white : Colors.grey[300],
                               ),
                               duration: const Duration(milliseconds: 300),
                               builder: (context, color, child) {

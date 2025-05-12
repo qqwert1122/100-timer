@@ -475,13 +475,11 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<void> refreshRemainingSeconds() async {
-    String weekStart = getWeekStart(DateTime.now());
-    final totalSeconds = timerData!['total_seconds'];
+    refreshTimer();
+    _totalSeconds = _timerData?['total_seconds'] ?? _totalSeconds;
 
     _totalSessionDuration = await _statsProvider.getTotalDurationForCurrentWeek();
     _updateRemainingSeconds();
-
-    notifyListeners();
   }
 
   /*
