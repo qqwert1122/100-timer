@@ -23,8 +23,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
   Map<String, Map<String, Map<String, int>>> heatmapData = {};
 
   final List<String> dayKeys = ['월', '화', '수', '목', '금', '토', '일'];
-  List<String> allHourKeys =
-      List.generate(24, (index) => '${index.toString().padLeft(2, '0')}:00');
+  List<String> allHourKeys = List.generate(24, (index) => '${index.toString().padLeft(2, '0')}:00');
   List<String> activeHourKeys = [];
 
   final Map<String, Color> activityColorMap = {};
@@ -65,8 +64,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
       activityNames.clear();
 
       // offset를 반영하여 해당 주의 세션 데이터 로드
-      List<Map<String, dynamic>> sessions =
-          await _statsProvider.getSessionsForWeek(_statsProvider.weekOffset);
+      List<Map<String, dynamic>> sessions = await _statsProvider.getSessionsForWeek(_statsProvider.weekOffset);
 
       Set<String> activeHourSet = {};
 
@@ -75,9 +73,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
       for (var session in sessions) {
         String activityId = session['activity_id'];
         DateTime startTime = DateTime.parse(session['start_time']).toLocal();
-        DateTime endTime = session['end_time'] != null
-            ? DateTime.parse(session['end_time']).toLocal()
-            : DateTime.now();
+        DateTime endTime = session['end_time'] != null ? DateTime.parse(session['end_time']).toLocal() : DateTime.now();
         Color color = ColorService.hexToColor(session['activity_color']);
         activityColorMap[session['activity_id']] = color;
         activityNames[session['activity_id']] = session['activity_name'];
@@ -89,8 +85,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
 
         DateTime current = startTime;
         while (current.isBefore(endTime)) {
-          DateTime nextHour = DateTime(
-              current.year, current.month, current.day, current.hour + 1);
+          DateTime nextHour = DateTime(current.year, current.month, current.day, current.hour + 1);
           DateTime segmentEnd = endTime.isBefore(nextHour) ? endTime : nextHour;
 
           int rawMinutes = segmentEnd.difference(current).inMinutes;
@@ -130,8 +125,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
   }
 
   Widget buildWeeklyHeatmapWidget() {
-    List<String> displayHourKeys =
-        widget.showAllHours ? allHourKeys : activeHourKeys;
+    List<String> displayHourKeys = widget.showAllHours ? allHourKeys : activeHourKeys;
 
     if (!isLoading && displayHourKeys.isEmpty) {
       return const Center(
@@ -182,8 +176,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
                   ),
                 ),
                 ...dayKeys.map((dayKey) {
-                  Map<String, int>? activityTimes =
-                      heatmapData[hourKey]?[dayKey];
+                  Map<String, int>? activityTimes = heatmapData[hourKey]?[dayKey];
 
                   if (activityTimes == null || activityTimes.isEmpty) {
                     return Container(
@@ -192,35 +185,27 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
                       margin: const EdgeInsets.all(1),
                     );
                   } else {
-                    String dominantActivityId = activityTimes.entries
-                        .reduce((a, b) => a.value >= b.value ? a : b)
-                        .key;
+                    String dominantActivityId = activityTimes.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
                     int dominantMinutes = activityTimes[dominantActivityId]!;
 
-                    Color baseColor =
-                        activityColorMap[dominantActivityId] ?? Colors.blue;
+                    Color baseColor = activityColorMap[dominantActivityId] ?? Colors.blue;
                     double intensity = (dominantMinutes / 60.0).clamp(0.2, 1.0);
                     Color color = baseColor.withValues(alpha: intensity);
 
-                    String activityName =
-                        activityNames[dominantActivityId] ?? '알 수 없는 활동';
+                    String activityName = activityNames[dominantActivityId] ?? '알 수 없는 활동';
 
                     return Container(
                       width: 40,
                       height: 15,
-                      decoration: BoxDecoration(
-                          color: color,
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(6))),
+                      decoration: BoxDecoration(color: color, borderRadius: const BorderRadius.all(Radius.circular(6))),
                       margin: const EdgeInsets.all(1),
                       child: Tooltip(
-                        message:
-                            '$dayKey $hourKey\n$activityName\n$dominantMinutes분',
+                        message: '$dayKey $hourKey\n$activityName\n$dominantMinutes분',
                         child: Center(
-                          child: Text(
-                              dominantMinutes > 0 ? '$dominantMinutes' : '',
+                          child: Text(dominantMinutes > 0 ? '$dominantMinutes' : '',
                               style: AppTextStyles.getCaption(context).copyWith(
                                 fontSize: 8,
+                                color: Colors.white,
                               )),
                         ),
                       ),

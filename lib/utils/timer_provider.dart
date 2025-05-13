@@ -463,6 +463,51 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   */
 
+  Future<void> updateTotalSeconds(int hours) async {
+    try {
+      logger.d('[timerProvider] updateTotalSeconds: $hours hours');
+
+      // 초 단위로 변환
+      int totalSecondsValue = hours * 3600;
+
+      // 현재 타이머 데이터 확인
+      if (_timerData == null || !_timerData!.containsKey('timer_id')) {
+        logger.e('[timerProvider] updateTotalSeconds: Timer data is null or invalid');
+        return;
+      }
+
+      // DB 업데이트 - 기존의 updateTimer 활용
+      await _dbService.updateTimer(
+        _timerData!['timer_id'],
+        {
+          'total_seconds': totalSecondsValue,
+        },
+      );
+
+      // 로컬 상태 업데이트
+      _totalSeconds = totalSecondsValue;
+
+      // 타이머 데이터를 새로고침
+      refreshTimer();
+
+      // 남은 시간 업데이트
+      _updateRemainingSeconds();
+
+      // 리스너에게 알림
+      notifyListeners();
+
+      logger.d('[timerProvider] Total seconds updated successfully');
+    } catch (e) {
+      logger.e('''
+      [timerProvider]
+      - 위치 : updateTotalSeconds
+      - 오류 유형: ${e.runtimeType}
+      - 메시지: ${e.toString()}
+    ''');
+      rethrow; // 호출자에게 예외 전파
+    }
+  }
+
   void refreshTimer() async {
     String weekStart = getWeekStart(DateTime.now());
     _timerData = await _dbService.getTimer(weekStart);

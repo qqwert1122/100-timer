@@ -114,8 +114,8 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
     final todayString = '${now.month}월 ${now.day}일';
 
     // 퍼센트 관련 변수
-    final percent = timerProv.totalSessionDuration / (timerProv.totalSeconds == 0 ? 1 : timerProv.totalSeconds);
-    final percentText = (percent * 100).toStringAsFixed(0);
+    double percent = (totalDuration / totalSeconds);
+    String percentText = (percent * 100).toStringAsFixed(0);
 
     return Padding(
       padding: context.paddingXS,
@@ -150,7 +150,7 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            timerProvider!.isWeeklyTargetExceeded ? '이번 주 달성 시간' : '이번 주 남은 목표 시간',
+                            timerProvider.isWeeklyTargetExceeded ? '이번 주 달성 시간' : '이번 주 남은 시간',
                             style: AppTextStyles.getCaption(context).copyWith(
                               color: AppColors.textSecondary(context),
                               fontWeight: FontWeight.w900,
@@ -167,40 +167,20 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
                             overlayOpacity: 0.5,
                             child: Consumer<TimerProvider>(
                               builder: (context, provider, child) {
-                                if (timerProvider!.isWeeklyTargetExceeded) {
-                                  return GestureDetector(
-                                    onTap: () {
-                                      HapticFeedback.lightImpact();
-                                      showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return const TotalSecondsCards();
-                                          });
-                                    },
-                                    child: Text(
-                                      _formatTime(duration),
-                                      style: AppTextStyles.getTimeDisplay(context).copyWith(
-                                        color: Colors.blueAccent,
-                                        fontFamily: 'chab',
-                                      ),
+                                if (timerProvider.isWeeklyTargetExceeded) {
+                                  return Text(
+                                    _formatTime(duration),
+                                    style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                      color: Colors.blueAccent,
+                                      fontFamily: 'chab',
                                     ),
                                   );
                                 } else {
-                                  return GestureDetector(
-                                    onTap: () {
-                                      HapticFeedback.lightImpact();
-                                      showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return const TotalSecondsCards();
-                                          });
-                                    },
-                                    child: Text(
-                                      provider.formattedTime,
-                                      style: AppTextStyles.getTimeDisplay(context).copyWith(
-                                        color: AppColors.primary(context),
-                                        fontFamily: 'chab',
-                                      ),
+                                  return Text(
+                                    provider.formattedTime,
+                                    style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                      color: AppColors.primary(context),
+                                      fontFamily: 'chab',
                                     ),
                                   );
                                 }

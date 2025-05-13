@@ -26,7 +26,8 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
   late DatabaseService _dbService;
   late TimerProvider _timerProvider;
   final prefsService = PrefsService();
-  int currentTotalSeconds = PrefsService().totalSeconds;
+  int currentTotalSeconds = 360000;
+  int upComingTotalSeconds = PrefsService().totalSeconds;
   late int initialCardIndex;
   double _page = 0.0;
 
@@ -35,6 +36,7 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
     super.initState();
     _dbService = Provider.of<DatabaseService>(context, listen: false);
     _timerProvider = Provider.of<TimerProvider>(context, listen: false);
+    currentTotalSeconds = _timerProvider.timerData!['total_seconds'] ?? 360000;
     initialCardIndex = _findCardIndexByValue(currentTotalSeconds);
     _page = initialCardIndex.toDouble();
   }
@@ -80,8 +82,9 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
         return;
       }
 
-      await _dbService.updateTimer(timerId, {'total_seconds': _cards[index].value});
-      _timerProvider.refreshRemainingSeconds();
+      final updateHour = (_cards[index].value / 3600).toInt();
+
+      await _timerProvider.updateTotalSeconds(updateHour);
       Fluttertoast.showToast(
         msg: "${_cards[index].title}으로 목표가 변경되었습니다",
         toastLength: Toast.LENGTH_SHORT,
@@ -162,21 +165,62 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                       card.title,
                       style: AppTextStyles.getHeadline(context).copyWith(
                         fontWeight: FontWeight.w900,
-                        fontFamily: 'Neo',
+                        fontFamily: 'neo',
                       ),
                     ),
                     SizedBox(width: context.wp(2)),
-                    card.value == currentTotalSeconds
+                    card.value == currentTotalSeconds && currentTotalSeconds != upComingTotalSeconds
                         ? Row(
                             children: [
                               Text(
-                                '선택됨',
-                                style: AppTextStyles.getBody(context).copyWith(color: Colors.redAccent),
+                                '이번주만 선택',
+                                style: AppTextStyles.getCaption(context).copyWith(
+                                  color: Colors.blueAccent,
+                                  letterSpacing: -0.3,
+                                ),
                               ),
                               SizedBox(width: context.wp(1)),
                               Icon(
                                 LucideIcons.checkCircle,
-                                size: context.lg,
+                                size: context.md,
+                                color: Colors.blueAccent,
+                              ),
+                            ],
+                          )
+                        : const SizedBox(),
+                    card.value == upComingTotalSeconds && currentTotalSeconds != upComingTotalSeconds
+                        ? Row(
+                            children: [
+                              Text(
+                                '다음 주 예정',
+                                style: AppTextStyles.getCaption(context).copyWith(
+                                  color: Colors.deepPurple,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              SizedBox(width: context.wp(1)),
+                              Icon(
+                                LucideIcons.checkCircle,
+                                size: context.md,
+                                color: Colors.deepPurple,
+                              ),
+                            ],
+                          )
+                        : const SizedBox(),
+                    card.value == currentTotalSeconds && currentTotalSeconds == upComingTotalSeconds
+                        ? Row(
+                            children: [
+                              Text(
+                                '선택됨',
+                                style: AppTextStyles.getCaption(context).copyWith(
+                                  color: Colors.redAccent,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              SizedBox(width: context.wp(1)),
+                              Icon(
+                                LucideIcons.checkCircle,
+                                size: context.md,
                                 color: Colors.redAccent,
                               ),
                             ],
@@ -273,7 +317,7 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                       changeThisWeekTotalSeconds(index);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
+                      backgroundColor: currentTotalSeconds == card.value ? AppColors.backgroundSecondary(context) : Colors.blueAccent,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -282,7 +326,7 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                     label: Text(
                       '이번주만 바꾸기',
                       style: AppTextStyles.getBody(context).copyWith(
-                        color: Colors.white,
+                        color: currentTotalSeconds == card.value ? AppColors.textSecondary(context) : Colors.white,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -298,7 +342,7 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                       changePrefTotalSeconds(index);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
+                      backgroundColor: upComingTotalSeconds == card.value ? AppColors.backgroundSecondary(context) : Colors.deepPurple,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -307,7 +351,7 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                     label: Text(
                       '이번주부터 쭉 바꾸기',
                       style: AppTextStyles.getBody(context).copyWith(
-                        color: Colors.white,
+                        color: upComingTotalSeconds == card.value ? AppColors.textSecondary(context) : Colors.white,
                         fontWeight: FontWeight.w900,
                       ),
                     ),

@@ -34,8 +34,7 @@ class _SettingPageState extends State<SettingPage> {
 
   // 설정 변수
   int selectedValue = 100; // 기본값 (시간 단위)
-  final List<int> values =
-      List.generate(13, (index) => index * 5 + 40); // 40부터 100까지의 숫자 목록 생성
+  final List<int> values = List.generate(13, (index) => index * 5 + 40); // 40부터 100까지의 숫자 목록 생성
   bool keepScreenOn = false; // 화면 켜기 상태 변수
   bool alarmFlag = false; // 알람 관련 초기 변수
 
@@ -134,35 +133,14 @@ class _SettingPageState extends State<SettingPage> {
         'title': '도전 시간을 변경해요',
         'icon': 'bullseye',
         'description': '다른 시간을 도전하세요\n바뀐 시간은 다음주부터 적용돼요',
-        'onTap': () {},
-        'trailing': GestureDetector(
-          // onTap: () => _showPicker(context),
-          onTap: () {
-            HapticFeedback.lightImpact();
-            showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return const TotalSecondsCards();
-                });
-          },
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '$selectedValue시간',
-                style: AppTextStyles.getBody(context).copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(width: 2),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: context.lg,
-                color: Colors.grey,
-              ),
-            ],
-          ),
-        ),
+        'onTap': () {
+          HapticFeedback.lightImpact();
+          showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return const TotalSecondsCards();
+              });
+        },
       },
       {
         'title': '타이머를 초기화해요',
@@ -205,20 +183,17 @@ class _SettingPageState extends State<SettingPage> {
                     },
                     child: Text(
                       "취소",
-                      style: AppTextStyles.getBody(context)
-                          .copyWith(color: Colors.grey),
+                      style: AppTextStyles.getBody(context).copyWith(color: Colors.grey),
                     ),
                   ),
                   TextButton(
                     onPressed: () async {
                       // 현재 주(weekOffset 0)의 세션들 가져오기
-                      final sessions =
-                          await statsProvider.getSessionsForWeek(0);
+                      final sessions = await statsProvider.getSessionsForWeek(0);
 
                       // 모든 세션에 대해 소프트 딜리션 실행 (동시에 처리)
                       await Future.wait(
-                        sessions.map((session) =>
-                            dbService.deleteSession(session['session_id'])),
+                        sessions.map((session) => dbService.deleteSession(session['session_id'])),
                       );
 
                       await timerProvider.refreshRemainingSeconds();
@@ -233,10 +208,8 @@ class _SettingPageState extends State<SettingPage> {
                         gravity: ToastGravity.BOTTOM,
                       );
                     },
-                    child: Text("삭제해요",
-                        style: AppTextStyles.getBody(context).copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.redAccent)),
+                    child:
+                        Text("삭제해요", style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.bold, color: Colors.redAccent)),
                   ),
                 ],
               );
@@ -296,8 +269,7 @@ class _SettingPageState extends State<SettingPage> {
         'icon': 'email',
         'description': '궁금한 점을 문의하세요',
         'onTap': () async {
-          const String googleFormUrl =
-              'https://forms.gle/thMpo1iGp97KjKXU8'; // 구글 폼 URL
+          const String googleFormUrl = 'https://forms.gle/thMpo1iGp97KjKXU8'; // 구글 폼 URL
           if (await canLaunchUrl(Uri.parse(googleFormUrl))) {
             await launchUrl(
               Uri.parse(googleFormUrl),
@@ -305,8 +277,7 @@ class _SettingPageState extends State<SettingPage> {
             );
           } else {
             const snackBar = SnackBar(
-              content: Text(
-                  '구글 폼을 열 수 없습니다. 링크: https://forms.gle/thMpo1iGp97KjKXU8g'),
+              content: Text('구글 폼을 열 수 없습니다. 링크: https://forms.gle/thMpo1iGp97KjKXU8g'),
             );
             ScaffoldMessenger.of(context).showSnackBar(snackBar);
           }
@@ -327,8 +298,7 @@ class _SettingPageState extends State<SettingPage> {
         'icon': 'notepad',
         'description': '서비스 이용약관을 확인하세요',
         'onTap': () async {
-          const String termsUrl =
-              'https://dour-sunday-be4.notion.site/100-timer-1c67162f12b2804482cbe6124186a2ac'; // 노션 URL
+          const String termsUrl = 'https://dour-sunday-be4.notion.site/100-timer-1c67162f12b2804482cbe6124186a2ac'; // 노션 URL
           if (await canLaunchUrl(Uri.parse(termsUrl))) {
             await launchUrl(
               Uri.parse(termsUrl),
@@ -407,8 +377,7 @@ class _SettingPageState extends State<SettingPage> {
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        subtitle: Text(items[i]['description'],
-                            style: AppTextStyles.getCaption(context)),
+                        subtitle: Text(items[i]['description'], style: AppTextStyles.getCaption(context)),
                         trailing: items[i]['trailing'],
                       ),
                     ),
@@ -476,8 +445,7 @@ class _SettingPageState extends State<SettingPage> {
             children: [
               Expanded(
                 child: CupertinoPicker(
-                  scrollController: FixedExtentScrollController(
-                      initialItem: selectedValue ~/ 5),
+                  scrollController: FixedExtentScrollController(initialItem: selectedValue ~/ 5),
                   itemExtent: 40,
                   onSelectedItemChanged: (int index) {
                     setState(() {
@@ -486,8 +454,7 @@ class _SettingPageState extends State<SettingPage> {
                   },
                   children: values.map((value) {
                     return Center(
-                      child: Text('$value 시간',
-                          style: AppTextStyles.getBody(context)),
+                      child: Text('$value 시간', style: AppTextStyles.getBody(context)),
                     );
                   }).toList(),
                 ),
@@ -506,8 +473,7 @@ class _SettingPageState extends State<SettingPage> {
                   ),
                   child: Text(
                     '확인',
-                    style: AppTextStyles.getBody(context)
-                        .copyWith(fontWeight: FontWeight.w600),
+                    style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w600),
                   ),
                   onPressed: () async {
                     setState(() {
@@ -535,10 +501,8 @@ class _SettingPageState extends State<SettingPage> {
         return Container(
           height: context.hp(90),
           width: MediaQuery.of(context).size.width, // 화면 너비에 맞춤
-          decoration: BoxDecoration(
-              color: AppColors.background(context),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16))),
+          decoration:
+              BoxDecoration(color: AppColors.background(context), borderRadius: const BorderRadius.vertical(top: Radius.circular(16))),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -594,11 +558,9 @@ class _SettingPageState extends State<SettingPage> {
                       title: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('${item['category']} | ${item['title']}',
-                              style: AppTextStyles.getTitle(context)),
+                          Text('${item['category']} | ${item['title']}', style: AppTextStyles.getTitle(context)),
                           SizedBox(height: context.hp(1)),
-                          Text(item['description'],
-                              style: AppTextStyles.getBody(context)),
+                          Text(item['description'], style: AppTextStyles.getBody(context)),
                           GestureDetector(
                             onTap: () => _launchURL(item['link']),
                             child: Text(
