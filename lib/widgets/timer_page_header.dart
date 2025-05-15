@@ -42,7 +42,9 @@ class _TimerPageHeaderState extends State<TimerPageHeader> {
   Widget build(BuildContext context) {
     return Consumer<TimerProvider>(
       builder: (context, timerProvider, child) {
-        final totalSeconds = timerProvider.timerData != null ? (timerProvider.timerData!['total_seconds'] / 3600).toInt() : 100; // 기본값
+        final totalSeconds = timerProvider.timerData != null
+            ? (timerProvider.timerData!['total_seconds'] / 3600).toInt()
+            : 100; // 기본값
 
         return Padding(
           padding: context.paddingHorizSM,
@@ -85,32 +87,32 @@ class _TimerPageHeaderState extends State<TimerPageHeader> {
               ),
               Row(
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      _showSubscriptionPage();
-                    },
-                    child: Icon(
-                      LucideIcons.crown,
-                      size: context.xl,
-                    ),
-                  ),
-                  SizedBox(width: context.wp(6)),
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AlarmPage(),
-                        ),
-                      );
-                    },
-                    child: Icon(
-                      LucideIcons.bell,
-                      size: context.xl,
-                    ),
-                  ),
+                  // GestureDetector(
+                  //   onTap: () {
+                  //     HapticFeedback.lightImpact();
+                  //     _showSubscriptionPage();
+                  //   },
+                  //   child: Icon(
+                  //     LucideIcons.crown,
+                  //     size: context.xl,
+                  //   ),
+                  // ),
+                  // SizedBox(width: context.wp(6)),
+                  // GestureDetector(
+                  //   onTap: () {
+                  //     HapticFeedback.lightImpact();
+                  //     Navigator.push(
+                  //       context,
+                  //       MaterialPageRoute(
+                  //         builder: (context) => const AlarmPage(),
+                  //       ),
+                  //     );
+                  //   },
+                  //   child: Icon(
+                  //     LucideIcons.bell,
+                  //     size: context.xl,
+                  //   ),
+                  // ),
                 ],
               ),
             ],

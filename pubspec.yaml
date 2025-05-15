@@ -56,6 +56,7 @@ dependencies:
   google_mobile_ads: ^6.0.0
   carousel_slider: ^5.0.0
   showcaseview: ^4.0.1
+  flutter_native_splash: ^2.4.1
 
 flutter:
   uses-material-design: true
@@ -100,9 +101,20 @@ dev_dependencies:
 flutter_icons:
   android: "launcher_icon"
   ios: true
+  remove_alpha_ios: true
+  image_path_android: "assets/logos/logo_2.png"
+  image_path_ios: "assets/logos/logo2_nobg.png"  
   image_path: "assets/logos/logo_2.png" # 아이콘 이미지 경로
   adaptive_icon_background: "#ffffff"
   adaptive_icon_foreground: "assets/logos/logo_2.png"
+
+flutter_native_splash:
+  color: "#ffffff"  # 배경색 (원하는 색상으로 변경 가능)
+  image: "assets/logos/logo_2.png"  # 스플래시 이미지 (앱 아이콘과 같은 이미지 사용)
+  ios: true
+  android: true
+  web: false
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

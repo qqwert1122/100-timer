@@ -156,7 +156,7 @@ class _MyAppState extends State<MyApp> {
 
     final List<Map<String, dynamic>> defaultActivities = [
       {
-        'activity_name': '전체',
+        'activity_name': '전체 활동',
         'activity_icon': 'category',
         'activity_color': '#BCBCBC',
         'is_default': true,
@@ -174,7 +174,7 @@ class _MyAppState extends State<MyApp> {
         'is_default': false,
       },
       {
-        'activity_name': '글쓰기',
+        'activity_name': '글쓰기 연습',
         'activity_icon': 'writing',
         'activity_color': '#EB5B00',
         'is_default': false,
@@ -186,8 +186,8 @@ class _MyAppState extends State<MyApp> {
         'is_default': false,
       },
       {
-        'activity_name': '아이디어 고민',
-        'activity_icon': 'bulb',
+        'activity_name': '사이드 프로젝트',
+        'activity_icon': 'rocket',
         'activity_color': '#A1DD70',
         'is_default': false,
       },
@@ -199,7 +199,7 @@ class _MyAppState extends State<MyApp> {
       },
       {
         'activity_name': '코딩',
-        'activity_icon': 'running',
+        'activity_icon': 'developer',
         'activity_color': '#6A5ACD',
         'is_default': false,
       },
