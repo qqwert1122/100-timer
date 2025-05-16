@@ -29,7 +29,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     final List<Map<String, dynamic>> goalSamples = [
       {
@@ -139,7 +140,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
           borderRadius: BorderRadius.circular(16.0),
           boxShadow: [
             BoxShadow(
-              color: AppColors.textPrimary(context).withValues(alpha: 0.08), // 그림자 색상
+              color: AppColors.textPrimary(context)
+                  .withValues(alpha: 0.08), // 그림자 색상
               blurRadius: 10, // 그림자 흐림 정도
               offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
             ),
@@ -153,7 +155,9 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                 Container(
                   width: context.xxl,
                   height: context.xxl,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(50.0)),
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(50.0)),
                   child: Image.asset(
                     getIconImage('fitness'),
                     width: context.xl,
@@ -163,7 +167,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                         width: context.xl,
                         height: context.xl,
                         color: Colors.grey.withValues(alpha: 0.2),
-                        child: Icon(Icons.broken_image, size: context.xl, color: Colors.grey),
+                        child: Icon(Icons.broken_image,
+                            size: context.xl, color: Colors.grey),
                       );
                     },
                   ),
@@ -340,7 +345,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
           borderRadius: BorderRadius.circular(16.0),
           boxShadow: [
             BoxShadow(
-              color: AppColors.textPrimary(context).withValues(alpha: 0.08), // 그림자 색상
+              color: AppColors.textPrimary(context)
+                  .withValues(alpha: 0.08), // 그림자 색상
               blurRadius: 10, // 그림자 흐림 정도
               offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
             ),
@@ -354,7 +360,9 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                 Container(
                   width: context.xxl,
                   height: context.xxl,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(50.0)),
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(50.0)),
                   child: Image.asset(
                     getIconImage('running'),
                     width: context.xl,
@@ -364,7 +372,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                         width: context.xl,
                         height: context.xl,
                         color: Colors.grey.withValues(alpha: 0.2),
-                        child: Icon(Icons.broken_image, size: context.xl, color: Colors.grey),
+                        child: Icon(Icons.broken_image,
+                            size: context.xl, color: Colors.grey),
                       );
                     },
                   ),
@@ -553,7 +562,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
           borderRadius: BorderRadius.circular(16.0), // 둥근 모서리
           boxShadow: [
             BoxShadow(
-              color: AppColors.textPrimary(context).withValues(alpha: 0.08), // 그림자 색상
+              color: AppColors.textPrimary(context)
+                  .withValues(alpha: 0.08), // 그림자 색상
               blurRadius: 10, // 그림자 흐림 정도
               offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
             ),
@@ -615,11 +625,12 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         margin: const EdgeInsets.symmetric(horizontal: 16.0),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.background(context),
           borderRadius: BorderRadius.circular(16.0), // 둥근 모서리
           boxShadow: [
             BoxShadow(
-              color: AppColors.textPrimary(context).withValues(alpha: 0.08), // 그림자 색상
+              color: AppColors.textPrimary(context)
+                  .withValues(alpha: 0.08), // 그림자 색상
               blurRadius: 10, // 그림자 흐림 정도
               offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
             ),
@@ -752,7 +763,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
       );
     }
 
-    Widget _buildDayWithReminder(BuildContext context, String day, bool isActive, Color? color) {
+    Widget _buildDayWithReminder(
+        BuildContext context, String day, bool isActive, Color? color) {
       return Column(
         children: [
           // 요일 텍스트
@@ -815,7 +827,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                         children: [
                           Text(
                             '목표 기능을\n준비 중이에요',
-                            style: AppTextStyles.getHeadline(context).copyWith(),
+                            style:
+                                AppTextStyles.getHeadline(context).copyWith(),
                           ),
                           SizedBox(width: context.wp(2)),
                           Shimmer.fromColors(
@@ -864,7 +877,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                     enlargeCenterPage: false,
                     autoPlay: true,
                   ),
-                  itemBuilder: (BuildContext context, int index, int realIndex) {
+                  itemBuilder:
+                      (BuildContext context, int index, int realIndex) {
                     final goal = goalSamples[index];
 
                     return Container(
@@ -875,7 +889,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.textPrimary(context).withValues(alpha: 0.08), // 그림자 색상
+                            color: AppColors.textPrimary(context)
+                                .withValues(alpha: 0.08), // 그림자 색상
                             blurRadius: 10, // 그림자 흐림 정도
                             offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
                           ),
@@ -909,7 +924,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                               Flexible(
                                 child: Text(
                                   goal['title'],
-                                  style: AppTextStyles.getBody(context).copyWith(
+                                  style:
+                                      AppTextStyles.getBody(context).copyWith(
                                     color: Colors.white,
                                     fontFamily: 'neo',
                                   ),
@@ -957,14 +973,16 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                 ),
                 SizedBox(height: context.hp(1)),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   margin: const EdgeInsets.symmetric(horizontal: 16.0),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.background(context),
                     borderRadius: BorderRadius.circular(16.0), // 둥근 모서리
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.textPrimary(context).withValues(alpha: 0.08), // 그림자 색상
+                        color: AppColors.textPrimary(context)
+                            .withValues(alpha: 0.08), // 그림자 색상
                         blurRadius: 10, // 그림자 흐림 정도
                         offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
                       ),
@@ -985,20 +1003,28 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _buildDayWithReminder(context, '월', true, Colors.blueAccent),
-                            _buildDayWithReminder(context, '화', true, Colors.blueAccent),
-                            _buildDayWithReminder(context, '수', true, Colors.blueAccent),
-                            _buildDayWithReminder(context, '목', false, Colors.transparent),
-                            _buildDayWithReminder(context, '금', true, Colors.orangeAccent),
-                            _buildDayWithReminder(context, '토', false, Colors.transparent),
-                            _buildDayWithReminder(context, '일', false, Colors.transparent),
+                            _buildDayWithReminder(
+                                context, '월', true, Colors.blueAccent),
+                            _buildDayWithReminder(
+                                context, '화', true, Colors.blueAccent),
+                            _buildDayWithReminder(
+                                context, '수', true, Colors.blueAccent),
+                            _buildDayWithReminder(
+                                context, '목', false, Colors.transparent),
+                            _buildDayWithReminder(
+                                context, '금', true, Colors.orangeAccent),
+                            _buildDayWithReminder(
+                                context, '토', false, Colors.transparent),
+                            _buildDayWithReminder(
+                                context, '일', false, Colors.transparent),
                           ],
                         ),
                         SizedBox(height: context.hp(2)),
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.blueAccent,
                                 borderRadius: BorderRadius.circular(16),
@@ -1013,7 +1039,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                                   SizedBox(width: context.wp(1)),
                                   Text(
                                     '오후 7:30',
-                                    style: AppTextStyles.getCaption(context).copyWith(
+                                    style: AppTextStyles.getCaption(context)
+                                        .copyWith(
                                       color: Colors.white,
                                     ),
                                   ),
@@ -1022,7 +1049,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                             ),
                             SizedBox(width: context.wp(2)),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
                                 color: Colors.orangeAccent,
                                 borderRadius: BorderRadius.circular(16),
@@ -1037,7 +1065,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                                   SizedBox(width: context.wp(1)),
                                   Text(
                                     '오후 9:30',
-                                    style: AppTextStyles.getCaption(context).copyWith(
+                                    style: AppTextStyles.getCaption(context)
+                                        .copyWith(
                                       color: Colors.white,
                                     ),
                                   ),
@@ -1098,7 +1127,8 @@ class _GoalFeatureIntroPageState extends State<GoalFeatureIntroPage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        icon: Icon(LucideIcons.send, size: context.lg, color: Colors.white),
+                        icon: Icon(LucideIcons.send,
+                            size: context.lg, color: Colors.white),
                         label: Text(
                           '출시되면 알려주세요',
                           style: AppTextStyles.getBody(context).copyWith(

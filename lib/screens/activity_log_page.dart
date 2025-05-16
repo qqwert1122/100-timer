@@ -439,7 +439,9 @@ class _ActivityLogPageState extends State<ActivityLogPage>
               child: Text(
                 daysOfWeek[index],
                 style: AppTextStyles.getBody(context).copyWith(
-                  color: AppColors.textPrimary(context),
+                  color: isSelected
+                      ? Colors.white
+                      : AppColors.textPrimary(context),
                 ),
               ),
             ),

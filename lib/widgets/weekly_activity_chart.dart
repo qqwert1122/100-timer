@@ -299,7 +299,7 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart>
                                 // 총 시간 표시
 
                                 Text(
-                                  activityName.length >= 6
+                                  activityName.length > 6
                                       ? '${activityName.substring(0, 6)}...'
                                       : activityName,
                                   style: AppTextStyles.getCaption(context)

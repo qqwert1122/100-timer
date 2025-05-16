@@ -634,6 +634,21 @@ class _AddActivityPageState extends State<AddActivityPage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          InkWell(
+            child: Container(
+              padding: context.paddingSM,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.backgroundSecondary(context),
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+              child: Text(
+                '활동을 오래할수록 색상이 점점 진해집니다.\n색상의 변화를 미리보고 마음에 드는 컬러를 선택해주세요.',
+                style: AppTextStyles.getCaption(context),
+              ),
+            ),
+          ),
+          SizedBox(height: context.hp(2)),
           Row(
             children: [
               Text(
@@ -700,39 +715,6 @@ class _AddActivityPageState extends State<AddActivityPage> {
                   ),
                 );
               }).toList(),
-            ),
-          ),
-          const SizedBox(
-            height: 30,
-          ),
-          InkWell(
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: ListTile(
-                  leading: Icon(
-                    Icons.info_outlined,
-                    color: isDarkMode
-                        ? Colors.grey.shade400
-                        : Colors.grey.shade700,
-                  ),
-                  title: Text(
-                    '베이스컬러를 선택해주세요',
-                    style: AppTextStyles.getBody(context),
-                  ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      '활동을 오래할수록 색상이 점점 진해집니다.\n위에서 색상의 변화를 미리보고 마음에 드는 베이스 컬러를 선택해주세요.',
-                      style: AppTextStyles.getCaption(context),
-                    ),
-                  ),
-                ),
-              ),
             ),
           ),
         ],

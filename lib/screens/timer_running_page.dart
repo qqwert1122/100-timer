@@ -929,7 +929,7 @@ class _TimerRunningPageState extends State<TimerRunningPage>
               context: context,
               builder: (ctx) {
                 return AlertDialog(
-                  backgroundColor: Colors.white,
+                  backgroundColor: AppColors.background(context),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16.0),
                   ),
@@ -986,8 +986,9 @@ class _TimerRunningPageState extends State<TimerRunningPage>
     final buttonText = currentState == 'RUNNING' ? '잠깐 휴식' : '다시 시작';
 
     // 상태에 따른 버튼 색상
-    final backgroundColor =
-        currentState == 'RUNNING' ? Colors.grey[200] : Colors.blueAccent;
+    final backgroundColor = currentState == 'RUNNING'
+        ? AppColors.backgroundTertiary(context)
+        : Colors.blueAccent;
 
     final fontColor = currentState == 'RUNNING' ? Colors.grey : Colors.white;
 

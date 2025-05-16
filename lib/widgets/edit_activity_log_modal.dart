@@ -475,6 +475,9 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
+
     return StatefulBuilder(
       builder: (BuildContext context, StateSetter setModalState) {
         return Container(
@@ -550,14 +553,14 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                       child: Container(
                         padding: context.paddingSM,
                         decoration: BoxDecoration(
-                          color: AppColors.background(context),
+                          color: AppColors.backgroundSecondary(context),
                           borderRadius: const BorderRadius.all(
                             Radius.circular(16.0),
                           ),
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.textSecondary(context)
-                                  .withValues(alpha: 0.3),
+                                  .withValues(alpha: isDarkMode ? 0 : 0.3),
                               spreadRadius: 1,
                               blurRadius: 4,
                               offset: const Offset(0, 2),
@@ -602,7 +605,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                   ),
                                   SizedBox(width: context.wp(2)),
                                   Text(
-                                    activityName.length >= 10
+                                    activityName.length > 10
                                         ? '${activityName.substring(0, 10)}...'
                                         : activityName,
                                     style:
@@ -641,14 +644,14 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                       child: Container(
                         padding: context.paddingSM,
                         decoration: BoxDecoration(
-                          color: AppColors.background(context),
+                          color: AppColors.backgroundSecondary(context),
                           borderRadius: const BorderRadius.all(
                             Radius.circular(16.0),
                           ),
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.textSecondary(context)
-                                  .withValues(alpha: 0.3),
+                                  .withValues(alpha: isDarkMode ? 0 : 0.3),
                               spreadRadius: 1,
                               blurRadius: 4,
                               offset: const Offset(0, 2),
