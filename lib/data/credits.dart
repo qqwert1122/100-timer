@@ -145,6 +145,30 @@ const List<Map<String, dynamic>> creditList = [
     'link': 'https://pub.dev/packages/showcaseview',
   },
   {
+    'category': '오픈 소스 라이브러리',
+    'title': 'device_info_plus',
+    'description': '이 어플리케이션은 device_info_plus 라이브러리를 사용했어요.',
+    'link': 'https://pub.dev/packages/device_info_plus',
+  },
+  {
+    'category': '오픈 소스 라이브러리',
+    'title': 'google_mobile_ads',
+    'description': '이 어플리케이션은 google_mobile_ads 라이브러리를 사용했어요.',
+    'link': 'https://pub.dev/packages/google_mobile_ads',
+  },
+  {
+    'category': '오픈 소스 라이브러리',
+    'title': 'lucide_icons',
+    'description': '이 어플리케이션은 lucide_icons 라이브러리를 사용했어요.',
+    'link': 'https://pub.dev/packages/lucide_icons',
+  },
+  {
+    'category': '오픈 소스 라이브러리',
+    'title': 'flutter_native_splash',
+    'description': '이 어플리케이션은 flutter_native_splash 라이브러리를 사용했어요.',
+    'link': 'https://pub.dev/packages/flutter_native_splash',
+  },
+  {
     'category': '폰트',
     'title': '나눔휴먼,나눔스퀘어네오',
     'description': '이 어플리케이션은 나눔휴먼체, 나눔스퀘어네오체를 사용했어요',
@@ -189,8 +213,8 @@ const List<Map<String, dynamic>> creditList = [
   },
   {
     'category': '목업',
-    'title': 'previewed.app',
-    'description': '이 어플리케이션의 홍보용 스크린샷 목업은 previewed.app을 사용했어요.',
-    'link': 'https://previewed.app/template/07C36340',
+    'title': 'theapplaunchpad',
+    'description': '이 어플리케이션의 홍보용 스크린샷 목업은 theapplaunchpad을 사용했어요.',
+    'link': 'https://theapplaunchpad.com/',
   },
 ];
