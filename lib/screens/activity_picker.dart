@@ -14,6 +14,7 @@ import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/time.formatter.dart';
+import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:showcaseview/showcaseview.dart';
 
@@ -33,12 +34,12 @@ class ActivityPicker extends StatefulWidget {
   _ActivityPickerState createState() => _ActivityPickerState();
 }
 
-class _ActivityPickerState extends State<ActivityPicker>
-    with SingleTickerProviderStateMixin {
+class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProviderStateMixin {
   late Future<List<Map<String, dynamic>>> _activityListFuture;
   late Future<List<Map<String, dynamic>>> _favoriteActivityListFuture;
   late final DatabaseService _dbService;
   late final StatsProvider _statsProvider;
+  late final TimerProvider _timerProvider;
 
   // 탭/페이지 컨트롤러
   late TabController _tabController;
@@ -78,6 +79,7 @@ class _ActivityPickerState extends State<ActivityPicker>
 
     _statsProvider = Provider.of<StatsProvider>(context, listen: false);
     _dbService = Provider.of<DatabaseService>(context, listen: false);
+    _timerProvider = Provider.of<TimerProvider>(context, listen: false);
     _tabController = TabController(length: 2, vsync: this);
     _pageController = PageController(initialPage: 0);
 
@@ -157,23 +159,15 @@ class _ActivityPickerState extends State<ActivityPicker>
     try {
       // DB에서 활동 목록 가져오기
       final rawAllActivities = await _statsProvider.getActivities();
-      final rawFavoriteActivities =
-          await _statsProvider.getFavoriteActivities();
+      final rawFavoriteActivities = await _statsProvider.getFavoriteActivities();
 
       // 데이터의 깊은 복사본 생성 (불변 객체 방지)
-      final allActivities = rawAllActivities
-          .map((activity) => Map<String, dynamic>.from(activity))
-          .toList();
-      final favoriteActivities = rawFavoriteActivities
-          .map((activity) => Map<String, dynamic>.from(activity))
-          .toList();
+      final allActivities = rawAllActivities.map((activity) => Map<String, dynamic>.from(activity)).toList();
+      final favoriteActivities = rawFavoriteActivities.map((activity) => Map<String, dynamic>.from(activity)).toList();
 
       // 최근 활동 목록 생성 (last_used_at 기준 정렬)
-      final recentActivities = allActivities
-          .where((activity) => activity['last_used_at'] != null)
-          .toList()
-        ..sort((a, b) => (b['last_used_at'] as String)
-            .compareTo(a['last_used_at'] as String));
+      final recentActivities = allActivities.where((activity) => activity['last_used_at'] != null).toList()
+        ..sort((a, b) => (b['last_used_at'] as String).compareTo(a['last_used_at'] as String));
 
       setState(() {
         _allActivities = allActivities;
@@ -200,11 +194,7 @@ class _ActivityPickerState extends State<ActivityPicker>
   }
 
   Future<void> _navigateToEditActivityPage(
-      BuildContext context,
-      String activityId,
-      String activityName,
-      String activityIcon,
-      String activityColor) async {
+      BuildContext context, String activityId, String activityName, String activityIcon, String activityColor) async {
     final updatedActivity = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -220,23 +210,27 @@ class _ActivityPickerState extends State<ActivityPicker>
 
     if (updatedActivity != null) {
       _loadInitialData();
+      if (_timerProvider.currentActivityId == updatedActivity['id']) {
+        logger.d('선택된 활동의 변경, setCurrentActivity 호출');
+        _timerProvider.setCurrentActivity(
+          updatedActivity['id'],
+          updatedActivity['name'],
+          updatedActivity['icon'],
+          updatedActivity['color'],
+        );
+      }
     }
   }
 
-  Future<void> _deleteActivity(
-      BuildContext context, String activityId, String activityName) async {
-    final shouldDelete =
-        await _showDeleteConfirmationDialog(context, activityName);
+  Future<void> _deleteActivity(BuildContext context, String activityId, String activityName) async {
+    final shouldDelete = await _showDeleteConfirmationDialog(context, activityName);
     if (shouldDelete) {
       await _dbService.deleteActivity(activityId);
 
       setState(() {
-        _allActivities
-            .removeWhere((activity) => activity['activity_id'] == activityId);
-        _favoriteActivities
-            .removeWhere((activity) => activity['activity_id'] == activityId);
-        _recentActivities
-            .removeWhere((activity) => activity['activity_id'] == activityId);
+        _allActivities.removeWhere((activity) => activity['activity_id'] == activityId);
+        _favoriteActivities.removeWhere((activity) => activity['activity_id'] == activityId);
+        _recentActivities.removeWhere((activity) => activity['activity_id'] == activityId);
       });
 
       if (widget.selectedActivity == activityName) {
@@ -260,32 +254,25 @@ class _ActivityPickerState extends State<ActivityPicker>
     }
   }
 
-  Future<bool> _showDeleteConfirmationDialog(
-      BuildContext context, String activity) async {
+  Future<bool> _showDeleteConfirmationDialog(BuildContext context, String activity) async {
     return await showDialog<bool>(
           context: context,
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
               backgroundColor: AppColors.background(context),
-              title: Text('정말 삭제하시겠습니까?',
-                  style: AppTextStyles.getTitle(context)
-                      .copyWith(color: Colors.redAccent)),
+              title: Text('정말 삭제하시겠습니까?', style: AppTextStyles.getTitle(context).copyWith(color: Colors.redAccent)),
               content: Text(
                 '활동을 삭제할 경우 같은 이름으로 재생성 할 수는 있으나 복구할 수 없습니다.',
                 style: AppTextStyles.getBody(context),
               ),
               actions: <Widget>[
                 TextButton(
-                  child: Text('취소',
-                      style: AppTextStyles.getTitle(context)
-                          .copyWith(color: Colors.grey)),
+                  child: Text('취소', style: AppTextStyles.getTitle(context).copyWith(color: Colors.grey)),
                   onPressed: () => Navigator.of(context).pop(false),
                 ),
                 TextButton(
-                  child: Text('삭제',
-                      style: AppTextStyles.getTitle(context)
-                          .copyWith(color: Colors.redAccent)),
+                  child: Text('삭제', style: AppTextStyles.getTitle(context).copyWith(color: Colors.redAccent)),
                   onPressed: () => Navigator.of(context).pop(true),
                 ),
               ],
@@ -317,15 +304,13 @@ class _ActivityPickerState extends State<ActivityPicker>
     // 메모리 내 목록 업데이트
     setState(() {
       // 전체 활동 목록에서 즐겨찾기 상태 업데이트
-      final index =
-          _allActivities.indexWhere((a) => a['activity_id'] == activityId);
+      final index = _allActivities.indexWhere((a) => a['activity_id'] == activityId);
       if (index != -1) {
         _allActivities[index]['is_favorite'] = newFavoriteValue;
       }
 
       // 최근 활동 목록에서도 업데이트
-      final recentIndex =
-          _recentActivities.indexWhere((a) => a['activity_id'] == activityId);
+      final recentIndex = _recentActivities.indexWhere((a) => a['activity_id'] == activityId);
       if (recentIndex != -1) {
         _recentActivities[recentIndex]['is_favorite'] = newFavoriteValue;
       }
@@ -425,9 +410,7 @@ class _ActivityPickerState extends State<ActivityPicker>
             },
             backgroundColor: Colors.yellow,
             foregroundColor: Colors.black,
-            icon: activity['is_favorite'] != 1
-                ? Icons.star_border_rounded
-                : Icons.star_rounded,
+            icon: activity['is_favorite'] != 1 ? Icons.star_border_rounded : Icons.star_rounded,
             flex: 1,
             autoClose: true,
           ),
@@ -475,8 +458,7 @@ class _ActivityPickerState extends State<ActivityPicker>
                 ),
                 SlidableAction(
                   onPressed: (context) {
-                    _deleteActivity(context, activity['activity_id'],
-                        activity['activity_name']);
+                    _deleteActivity(context, activity['activity_id'], activity['activity_name']);
                   },
                   backgroundColor: Colors.redAccent,
                   foregroundColor: Colors.white,
@@ -488,9 +470,7 @@ class _ActivityPickerState extends State<ActivityPicker>
           : null,
       child: Container(
         decoration: BoxDecoration(
-          color: activity['activity_name'] == widget.selectedActivity
-              ? Colors.red[50]
-              : null,
+          color: activity['activity_name'] == widget.selectedActivity ? Colors.red[50] : null,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Padding(
@@ -522,9 +502,7 @@ class _ActivityPickerState extends State<ActivityPicker>
                       : activity['activity_name'],
                   style: AppTextStyles.getBody(context).copyWith(
                     fontWeight: FontWeight.w900,
-                    color: activity['activity_name'] == widget.selectedActivity
-                        ? Colors.redAccent.shade200
-                        : null,
+                    color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -764,9 +742,7 @@ class _ActivityPickerState extends State<ActivityPicker>
           SliverToBoxAdapter(
             child: ListTile(
               leading: const Icon(Icons.add, color: Colors.blue),
-              title: Text('활동 추가',
-                  style: AppTextStyles.getBody(context)
-                      .copyWith(fontWeight: FontWeight.w900)),
+              title: Text('활동 추가', style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900)),
               onTap: () {
                 _navigateToAddActivityPage(context);
               },
@@ -784,8 +760,7 @@ class _ActivityPickerState extends State<ActivityPicker>
     }
 
     if (_recentActivities.isEmpty) {
-      return Center(
-          child: Text('데이터가 없습니다.', style: AppTextStyles.getBody(context)));
+      return Center(child: Text('데이터가 없습니다.', style: AppTextStyles.getBody(context)));
     }
 
     return ListView.builder(
@@ -883,9 +858,7 @@ class _ActivityPickerState extends State<ActivityPicker>
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isEditingOrder
-                            ? Colors.indigoAccent
-                            : AppColors.backgroundSecondary(context),
+                        backgroundColor: isEditingOrder ? Colors.indigoAccent : AppColors.backgroundSecondary(context),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -895,17 +868,13 @@ class _ActivityPickerState extends State<ActivityPicker>
                         children: [
                           Icon(
                             Icons.swap_vert_rounded,
-                            color: isEditingOrder
-                                ? Colors.white
-                                : AppColors.textPrimary(context),
+                            color: isEditingOrder ? Colors.white : AppColors.textPrimary(context),
                           ),
                           SizedBox(width: context.wp(1)),
                           Text(
                             '순서편집',
                             style: AppTextStyles.getCaption(context).copyWith(
-                              color: isEditingOrder
-                                  ? Colors.white
-                                  : AppColors.textPrimary(context),
+                              color: isEditingOrder ? Colors.white : AppColors.textPrimary(context),
                             ),
                           ),
                         ],
@@ -989,18 +958,15 @@ class _ActivityPickerState extends State<ActivityPicker>
                     },
                     decoration: InputDecoration(
                       hintText: "활동 이름을 검색하세요",
-                      hintStyle: AppTextStyles.getBody(context)
-                          .copyWith(color: AppColors.textSecondary(context)),
+                      hintStyle: AppTextStyles.getBody(context).copyWith(color: AppColors.textSecondary(context)),
                       border: InputBorder.none,
                       enabledBorder: OutlineInputBorder(
                         borderSide: BorderSide.none, // 테두리 없음
-                        borderRadius:
-                            BorderRadius.circular(8), // 원하는 둥근 정도로 조정 가능
+                        borderRadius: BorderRadius.circular(8), // 원하는 둥근 정도로 조정 가능
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderSide: BorderSide.none, // 포커스 상태에서도 테두리 없음
-                        borderRadius:
-                            BorderRadius.circular(8), // 원하는 둥근 정도로 조정 가능
+                        borderRadius: BorderRadius.circular(8), // 원하는 둥근 정도로 조정 가능
                       ),
                       filled: true,
                       fillColor: AppColors.backgroundSecondary(context),
@@ -1010,10 +976,7 @@ class _ActivityPickerState extends State<ActivityPicker>
                       ),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _searchFocusNode.hasFocus ||
-                                  searchController.text.isNotEmpty
-                              ? Icons.clear
-                              : Icons.search_rounded,
+                          _searchFocusNode.hasFocus || searchController.text.isNotEmpty ? Icons.clear : Icons.search_rounded,
                         ),
                         onPressed: () {
                           // 검색 종료 시 초기화

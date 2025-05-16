@@ -3,6 +3,7 @@ import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
+import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -20,26 +21,25 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
 
     // 위젯이 처음 생성될 때 데이터 초기화 확인
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final timerProvider = Provider.of<TimerProvider>(context, listen: false);
-      if (timerProvider.heatMapDataSet.isEmpty) {
+      final statsProvider = Provider.of<StatsProvider>(context, listen: false);
+      if (statsProvider.heatMapDataSet.isEmpty) {
         print("히트맵 데이터가 비어있습니다. 데이터를 초기화합니다.");
-        timerProvider.initializeHeatMapData();
+        statsProvider.initializeHeatMapData();
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final timerProvider = Provider.of<TimerProvider>(context);
-    final isDarkMode =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final statsProvider = Provider.of<StatsProvider>(context);
+    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
     final locale = Localizations.localeOf(context).toString();
     double deviceWidth = MediaQuery.of(context).size.width;
     double squareSize = (deviceWidth - 32) / 9;
 
     // 레벨별 데이터 변환 (초 단위 데이터 기준)
     Map<DateTime, int> datasets = {};
-    timerProvider.heatMapDataSet.forEach((date, duration) {
+    statsProvider.heatMapDataSet.forEach((date, duration) {
       int level = 0;
       // 초 단위 데이터를 시간 단위로 변환
       double hours = duration / 3600;
@@ -66,40 +66,32 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
             child: Column(
               children: [
                 HeatMapCalendar(
-                  initDate:
-                      DateTime(DateTime.now().year, DateTime.now().month, 1),
+                  initDate: DateTime(DateTime.now().year, DateTime.now().month, 1),
                   datasets: datasets,
                   colorMode: ColorMode.color,
                   colorsets: {
                     0: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
-                    1: ColorService.hexToColor("#32CD32")
-                        .withValues(alpha: 0.25),
-                    2: ColorService.hexToColor("#32CD32")
-                        .withValues(alpha: 0.5),
-                    3: ColorService.hexToColor("#32CD32")
-                        .withValues(alpha: 0.75),
+                    1: ColorService.hexToColor("#32CD32").withValues(alpha: 0.25),
+                    2: ColorService.hexToColor("#32CD32").withValues(alpha: 0.5),
+                    3: ColorService.hexToColor("#32CD32").withValues(alpha: 0.75),
                     4: ColorService.hexToColor("#32CD32").withValues(alpha: 1),
                   },
-                  defaultColor:
-                      isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+                  defaultColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
                   textColor: isDarkMode ? Colors.white70 : Colors.black87,
                   showColorTip: false,
                   size: squareSize,
                   monthFontSize: 16,
                   weekFontSize: 14,
                   onMonthChange: (selectedMonth) {
-                    timerProvider.initializeHeatMapData(
+                    statsProvider.initializeHeatMapData(
                       year: selectedMonth.year,
                       month: selectedMonth.month,
                     );
                   },
                   onClick: (value) {
-                    String formattedDate =
-                        DateFormat.yMMMd(locale).format(value);
-                    int? seconds = timerProvider.heatMapDataSet[value];
-                    String activityTime = seconds != null
-                        ? '${(seconds / 3600).toStringAsFixed(1)}시간'
-                        : '데이터 없음';
+                    String formattedDate = DateFormat.yMMMd(locale).format(value);
+                    int? seconds = statsProvider.heatMapDataSet[value];
+                    String activityTime = seconds != null ? '${(seconds / 3600).toStringAsFixed(1)}시간' : '데이터 없음';
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('$formattedDate: $activityTime')),
@@ -132,8 +124,7 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
     );
   }
 
-  Widget _buildLegendItem(
-      BuildContext context, String text, int level, bool isDarkMode) {
+  Widget _buildLegendItem(BuildContext context, String text, int level, bool isDarkMode) {
     return Row(
       children: [
         Container(
@@ -142,8 +133,7 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
           decoration: BoxDecoration(
             color: level == 0
                 ? (isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200)
-                : ColorService.hexToColor("#32CD32")
-                    .withValues(alpha: level * 0.25),
+                : ColorService.hexToColor("#32CD32").withValues(alpha: level * 0.25),
             borderRadius: BorderRadius.circular(2),
           ),
         ),

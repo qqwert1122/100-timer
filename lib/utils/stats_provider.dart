@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:project1/utils/database_service.dart';
@@ -23,6 +24,8 @@ class StatsProvider extends ChangeNotifier {
     _initializedCompleter.complete();
     notifyListeners();
   }
+
+  bool _disposed = false; // dispose 여부를 추적
 
   Map<String, DateTime> get weeklyRange => DateUtils.getWeeklyRange(weekOffset: _weekOffset);
 
@@ -335,7 +338,7 @@ class StatsProvider extends ChangeNotifier {
       final timerData = await _dbService.getTimer(weekStart);
       return timerData!['total_seconds'];
     } catch (e) {
-      return 0;
+      return 360000;
     }
   }
 
@@ -455,6 +458,225 @@ class StatsProvider extends ChangeNotifier {
 
       print('Error fetching weekly line chart data: $e');
       return [];
+    }
+  }
+
+  // 활동 데이터를 저장할 맵
+  Map<DateTime, int> _heatMapDataSet = {};
+
+  // heatMapDataSet의 getter
+  Map<DateTime, int> get heatMapDataSet => _heatMapDataSet;
+  Future<void> initializeHeatMapData({int? year, int? month}) async {
+    try {
+      DateTime now = DateTime.now();
+      int selectedYear = year ?? now.year;
+      int selectedMonth = month ?? now.month;
+
+      // 선택한 월의 시작일과 종료일 계산
+      DateTime monthStart = DateTime(selectedYear, selectedMonth, 1);
+      DateTime monthEnd;
+      if (selectedMonth == 12) {
+        monthEnd = DateTime(selectedYear + 1, 1, 1);
+      } else {
+        monthEnd = DateTime(selectedYear, selectedMonth + 1, 1);
+      }
+
+      // DB에서 세션 데이터를 가져옴
+      List<Map<String, dynamic>> logs = await _dbService.getSessionsWithinDateRange(
+        startDate: monthStart,
+        endDate: monthEnd,
+      );
+      _heatMapDataSet = {};
+
+      for (var log in logs) {
+        try {
+          String? startTimeString = log['start_time'];
+          int duration = log['duration'] ?? 0;
+
+          if (startTimeString != null && startTimeString.isNotEmpty) {
+            DateTime date = DateTime.parse(startTimeString).toLocal();
+            // 날짜만 사용하기 위해 시간 정보를 제거
+            DateTime dateOnly = DateTime(date.year, date.month, date.day);
+            int effectiveDuration = max(0, duration);
+
+            _heatMapDataSet.update(
+              dateOnly,
+              (existing) {
+                int newValue = existing + effectiveDuration;
+                return newValue;
+              },
+              ifAbsent: () {
+                return effectiveDuration;
+              },
+            );
+          } else {}
+        } catch (e) {}
+      }
+
+      if (_heatMapDataSet.isEmpty) {
+      } else {
+        _heatMapDataSet.forEach((date, seconds) {});
+      }
+
+      notifyListeners();
+    } catch (e) {}
+  }
+
+  // 주간 진행률 데이터 관리를 위한 속성 추가
+  int _totalDuration = 0;
+  int get totalDuration => _totalDuration;
+
+  int _totalSeconds = 1;
+  int get totalSeconds => _totalSeconds;
+
+  List<int> _dailyDurations = List.filled(7, 0);
+  List<double> _dailyPercents = List.filled(7, 0.0);
+
+  List<int> get dailyDurations => _dailyDurations;
+  List<double> get dailyPercents => _dailyPercents;
+
+  Future<void> getWeeklyProgressCircle() async {
+    try {
+      int duration = await getTotalDurationForCurrentWeek();
+      int total = await getTotalSecondsForCurrnetWeek();
+
+      final now = DateTime.now();
+      final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+      final weekDays = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
+
+      List<int> dailyDurations = [];
+      for (var date in weekDays) {
+        final d = await getTotalDurationForDate(date);
+        dailyDurations.add(d);
+      }
+
+      int remaining = total;
+      List<double> percents = [];
+      for (int i = 0; i < 7; i++) {
+        final daysLeft = 7 - i;
+        final target = remaining / daysLeft; // 남은 일수로 균등 분배
+        final actual = dailyDurations[i].toDouble();
+        final pct = (actual / (target > 0 ? target : 1)).clamp(0.0, 1.0);
+        percents.add(pct);
+        remaining -= actual.toInt(); // 다음 요일 목표 계산을 위해 차감
+      }
+
+      _totalDuration = duration;
+      _totalSeconds = total != 0 ? total : 1; // 0이면 퍼센트 계산 에러 방지
+      _dailyDurations = dailyDurations;
+      _dailyPercents = percents;
+
+      notifyListeners(); // 상태가 변경되었음을 알림
+      logger.d('[statsProvider] Weekly stats loaded successfully');
+    } catch (e) {
+      logger.e('''
+        [statsProvider]
+        - 위치: loadWeeklyStats
+        - 오류 유형: ${e.runtimeType}
+        - 메시지: ${e.toString()}
+      ''');
+    }
+  }
+
+  // timerProvider의 updateTotalSeconds 메서드에서 호출할 메서드
+  Future<void> refreshWeeklyStats() async {
+    await getWeeklyProgressCircle();
+  }
+
+  final Map<String, double> _weeklyActivityData = {
+    '월': 0.0,
+    '화': 0.0,
+    '수': 0.0,
+    '목': 0.0,
+    '금': 0.0,
+    '토': 0.0,
+    '일': 0.0,
+  };
+
+  Future<List<Map<String, dynamic>>> get activityLogs async {
+    try {
+      DateTime now = DateTime.now();
+      // _statsProvider.weekOffset을 사용하여 원하는 주(예: -1: 지난 주, 0: 이번 주, 1: 다음 주)를 계산
+      int offset = weekOffset;
+      DateTime weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1)).add(Duration(days: offset * 7));
+      DateTime weekEnd = weekStart.add(const Duration(days: 7)).subtract(const Duration(seconds: 1));
+
+      // 해당 주 범위의 활동 로그를 DB에서 가져오기
+      List<Map<String, dynamic>> allLogs = await _dbService.getSessionsWithinDateRange(
+        startDate: weekStart,
+        endDate: weekEnd,
+      );
+
+      // 주간 활동 로그만 필터링
+      List<Map<String, dynamic>> weeklyLogs = allLogs.where((log) {
+        try {
+          String? startTimeString = log['start_time'];
+          if (startTimeString != null && startTimeString.isNotEmpty) {
+            DateTime startTime = DateTime.parse(startTimeString).toLocal();
+            return !startTime.isBefore(weekStart) && startTime.isBefore(weekEnd);
+          }
+        } catch (e) {
+          // 에러 발생 시 해당 로그는 제외
+        }
+        return false;
+      }).toList();
+
+      return weeklyLogs;
+    } catch (e) {
+      // 에러 발생 시 빈 리스트 반환
+      return [];
+    }
+  }
+
+  List<Map<String, dynamic>> get weeklyActivityData {
+    return _weeklyActivityData.entries.map((entry) {
+      int hours = entry.value ~/ 60;
+      int minutes = (entry.value % 60).toInt(); // double을 int로 변환
+      return {'day': entry.key, 'hours': hours, 'minutes': minutes};
+    }).toList();
+  }
+
+  // 주간 활동 데이터 초기화 메서드
+  void initializeWeeklyActivityData() async {
+    try {
+      List<Map<String, dynamic>> logs = await activityLogs; // 활동 로그 데이터 가져오기
+
+      // 주간 데이터를 초기화
+      _weeklyActivityData.updateAll((key, value) => 0.0);
+
+      for (var log in logs) {
+        try {
+          // 로그 데이터의 필드 유효성 검사
+          if (log['start_time'] == null || log['start_time'] is! String) {
+            throw Exception('Invalid or missing start_time in log: $log');
+          }
+
+          String startTimeString = log['start_time'];
+          int duration = log['duration'] ?? 0;
+          int restTime = log['rest_time'] ?? 0; // rest_time 가져오기
+
+          if (startTimeString.isNotEmpty) {
+            DateTime startTime = DateTime.parse(startTimeString).toLocal();
+            String dayOfWeek = DateFormat.E('ko_KR').format(startTime);
+
+            // 실제 활동 시간 계산
+            double actualDuration = (duration - restTime) / 60.0;
+
+            // 주간 활동 데이터에 추가 (분 단위)
+            _weeklyActivityData[dayOfWeek] = (_weeklyActivityData[dayOfWeek] ?? 0) + actualDuration;
+          }
+        } catch (e) {
+          // error log
+          continue; // 다른 로그 처리 계속
+        }
+      }
+
+      if (!_disposed) {
+        // dispose 여부 확인
+        notifyListeners();
+      }
+    } catch (e) {
+      // error log
     }
   }
 }

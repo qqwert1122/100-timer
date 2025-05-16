@@ -26,8 +26,7 @@ class ActivityLogPage extends StatefulWidget {
   _ActivityLogPageState createState() => _ActivityLogPageState();
 }
 
-class _ActivityLogPageState extends State<ActivityLogPage>
-    with AutomaticKeepAliveClientMixin {
+class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAliveClientMixin {
   late final DatabaseService _dbService;
   late final StatsProvider _statsProvider;
   List<Map<String, dynamic>> groupedLogs = [];
@@ -36,8 +35,7 @@ class _ActivityLogPageState extends State<ActivityLogPage>
   Map<String, int> dayToIndexMap = {};
 
   final ItemScrollController _scrollController = ItemScrollController();
-  final ItemPositionsListener _itemPositionsListener =
-      ItemPositionsListener.create();
+  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
   bool isProgrammaticScroll = false;
 
   int _currentWeekOffset = 0; // 0: 이번 주, 1: 지난주, ...
@@ -126,8 +124,7 @@ class _ActivityLogPageState extends State<ActivityLogPage>
       }
 
       // 삭제되지 않은 로그만 필터링
-      final filteredLogs =
-          logData.where((log) => log['is_deleted'] == 0).toList();
+      final filteredLogs = logData.where((log) => log['is_deleted'] == 0).toList();
 
       final grouped = _groupLogsByDate(filteredLogs);
 
@@ -151,9 +148,7 @@ class _ActivityLogPageState extends State<ActivityLogPage>
         if (positions.isNotEmpty) {
           final targetIndex = positions.first.index;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted &&
-                _scrollController.isAttached &&
-                targetIndex < groupedLogs.length) {
+            if (mounted && _scrollController.isAttached && targetIndex < groupedLogs.length) {
               _scrollController.jumpTo(index: targetIndex);
             }
           });
@@ -164,8 +159,7 @@ class _ActivityLogPageState extends State<ActivityLogPage>
       if (groupedLogs.length > _maxStoredWeeks * 7) {
         setState(() {
           final int itemsToRemove = groupedLogs.length - _maxStoredWeeks * 7;
-          debugPrint(
-              '메모리 관리: $itemsToRemove 아이템 제거 전 groupedLogs.length=${groupedLogs.length}');
+          debugPrint('메모리 관리: $itemsToRemove 아이템 제거 전 groupedLogs.length=${groupedLogs.length}');
           groupedLogs.removeRange(0, itemsToRemove);
           dayToIndexMap = _calculateDayToIndexMap();
           debugPrint('메모리 관리 후 groupedLogs.length=${groupedLogs.length}');
@@ -196,14 +190,9 @@ class _ActivityLogPageState extends State<ActivityLogPage>
     // 화면 중앙에 가장 가까운 아이템 인덱스 계산
     const screenMiddle = 0.5;
     final middlePosition = positions.reduce((closest, position) {
-      final itemMiddle =
-          (position.itemLeadingEdge + position.itemTrailingEdge) / 2;
-      final closestMiddle =
-          (closest.itemLeadingEdge + closest.itemTrailingEdge) / 2;
-      return (itemMiddle - screenMiddle).abs() <
-              (closestMiddle - screenMiddle).abs()
-          ? position
-          : closest;
+      final itemMiddle = (position.itemLeadingEdge + position.itemTrailingEdge) / 2;
+      final closestMiddle = (closest.itemLeadingEdge + closest.itemTrailingEdge) / 2;
+      return (itemMiddle - screenMiddle).abs() < (closestMiddle - screenMiddle).abs() ? position : closest;
     });
 
     final index = middlePosition.index;
@@ -219,18 +208,15 @@ class _ActivityLogPageState extends State<ActivityLogPage>
     }
 
     final maxIndex = positions.map((e) => e.index).reduce(max);
-    debugPrint(
-        'maxIndex: $maxIndex, groupedLogs.length: ${groupedLogs.length}, threshold: ${groupedLogs.length - _loadMoreThreshold}');
+    debugPrint('maxIndex: $maxIndex, groupedLogs.length: ${groupedLogs.length}, threshold: ${groupedLogs.length - _loadMoreThreshold}');
 
-    if ((groupedLogs.length <= _loadMoreThreshold ||
-            maxIndex >= groupedLogs.length - _loadMoreThreshold) &&
+    if ((groupedLogs.length <= _loadMoreThreshold || maxIndex >= groupedLogs.length - _loadMoreThreshold) &&
         !_isLoadingMore &&
         _hasMoreData) {
       debugPrint('임계치 도달, _loadMoreData() 호출');
       _loadMoreData();
     } else {
-      debugPrint(
-          '임계치 미달: _isLoadingMore=$_isLoadingMore, _hasMoreData=$_hasMoreData');
+      debugPrint('임계치 미달: _isLoadingMore=$_isLoadingMore, _hasMoreData=$_hasMoreData');
     }
   }
 
@@ -273,10 +259,7 @@ class _ActivityLogPageState extends State<ActivityLogPage>
     Map<String, List<Map<String, dynamic>>> tempGroup = {};
     for (var log in logs) {
       if (log.containsKey('start_time') && log['start_time'] != null) {
-        String date = DateTime.parse(log['start_time'])
-            .toLocal()
-            .toIso8601String()
-            .substring(0, 10);
+        String date = DateTime.parse(log['start_time']).toLocal().toIso8601String().substring(0, 10);
         if (!tempGroup.containsKey(date)) {
           tempGroup[date] = [];
         }
@@ -284,12 +267,10 @@ class _ActivityLogPageState extends State<ActivityLogPage>
       }
     }
     List<Map<String, dynamic>> groupedList = tempGroup.entries.map((entry) {
-      entry.value.sort((a, b) => DateTime.parse(b['start_time'])
-          .compareTo(DateTime.parse(a['start_time'])));
+      entry.value.sort((a, b) => DateTime.parse(b['start_time']).compareTo(DateTime.parse(a['start_time'])));
       return {'date': entry.key, 'logs': entry.value};
     }).toList();
-    groupedList.sort((a, b) =>
-        DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
+    groupedList.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
     return groupedList;
   }
 
@@ -318,12 +299,8 @@ class _ActivityLogPageState extends State<ActivityLogPage>
     final now = DateTime.now();
     final isSameYear = dateTime.year == now.year;
     final timeFormatter = DateFormat('a h시 mm분');
-    final dateFormatter =
-        isSameYear ? DateFormat('M월 d일') : DateFormat('yyyy년 M월 d일');
-    String formattedTime = timeFormatter
-        .format(dateTime)
-        .replaceAll('AM', '오전')
-        .replaceAll('PM', '오후');
+    final dateFormatter = isSameYear ? DateFormat('M월 d일') : DateFormat('yyyy년 M월 d일');
+    String formattedTime = timeFormatter.format(dateTime).replaceAll('AM', '오전').replaceAll('PM', '오후');
     return '${dateFormatter.format(dateTime)} $formattedTime';
   }
 
@@ -432,16 +409,11 @@ class _ActivityLogPageState extends State<ActivityLogPage>
             ),
             child: Container(
               padding: const EdgeInsets.all(8),
-              decoration: isSelected
-                  ? const BoxDecoration(
-                      shape: BoxShape.circle, color: Colors.redAccent)
-                  : null,
+              decoration: isSelected ? const BoxDecoration(shape: BoxShape.circle, color: Colors.redAccent) : null,
               child: Text(
                 daysOfWeek[index],
                 style: AppTextStyles.getBody(context).copyWith(
-                  color: isSelected
-                      ? Colors.white
-                      : AppColors.textPrimary(context),
+                  color: isSelected ? Colors.white : AppColors.textPrimary(context),
                 ),
               ),
             ),
@@ -451,8 +423,7 @@ class _ActivityLogPageState extends State<ActivityLogPage>
     );
   }
 
-  Widget _buildDateGroup(String date, List<Map<String, dynamic>> logs,
-      {required bool isFirstGroup}) {
+  Widget _buildDateGroup(String date, List<Map<String, dynamic>> logs, {required bool isFirstGroup}) {
     final DateFormat formatter = DateFormat('yyyy-MM-dd');
     final DateTime dateTime = formatter.parse(date);
     final String dayOfWeek = _getDayOfWeek(date);
@@ -542,19 +513,15 @@ class _ActivityLogPageState extends State<ActivityLogPage>
                     title: Row(
                       children: [
                         Text(
-                          log['activity_name'].length >= 10
-                              ? '${log['activity_name'].substring(0, 10)}...'
-                              : log['activity_name'] ?? '',
-                          style: AppTextStyles.getBody(context)
-                              .copyWith(fontWeight: FontWeight.bold),
+                          log['activity_name'].length >= 10 ? '${log['activity_name'].substring(0, 10)}...' : log['activity_name'] ?? '',
+                          style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(width: 8),
                         Container(
                           width: context.sm,
                           height: context.sm,
                           decoration: BoxDecoration(
-                            color:
-                                ColorService.hexToColor(log['activity_color']),
+                            color: ColorService.hexToColor(log['activity_color']),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -567,14 +534,12 @@ class _ActivityLogPageState extends State<ActivityLogPage>
                           children: [
                             Text(
                               '시작',
-                              style: AppTextStyles.getCaption(context)
-                                  .copyWith(color: Colors.grey.shade500),
+                              style: AppTextStyles.getCaption(context).copyWith(color: Colors.grey.shade500),
                             ),
                             const SizedBox(width: 15),
                             Text(
                               formatDate(log['start_time']),
-                              style: AppTextStyles.getCaption(context)
-                                  .copyWith(color: Colors.grey.shade500),
+                              style: AppTextStyles.getCaption(context).copyWith(color: Colors.grey.shade500),
                             ),
                           ],
                         ),
@@ -582,16 +547,12 @@ class _ActivityLogPageState extends State<ActivityLogPage>
                           children: [
                             Text(
                               '종료',
-                              style: AppTextStyles.getCaption(context)
-                                  .copyWith(color: Colors.grey.shade500),
+                              style: AppTextStyles.getCaption(context).copyWith(color: Colors.grey.shade500),
                             ),
                             const SizedBox(width: 15),
                             Text(
-                              log['end_time'] != null
-                                  ? formatDate(log['end_time'])
-                                  : "진행 중",
-                              style: AppTextStyles.getCaption(context)
-                                  .copyWith(color: Colors.grey.shade500),
+                              log['end_time'] != null ? formatDate(log['end_time']) : "진행 중",
+                              style: AppTextStyles.getCaption(context).copyWith(color: Colors.grey.shade500),
                             ),
                           ],
                         ),
@@ -602,15 +563,11 @@ class _ActivityLogPageState extends State<ActivityLogPage>
                               const SizedBox(height: 10),
                               Row(
                                 children: [
-                                  const Icon(Icons.play_circle_fill_rounded,
-                                      color: Colors.grey, size: 18),
+                                  const Icon(Icons.play_circle_fill_rounded, color: Colors.grey, size: 18),
                                   const SizedBox(width: 3),
                                   Text(
                                     formatTime((log['duration'] as int)),
-                                    style: AppTextStyles.getCaption(context)
-                                        .copyWith(
-                                            fontSize: context.sm,
-                                            color: Colors.grey.shade500),
+                                    style: AppTextStyles.getCaption(context).copyWith(fontSize: context.sm, color: Colors.grey.shade500),
                                   ),
                                 ],
                               ),
@@ -718,11 +675,9 @@ class _ActivityLogPageState extends State<ActivityLogPage>
                               }
                               final logGroup = groupedLogs[index];
                               final date = logGroup['date'] as String;
-                              final logs = logGroup['logs']
-                                  as List<Map<String, dynamic>>;
+                              final logs = logGroup['logs'] as List<Map<String, dynamic>>;
                               final isFirstGroup = index == 0;
-                              return _buildDateGroup(date, logs,
-                                  isFirstGroup: isFirstGroup);
+                              return _buildDateGroup(date, logs, isFirstGroup: isFirstGroup);
                             },
                           ),
                         ),

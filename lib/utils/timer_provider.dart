@@ -64,16 +64,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   bool _disposed = false; // dispose 여부를 추적
 
-  final Map<String, double> _weeklyActivityData = {
-    '월': 0.0,
-    '화': 0.0,
-    '수': 0.0,
-    '목': 0.0,
-    '금': 0.0,
-    '토': 0.0,
-    '일': 0.0,
-  };
-
   bool _isTimerProviderInit = false;
   bool get isTimerProviderInit => _isTimerProviderInit;
 
@@ -492,6 +482,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
       // 남은 시간 업데이트
       _updateRemainingSeconds();
+      await _statsProvider.refreshWeeklyStats();
 
       // 리스너에게 알림
       notifyListeners();
@@ -912,154 +903,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     // 월요일을 기준으로 주 시작일을 계산 (월요일이 1, 일요일이 7)
     DateTime weekStart = date.subtract(Duration(days: weekday - 1)).copyWith(hour: 0, minute: 0, second: 0, millisecond: 0);
     return weekStart.toIso8601String().split('T').first;
-  }
-
-  List<Map<String, dynamic>> get weeklyActivityData {
-    return _weeklyActivityData.entries.map((entry) {
-      int hours = entry.value ~/ 60;
-      int minutes = (entry.value % 60).toInt(); // double을 int로 변환
-      return {'day': entry.key, 'hours': hours, 'minutes': minutes};
-    }).toList();
-  }
-
-  // 주간 활동 데이터 초기화 메서드
-  void initializeWeeklyActivityData() async {
-    try {
-      List<Map<String, dynamic>> logs = await activityLogs; // 활동 로그 데이터 가져오기
-
-      // 주간 데이터를 초기화
-      _weeklyActivityData.updateAll((key, value) => 0.0);
-
-      for (var log in logs) {
-        try {
-          // 로그 데이터의 필드 유효성 검사
-          if (log['start_time'] == null || log['start_time'] is! String) {
-            throw Exception('Invalid or missing start_time in log: $log');
-          }
-
-          String startTimeString = log['start_time'];
-          int duration = log['duration'] ?? 0;
-          int restTime = log['rest_time'] ?? 0; // rest_time 가져오기
-
-          if (startTimeString.isNotEmpty) {
-            DateTime startTime = DateTime.parse(startTimeString).toLocal();
-            String dayOfWeek = DateFormat.E('ko_KR').format(startTime);
-
-            // 실제 활동 시간 계산
-            double actualDuration = (duration - restTime) / 60.0;
-
-            // 주간 활동 데이터에 추가 (분 단위)
-            _weeklyActivityData[dayOfWeek] = (_weeklyActivityData[dayOfWeek] ?? 0) + actualDuration;
-          }
-        } catch (e) {
-          // error log
-          continue; // 다른 로그 처리 계속
-        }
-      }
-
-      if (!_disposed) {
-        // dispose 여부 확인
-        notifyListeners();
-      }
-    } catch (e) {
-      // error log
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> get activityLogs async {
-    try {
-      DateTime now = DateTime.now();
-      // _statsProvider.weekOffset을 사용하여 원하는 주(예: -1: 지난 주, 0: 이번 주, 1: 다음 주)를 계산
-      int offset = _statsProvider.weekOffset;
-      DateTime weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1)).add(Duration(days: offset * 7));
-      DateTime weekEnd = weekStart.add(const Duration(days: 7)).subtract(const Duration(seconds: 1));
-
-      // 해당 주 범위의 활동 로그를 DB에서 가져오기
-      List<Map<String, dynamic>> allLogs = await _dbService.getSessionsWithinDateRange(
-        startDate: weekStart,
-        endDate: weekEnd,
-      );
-
-      // 주간 활동 로그만 필터링
-      List<Map<String, dynamic>> weeklyLogs = allLogs.where((log) {
-        try {
-          String? startTimeString = log['start_time'];
-          if (startTimeString != null && startTimeString.isNotEmpty) {
-            DateTime startTime = DateTime.parse(startTimeString).toLocal();
-            return !startTime.isBefore(weekStart) && startTime.isBefore(weekEnd);
-          }
-        } catch (e) {
-          // 에러 발생 시 해당 로그는 제외
-        }
-        return false;
-      }).toList();
-
-      return weeklyLogs;
-    } catch (e) {
-      // 에러 발생 시 빈 리스트 반환
-      return [];
-    }
-  }
-
-  // 활동 데이터를 저장할 맵
-  Map<DateTime, int> _heatMapDataSet = {};
-
-  // heatMapDataSet의 getter
-  Map<DateTime, int> get heatMapDataSet => _heatMapDataSet;
-  Future<void> initializeHeatMapData({int? year, int? month}) async {
-    try {
-      DateTime now = DateTime.now();
-      int selectedYear = year ?? now.year;
-      int selectedMonth = month ?? now.month;
-
-      // 선택한 월의 시작일과 종료일 계산
-      DateTime monthStart = DateTime(selectedYear, selectedMonth, 1);
-      DateTime monthEnd;
-      if (selectedMonth == 12) {
-        monthEnd = DateTime(selectedYear + 1, 1, 1);
-      } else {
-        monthEnd = DateTime(selectedYear, selectedMonth + 1, 1);
-      }
-
-      // DB에서 세션 데이터를 가져옴
-      List<Map<String, dynamic>> logs = await _dbService.getSessionsWithinDateRange(
-        startDate: monthStart,
-        endDate: monthEnd,
-      );
-      _heatMapDataSet = {};
-
-      for (var log in logs) {
-        try {
-          String? startTimeString = log['start_time'];
-          int duration = log['duration'] ?? 0;
-
-          if (startTimeString != null && startTimeString.isNotEmpty) {
-            DateTime date = DateTime.parse(startTimeString).toLocal();
-            // 날짜만 사용하기 위해 시간 정보를 제거
-            DateTime dateOnly = DateTime(date.year, date.month, date.day);
-            int effectiveDuration = max(0, duration);
-
-            _heatMapDataSet.update(
-              dateOnly,
-              (existing) {
-                int newValue = existing + effectiveDuration;
-                return newValue;
-              },
-              ifAbsent: () {
-                return effectiveDuration;
-              },
-            );
-          } else {}
-        } catch (e) {}
-      }
-
-      if (_heatMapDataSet.isEmpty) {
-      } else {
-        _heatMapDataSet.forEach((date, seconds) {});
-      }
-
-      notifyListeners();
-    } catch (e) {}
   }
 
   /* 

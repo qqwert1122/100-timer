@@ -115,12 +115,12 @@ class _ChartPageState extends State<ChartPage> {
     if (!mounted) return;
 
     // 타이머 데이터 미리 로드
-    timerProvider?.initializeHeatMapData();
+    statsProvider?.initializeHeatMapData();
     setState(() {
       _heatmapDataLoaded = true;
     });
 
-    timerProvider?.initializeWeeklyActivityData();
+    statsProvider?.initializeWeeklyActivityData();
     setState(() {
       _activityChartDataLoaded = true;
     });
@@ -138,8 +138,7 @@ class _ChartPageState extends State<ChartPage> {
     if (!mounted || _scrollController == null) return;
 
     // 오프셋 섹션이 상단에 도달했는지 확인 (임계값 설정)
-    double offsetSectionThreshold =
-        context.hp(8) + 5 + context.xl + context.hp(2);
+    double offsetSectionThreshold = context.hp(8) + 5 + context.xl + context.hp(2);
     bool shouldPin = _scrollController!.offset > offsetSectionThreshold;
 
     if (shouldPin != _isOffsetSectionPinned) {
@@ -221,7 +220,7 @@ class _ChartPageState extends State<ChartPage> {
                       height: _bannerAd1!.size.height.toDouble(),
                       child: AdWidget(ad: _bannerAd1!),
                     )
-                  : SizedBox.shrink(),
+                  : const SizedBox.shrink(),
             ),
 
             SliverToBoxAdapter(
@@ -316,8 +315,7 @@ class _ChartPageState extends State<ChartPage> {
                   ),
                   Text(
                     stats.getSelectedWeekLabel(),
-                    style: AppTextStyles.getBody(context)
-                        .copyWith(fontWeight: FontWeight.w900),
+                    style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
                   ),
                   IconButton(
                     icon: Icon(
@@ -345,8 +343,7 @@ class _ChartPageState extends State<ChartPage> {
 
                             // 데이터 로드 및 스크롤 위치 복원
                             WidgetsBinding.instance.addPostFrameCallback((_) {
-                              _preloadDataAndRestoreScroll(
-                                  currentScrollPosition);
+                              _preloadDataAndRestoreScroll(currentScrollPosition);
                             });
                           },
                   ),
@@ -372,8 +369,7 @@ class _ChartPageState extends State<ChartPage> {
     // 데이터 로드 완료 후 스크롤 위치 복원
     if (mounted && _scrollController?.hasClients == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollController!.jumpTo(scrollPosition.clamp(
-            0.0, _scrollController!.position.maxScrollExtent));
+        _scrollController!.jumpTo(scrollPosition.clamp(0.0, _scrollController!.position.maxScrollExtent));
 
         // 리스너 재연결
         _scrollController?.addListener(_onScroll);
@@ -381,165 +377,7 @@ class _ChartPageState extends State<ChartPage> {
     }
   }
 
-  Widget _buildDashboardSection(BuildContext context) {
-    String formatHour(int seconds) {
-      final hours = seconds ~/ 3600;
-      return '$hours';
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          flex: 1,
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.background(context),
-            ),
-            child: Padding(
-              padding: context.paddingSM,
-              child: FutureBuilder<List<int>>(
-                future: Future.wait([
-                  statsProvider!.getTotalDurationForWeek(),
-                  statsProvider!.getTotalSecondsForWeek(),
-                ]),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("활동 완료 시간",
-                                style: AppTextStyles.getTitle(context)),
-                            SizedBox(height: context.hp(1)),
-                            Shimmer.fromColors(
-                              baseColor:
-                                  Colors.grey.shade300.withValues(alpha: 0.2),
-                              highlightColor:
-                                  Colors.grey.shade100.withValues(alpha: 0.2),
-                              child: Container(
-                                width: context.wp(50),
-                                height: context.hp(7),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  color: AppColors.background(context),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Shimmer.fromColors(
-                          baseColor:
-                              Colors.grey.shade300.withValues(alpha: 0.2),
-                          highlightColor: Colors.grey.shade100,
-                          child: Container(
-                            width: context.wp(24), // diameter = 2 * radius
-                            height: context.wp(24),
-                            decoration: BoxDecoration(
-                              color: AppColors.background(context),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                    // 로딩 하나만
-                  }
-
-                  if (snapshot.hasError) {
-                    return const Text('에러 발생');
-                  }
-
-                  final totalDuration = snapshot.data![0]; // 첫 번째 Future 결과
-                  final totalSeconds = snapshot.data![1]; // 두 번째 Future 결과
-
-                  final formattedDuration = formatHour(totalDuration);
-                  final tagetDuration = formatHour(totalSeconds);
-
-                  double percent = (totalDuration / totalSeconds);
-                  String percentText = (percent * 100).toStringAsFixed(0);
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("활동 완료 시간",
-                              style: AppTextStyles.getTitle(context)),
-                          SizedBox(height: context.hp(1)),
-                          Row(
-                            children: [
-                              Text(
-                                formattedDuration,
-                                style: AppTextStyles.getTimeDisplay(context)
-                                    .copyWith(
-                                  fontFamily: 'chab',
-                                  color: Colors.redAccent,
-                                ),
-                              ),
-                              SizedBox(width: context.wp(1)),
-                              Container(
-                                width: 1,
-                                height: context.hp(2),
-                                color: Colors.grey.shade400,
-                                margin: EdgeInsets.symmetric(
-                                    horizontal: context.wp(1)),
-                              ),
-                              SizedBox(width: context.wp(1)),
-                              Text(
-                                '${tagetDuration}h',
-                                style: AppTextStyles.getTimeDisplay(context)
-                                    .copyWith(
-                                  fontFamily: 'chab',
-                                  color: Colors.grey.shade300,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      CircularPercentIndicator(
-                        radius: context.wp(12),
-                        lineWidth: context.wp(5),
-                        animation: true,
-                        percent: percent.clamp(0.0, 1.0),
-                        center: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              percentText,
-                              style: AppTextStyles.getBody(context).copyWith(
-                                fontSize: context.xl,
-                                color: Colors.redAccent,
-                                fontFamily: 'chab',
-                              ),
-                            ),
-                            SizedBox(width: context.wp(0.5)),
-                            Text(
-                              '%',
-                              style: AppTextStyles.getCaption(context),
-                            ),
-                          ],
-                        ),
-                        circularStrokeCap: CircularStrokeCap.round,
-                        progressColor: Colors.redAccent,
-                        backgroundColor: AppColors.backgroundSecondary(context),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeatmapSection(
-      BuildContext context, TimerProvider timerProvider) {
+  Widget _buildHeatmapSection(BuildContext context, TimerProvider timerProvider) {
     return Container(
       padding: context.paddingSM,
       decoration: BoxDecoration(
@@ -568,8 +406,7 @@ class _ChartPageState extends State<ChartPage> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  ToggleTotalViewSwtich(
-                      value: showAllHours, onChanged: _toggleShowAllHours),
+                  ToggleTotalViewSwtich(value: showAllHours, onChanged: _toggleShowAllHours),
                   SizedBox(width: context.wp(4)),
                   SizedBox(
                     width: 25,
@@ -582,11 +419,10 @@ class _ChartPageState extends State<ChartPage> {
                       ),
                       onPressed: () {
                         HapticFeedback.lightImpact();
-                        timerProvider.initializeHeatMapData();
+                        statsProvider!.initializeHeatMapData();
                         rerenderingHeatmap();
                       },
-                      child: Icon(Icons.refresh,
-                          color: AppColors.textPrimary(context), size: 18),
+                      child: Icon(Icons.refresh, color: AppColors.textPrimary(context), size: 18),
                     ),
                   )
                 ],
@@ -619,8 +455,7 @@ class _ChartPageState extends State<ChartPage> {
     );
   }
 
-  Widget _buildActivityTimeSection(
-      BuildContext context, TimerProvider timerProvider) {
+  Widget _buildActivityTimeSection(BuildContext context, TimerProvider timerProvider) {
     return Container(
       // padding: context.paddingSM,
       decoration: BoxDecoration(
@@ -691,15 +526,12 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => maxHeight;
 
   @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return SizedBox.expand(child: child);
   }
 
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return maxHeight != oldDelegate.maxHeight ||
-        minHeight != oldDelegate.minHeight ||
-        child != oldDelegate.child;
+    return maxHeight != oldDelegate.maxHeight || minHeight != oldDelegate.minHeight || child != oldDelegate.child;
   }
 }

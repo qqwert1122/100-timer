@@ -15,11 +15,14 @@ class PrefsService {
   }
 
   Future<void> _ensureDefaultValues() async {
-    // 100 h = 360 000 sec
-    await _prefs.setInt('totalSeconds', _prefs.getInt('totalSeconds') ?? 360000);
+    final now = DateTime.now().toUtc();
+    final installDateStr = now.toIso8601String();
+
+    await _prefs.setInt('totalSeconds', _prefs.getInt('totalSeconds') ?? 360000); // 100 h = 360 000 sec
     await _prefs.setBool('keepScreenOn', _prefs.getBool('keepScreenOn') ?? false);
     await _prefs.setBool('alarmFlag', _prefs.getBool('alarmFlag') ?? false);
     await _prefs.setBool('hasRequestedNotificationPermission', _prefs.getBool('hasRequestedNotificationPermission') ?? false);
+    await _prefs.setString('installDate', _prefs.getString('installDate') ?? installDateStr);
 
     const pages = ['timer', 'activityPicker', 'timerRunning', 'focusMode', 'history'];
     for (final p in pages) {
@@ -44,4 +47,7 @@ class PrefsService {
 
   bool get hasRequestedNotificationPermission => _prefs.getBool('hasRequestedNotificationPermission')!;
   set hasRequestedNotificationPermission(bool v) => _prefs.setBool('hasRequestedNotificationPermission', v);
+
+  String get installDate => _prefs.getString('installDate')!;
+  set installDate(String date) => _prefs.setString('installDate', date);
 }

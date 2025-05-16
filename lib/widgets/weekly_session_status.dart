@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/logger_config.dart';
+import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
@@ -16,6 +18,16 @@ class WeeklySessionStatus extends StatefulWidget {
 
 class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
   final DateTime now = DateTime.now();
+
+  late DateTime installDate;
+
+  @override
+  void initState() {
+    super.initState();
+    final installDateStr = PrefsService().installDate;
+    final localInstallDate = DateTime.parse(installDateStr).toLocal();
+    installDate = DateTime(localInstallDate.year, localInstallDate.month, localInstallDate.day);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,86 +85,78 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
                 ),
               );
             }
+            if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+              final emptyList = <Map<String, dynamic>>[];
+              final dayStatuses = _calculateDayStatuses(statsProvider, emptyList);
 
-            if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  '데이터를 불러오는 중 오류가 발생했습니다',
-                  style: AppTextStyles.getCaption(context).copyWith(color: Colors.red),
-                ),
-              );
-            }
-
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Center(
-                child: Text(
-                  '이 주에 기록된 데이터가 없습니다',
-                  style: AppTextStyles.getCaption(context),
-                ),
-              );
+              return getStatusCard(dayStatuses: dayStatuses, isDarkMode: isDarkMode);
             }
 
             final sessions = snapshot.data!;
             final dayStatuses = _calculateDayStatuses(statsProvider, sessions);
 
-            return Container(
-              padding: context.paddingSM,
-              decoration: BoxDecoration(
-                color: AppColors.background(context),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('집중 달성한 날', style: AppTextStyles.getTitle(context)),
-                          Text(
-                            '1시간 이상 이어서 집중한 날은 달성 표시가 돼요',
-                            style: AppTextStyles.getCaption(context),
-                          ),
-                        ],
-                      ),
-                      Image.asset(
-                        getIconImage('rocket'),
-                        width: context.xxxl,
-                        height: context.xxxl,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: context.hp(3)),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: dayStatuses.map((status) {
-                      return Column(
-                        children: [
-                          Text(status.weekday, style: AppTextStyles.getCaption(context)),
-                          SizedBox(height: context.hp(1)),
-                          Container(
-                            width: context.xxl,
-                            height: context.xxl,
-                            decoration: BoxDecoration(
-                              color: isDarkMode ? Colors.grey.shade700 : Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: _buildStatusIcon(status.status),
-                            ),
-                          ),
-                          SizedBox(height: context.hp(1)),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            );
+            return getStatusCard(dayStatuses: dayStatuses, isDarkMode: isDarkMode);
           },
         );
       },
+    );
+  }
+
+  Widget getStatusCard({required List<_DayStatus> dayStatuses, required bool isDarkMode}) {
+    return Container(
+      padding: context.paddingSM,
+      decoration: BoxDecoration(
+        color: AppColors.background(context),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('집중 달성한 날', style: AppTextStyles.getTitle(context)),
+                  Text(
+                    '1시간 이상 이어서 집중한 날은 달성 표시가 돼요',
+                    style: AppTextStyles.getCaption(context),
+                  ),
+                ],
+              ),
+              Image.asset(
+                getIconImage('rocket'),
+                width: context.xxxl,
+                height: context.xxxl,
+              ),
+            ],
+          ),
+          SizedBox(height: context.hp(3)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: dayStatuses.map((status) {
+              return Column(
+                children: [
+                  Text(status.weekday, style: AppTextStyles.getCaption(context)),
+                  SizedBox(height: context.hp(1)),
+                  Container(
+                    width: context.xxl,
+                    height: context.xxl,
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? Colors.grey.shade700 : Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: _buildStatusIcon(status.status),
+                    ),
+                  ),
+                  SizedBox(height: context.hp(1)),
+                ],
+              );
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -174,7 +178,11 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
 
     for (int i = 0; i < 7; i++) {
       DateTime currentDay = monday.add(Duration(days: i));
-      bool isToday = isCurrentWeek && currentDay.year == now.year && currentDay.month == now.month && currentDay.day == now.day;
+      DateTime currentDayDate = DateTime(currentDay.year, currentDay.month, currentDay.day);
+      DateTime todayDate = DateTime(now.year, now.month, now.day);
+
+      bool isToday = isCurrentWeek && currentDayDate.isAtSameMomentAs(todayDate);
+      bool isBeforeInstallation = currentDayDate.isBefore(installDate);
 
       // 해당 날짜의 세션들 찾기
       List<Map<String, dynamic>> daySessions = sessions.where((session) {
@@ -189,7 +197,10 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
       if (hasLongSession) {
         status = DayStatusType.completed;
       } else {
-        if (isCurrentWeek) {
+        if (isBeforeInstallation) {
+          // 앱 설치 전이면 notAvailable
+          status = DayStatusType.notAvailable;
+        } else if (isCurrentWeek) {
           // 현재 주: 오늘 이후는 upcoming, 그 이전은 missed
           if (currentDay.isAfter(now)) {
             status = DayStatusType.upcoming;
@@ -256,6 +267,20 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
           height: containerSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
+            color: AppColors.background(context),
+            border: Border.all(
+              color: Colors.grey.shade300, // 더 밝은 회색
+              width: 1.0,
+            ),
+          ),
+          // 선택적으로 중앙에 특수 아이콘 추가
+        );
+      case DayStatusType.notAvailable:
+        return Container(
+          width: containerSize,
+          height: containerSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
             color: AppColors.backgroundSecondary(context),
           ),
         );
@@ -264,9 +289,10 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
 }
 
 enum DayStatusType {
-  completed, // 체크 표시 (long_session_flag가 있는 경우)
-  missed, // X 표시 (활동하지 않고 지난 날)
-  upcoming, // 빈 원 (아직 도래하지 않은 날)
+  completed, // long_session_flag가 있는 날
+  missed, // 활동을 놓친 날
+  upcoming, // 아직 도래하지 않은 날
+  notAvailable, // 앱 설치 전이라 데이터가 없는 경우
 }
 
 class _DayStatus {
