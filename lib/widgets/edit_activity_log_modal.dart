@@ -170,8 +170,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           ),
                           Expanded(
                             child: CupertinoPicker(
-                              scrollController: FixedExtentScrollController(
-                                  initialItem: hours),
+                              scrollController: FixedExtentScrollController(initialItem: hours),
                               itemExtent: 40,
                               onSelectedItemChanged: (int index) {
                                 setState(() {
@@ -205,8 +204,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           ),
                           Expanded(
                             child: CupertinoPicker(
-                              scrollController: FixedExtentScrollController(
-                                  initialItem: minutes),
+                              scrollController: FixedExtentScrollController(initialItem: minutes),
                               itemExtent: 40,
                               onSelectedItemChanged: (int index) {
                                 setState(() {
@@ -240,8 +238,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                           ),
                           Expanded(
                             child: CupertinoPicker(
-                              scrollController: FixedExtentScrollController(
-                                  initialItem: seconds),
+                              scrollController: FixedExtentScrollController(initialItem: seconds),
                               itemExtent: 40,
                               onSelectedItemChanged: (int index) {
                                 setState(() {
@@ -392,9 +389,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                             color: Colors.transparent,
                             child: Container(
                               decoration: BoxDecoration(
-                                color: activity['activity_name'] == activityName
-                                    ? Colors.red[50]
-                                    : null,
+                                color: activity['activity_name'] == activityName ? Colors.red[50] : null,
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: ListTile(
@@ -421,15 +416,9 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                   children: [
                                     Text(
                                       activity['activity_name'],
-                                      style: AppTextStyles.getBody(context)
-                                          .copyWith(
-                                              fontWeight: FontWeight.w900,
-                                              color:
-                                                  activity['activity_name'] ==
-                                                          activityName
-                                                      ? Colors
-                                                          .redAccent.shade200
-                                                      : null),
+                                      style: AppTextStyles.getBody(context).copyWith(
+                                          fontWeight: FontWeight.w900,
+                                          color: activity['activity_name'] == activityName ? Colors.redAccent.shade200 : null),
                                     ),
                                     SizedBox(
                                       width: context.wp(4),
@@ -437,11 +426,9 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                     Container(
                                       width: 12,
                                       height: 12,
-                                      margin: const EdgeInsets.symmetric(
-                                          vertical: 2.0),
+                                      margin: const EdgeInsets.symmetric(vertical: 2.0),
                                       decoration: BoxDecoration(
-                                        color: ColorService.hexToColor(
-                                            activity['activity_color']),
+                                        color: ColorService.hexToColor(activity['activity_color']),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                     ),
@@ -475,8 +462,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     return StatefulBuilder(
       builder: (BuildContext context, StateSetter setModalState) {
@@ -492,16 +478,13 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
           ),
           child: FutureBuilder(
             future: _sessionData,
-            builder: (BuildContext context,
-                AsyncSnapshot<Map<String, dynamic>?> snapshot) {
+            builder: (BuildContext context, AsyncSnapshot<Map<String, dynamic>?> snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(
                     child: CircularProgressIndicator(
                   color: AppColors.textPrimary(context),
                 ));
-              } else if (snapshot.hasError ||
-                  !snapshot.hasData ||
-                  snapshot.data == null) {
+              } else if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
                 return const Center(child: Text('활동 기록을 찾을 수 없습니다.'));
               } else {
                 return Column(
@@ -538,7 +521,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '- 활동 시간 수정 시 시작일시와 종료일시는 변경되지 않습니다.\n- 시간대별 히트맵은 수정된 활동시간이 반영되지 않습니다.',
+                            '활동 시간 수정 시 시작일시와 종료일시는 변경되지 않습니다.\n시간대별 히트맵은 수정된 활동시간이 반영되지 않습니다.',
                             style: AppTextStyles.getCaption(context),
                           ),
                         ],
@@ -553,19 +536,14 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                       child: Container(
                         padding: context.paddingSM,
                         decoration: BoxDecoration(
-                          color: AppColors.backgroundSecondary(context),
+                          color: AppColors.background(context),
                           borderRadius: const BorderRadius.all(
                             Radius.circular(16.0),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.textSecondary(context)
-                                  .withValues(alpha: isDarkMode ? 0 : 0.3),
-                              spreadRadius: 1,
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                          border: Border.all(
+                            color: AppColors.backgroundTertiary(context),
+                            width: 1.0,
+                          ),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -593,8 +571,7 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                       return Container(
                                         width: context.xl,
                                         height: context.xl,
-                                        color:
-                                            Colors.grey.withValues(alpha: 0.2),
+                                        color: Colors.grey.withValues(alpha: 0.2),
                                         child: Icon(
                                           Icons.broken_image,
                                           size: context.xl,
@@ -605,11 +582,8 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                   ),
                                   SizedBox(width: context.wp(2)),
                                   Text(
-                                    activityName.length > 10
-                                        ? '${activityName.substring(0, 10)}...'
-                                        : activityName,
-                                    style:
-                                        AppTextStyles.getBody(context).copyWith(
+                                    activityName.length > 10 ? '${activityName.substring(0, 10)}...' : activityName,
+                                    style: AppTextStyles.getBody(context).copyWith(
                                       fontWeight: FontWeight.w900,
                                     ),
                                     textAlign: TextAlign.end,
@@ -624,18 +598,15 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                 child: Transform(
                                     // 중심을 기준으로 좌우 대칭(수평 반전)하기
                                     alignment: Alignment.center,
-                                    transform: Matrix4.identity()
-                                      ..scale(-1.0, 1.0),
-                                    child: Icon(
-                                        Icons.arrow_back_ios_new_rounded,
-                                        size: context.lg)),
+                                    transform: Matrix4.identity()..scale(-1.0, 1.0),
+                                    child: Icon(Icons.arrow_back_ios_new_rounded, size: context.lg)),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    SizedBox(height: context.hp(1)),
+                    SizedBox(height: context.hp(2)),
                     GestureDetector(
                       onTap: () {
                         _showTimePicker(context);
@@ -644,19 +615,14 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                       child: Container(
                         padding: context.paddingSM,
                         decoration: BoxDecoration(
-                          color: AppColors.backgroundSecondary(context),
+                          color: AppColors.background(context),
                           borderRadius: const BorderRadius.all(
                             Radius.circular(16.0),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.textSecondary(context)
-                                  .withValues(alpha: isDarkMode ? 0 : 0.3),
-                              spreadRadius: 1,
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                          border: Border.all(
+                            color: AppColors.backgroundTertiary(context),
+                            width: 1.0,
+                          ),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -688,11 +654,8 @@ class _EditActivityLogModalState extends State<EditActivityLogModal> {
                                 child: Transform(
                                     // 중심을 기준으로 좌우 대칭(수평 반전)하기
                                     alignment: Alignment.center,
-                                    transform: Matrix4.identity()
-                                      ..scale(-1.0, 1.0),
-                                    child: Icon(
-                                        Icons.arrow_back_ios_new_rounded,
-                                        size: context.lg)),
+                                    transform: Matrix4.identity()..scale(-1.0, 1.0),
+                                    child: Icon(Icons.arrow_back_ios_new_rounded, size: context.lg)),
                               ),
                             ),
                           ],

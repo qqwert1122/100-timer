@@ -103,8 +103,8 @@ void main() async {
     await NotificationService().initialize();
 
     // 데이터베이스 초기
-    // final dbService = DatabaseService();
-    // await insertTestData(dbService);
+    final dbService = DatabaseService();
+    await insertTestData(dbService);
   });
 
   // 앱 설정 초기화 함수

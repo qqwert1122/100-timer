@@ -9,6 +9,7 @@ import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
@@ -92,6 +93,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       _isLoadingMore = true;
       _loadingError = false;
     });
+
     try {
       if (isInitialLoad) {
         _currentWeekOffset = 0;
@@ -102,7 +104,52 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         _currentWeekOffset -= 1;
       }
 
-      // 빈 데이터가 반환될 경우, 최대 maxAttempts 번까지 weekOffset을 증가시켜 데이터를 찾음
+      // 앱 설치일 가져오기
+      final installDateStr = PrefsService().installDate;
+      final installDate = DateTime.parse(installDateStr).toLocal();
+      final installWeekDay = installDate.weekday;
+      final installDateWeekBefore = installDate.subtract(Duration(days: 7));
+
+      // 현재 조회하려는 주차의 시작일 계산
+      final now = DateTime.now();
+      final currentWeekStartDate = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+      final targetWeekStartDate = currentWeekStartDate.subtract(Duration(days: 7 * _currentWeekOffset.abs()));
+
+      // 앱 설치일 이전 조회 시도 시 return
+      // if (targetWeekStartDate.isBefore(installDateWeekBefore)) {
+      //   setState(() {
+      //     _hasMoreData = false;
+      //   });
+      //   return;
+      // }
+
+      // List<Map<String, dynamic>> logData = await _statsProvider.getSessionsForWeek(_currentWeekOffset);
+      // if (logData.isEmpty) {
+      //   // 다음 주차로 이동
+      //   _currentWeekOffset -= 1;
+
+      // 다시 설치 날짜와 비교
+      // final newTargetWeekStartDate = currentWeekStartDate.subtract(Duration(days: 7 * _currentWeekOffset.abs()));
+      // if (newTargetWeekStartDate.isBefore(installDateWeekBefore)) {
+      //   setState(() {
+      //     _hasMoreData = false;
+      //   });
+      //   return;
+      // }
+
+      // 다음 주차 데이터 로드 재시도
+      // logData = await _statsProvider.getSessionsForWeek(_currentWeekOffset);
+
+      // 여전히 데이터가 없다면 더 이상 데이터가 없는 것으로 처리
+      // if (logData.isEmpty) {
+      //   setState(() {
+      //     _hasMoreData = false;
+      //   });
+      //   return;
+      // }
+      // }
+
+      // ### 기능 테스트 이후 삭제 예정
       List<Map<String, dynamic>> logData = [];
       const int maxAttempts = 10;
       int attempts = 0;
@@ -116,6 +163,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         }
       }
 
+      // ### 기능 테스트 이후 삭제 예정
       if (logData.isEmpty) {
         setState(() {
           _hasMoreData = false;
@@ -626,9 +674,14 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         ),
       );
     } else if (!_hasMoreData) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
-        child: Center(child: Text('마지막 기록입니다')),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: Text(
+            '마지막 기록입니다',
+            style: AppTextStyles.getCaption(context),
+          ),
+        ),
       );
     }
     return const SizedBox.shrink();
@@ -659,27 +712,22 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                 padding: context.paddingHorizSM,
                 child: groupedLogs.isEmpty && !_isLoadingMore
                     ? const Center(child: Text('활동 로그가 없습니다.'))
-                    : RefreshIndicator(
-                        color: Colors.grey,
-                        backgroundColor: AppColors.backgroundSecondary(context),
-                        onRefresh: _refreshLogs,
-                        child: NotificationListener<ScrollNotification>(
-                          onNotification: (notification) => false,
-                          child: ScrollablePositionedList.builder(
-                            itemScrollController: _scrollController,
-                            itemPositionsListener: _itemPositionsListener,
-                            itemCount: groupedLogs.length + 1,
-                            itemBuilder: (context, index) {
-                              if (index == groupedLogs.length) {
-                                return _buildBottomWidget();
-                              }
-                              final logGroup = groupedLogs[index];
-                              final date = logGroup['date'] as String;
-                              final logs = logGroup['logs'] as List<Map<String, dynamic>>;
-                              final isFirstGroup = index == 0;
-                              return _buildDateGroup(date, logs, isFirstGroup: isFirstGroup);
-                            },
-                          ),
+                    : NotificationListener<ScrollNotification>(
+                        onNotification: (notification) => false,
+                        child: ScrollablePositionedList.builder(
+                          itemScrollController: _scrollController,
+                          itemPositionsListener: _itemPositionsListener,
+                          itemCount: groupedLogs.length + 1,
+                          itemBuilder: (context, index) {
+                            if (index == groupedLogs.length) {
+                              return _buildBottomWidget();
+                            }
+                            final logGroup = groupedLogs[index];
+                            final date = logGroup['date'] as String;
+                            final logs = logGroup['logs'] as List<Map<String, dynamic>>;
+                            final isFirstGroup = index == 0;
+                            return _buildDateGroup(date, logs, isFirstGroup: isFirstGroup);
+                          },
                         ),
                       ),
               ),

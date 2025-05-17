@@ -75,14 +75,11 @@ class _DashboardSectionState extends State<DashboardSection> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("활동 완료 시간",
-                                style: AppTextStyles.getTitle(context)),
+                            Text("활동 완료 시간", style: AppTextStyles.getTitle(context)),
                             SizedBox(height: context.hp(1)),
                             Shimmer.fromColors(
-                              baseColor:
-                                  Colors.grey.shade300.withValues(alpha: 0.2),
-                              highlightColor:
-                                  Colors.grey.shade100.withValues(alpha: 0.2),
+                              baseColor: Colors.grey.shade300.withValues(alpha: 0.2),
+                              highlightColor: Colors.grey.shade100.withValues(alpha: 0.2),
                               child: Container(
                                 width: context.wp(50),
                                 height: context.hp(7),
@@ -95,8 +92,7 @@ class _DashboardSectionState extends State<DashboardSection> {
                           ],
                         ),
                         Shimmer.fromColors(
-                          baseColor:
-                              Colors.grey.shade300.withValues(alpha: 0.2),
+                          baseColor: Colors.grey.shade300.withValues(alpha: 0.2),
                           highlightColor: Colors.grey.shade100,
                           child: Container(
                             width: context.wp(24),
@@ -129,15 +125,13 @@ class _DashboardSectionState extends State<DashboardSection> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("활동 완료 시간",
-                              style: AppTextStyles.getTitle(context)),
+                          Text("활동 완료 시간", style: AppTextStyles.getTitle(context)),
                           SizedBox(height: context.hp(1)),
                           Row(
                             children: [
                               Text(
                                 formattedDuration,
-                                style: AppTextStyles.getTimeDisplay(context)
-                                    .copyWith(
+                                style: AppTextStyles.getTimeDisplay(context).copyWith(
                                   fontFamily: 'chab',
                                   color: Colors.redAccent,
                                 ),
@@ -147,14 +141,12 @@ class _DashboardSectionState extends State<DashboardSection> {
                                 width: 1,
                                 height: context.hp(2),
                                 color: Colors.grey.shade400,
-                                margin: EdgeInsets.symmetric(
-                                    horizontal: context.wp(1)),
+                                margin: EdgeInsets.symmetric(horizontal: context.wp(1)),
                               ),
                               SizedBox(width: context.wp(1)),
                               Text(
                                 '${tagetDuration}h',
-                                style: AppTextStyles.getTimeDisplay(context)
-                                    .copyWith(
+                                style: AppTextStyles.getTimeDisplay(context).copyWith(
                                   fontFamily: 'chab',
                                   color: Colors.grey.shade300,
                                 ),
@@ -168,23 +160,9 @@ class _DashboardSectionState extends State<DashboardSection> {
                         lineWidth: context.wp(5),
                         animation: true,
                         percent: percent.clamp(0.0, 1.0),
-                        center: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              percentText,
-                              style: AppTextStyles.getBody(context).copyWith(
-                                fontSize: context.xl,
-                                color: Colors.redAccent,
-                                fontFamily: 'chab',
-                              ),
-                            ),
-                            SizedBox(width: context.wp(0.5)),
-                            Text(
-                              '%',
-                              style: AppTextStyles.getCaption(context),
-                            ),
-                          ],
+                        center: Text(
+                          '$percentText %',
+                          style: AppTextStyles.getCaption(context),
                         ),
                         circularStrokeCap: CircularStrokeCap.round,
                         progressColor: Colors.redAccent,
