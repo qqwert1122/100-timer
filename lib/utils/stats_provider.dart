@@ -265,6 +265,78 @@ class StatsProvider extends ChangeNotifier {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getFilteredSessionsForWeek({
+    String? activityName,
+    DateTimeRange? dateRange,
+    int weekOffset = 0,
+  }) async {
+    try {
+      // 필터가 적용되지 않은 경우 일반 주차 데이터 반환
+      if (activityName == null && dateRange == null) {
+        logger.d('필터 없음: 지정된 주차($weekOffset) 데이터 반환');
+        return await getSessionsForWeek(weekOffset);
+      }
+
+      // 날짜 범위 계산
+      DateTime? startDate;
+      DateTime? endDate;
+      logger.d('dateRange: $dateRange');
+      if (dateRange != null) {
+        // 사용자가 지정한 날짜 범위 사용
+
+        logger.d('사용자가 지정한 날짜 범위 사용');
+        startDate = dateRange.start;
+        endDate = dateRange.end.add(const Duration(days: 1)).subtract(const Duration(seconds: 1));
+      } else {
+        // 주차 기반 날짜 범위 계산
+
+        logger.d('주차 기반 날짜 범위 계산');
+        final weeklyRange = DateUtils.getWeeklyRange(weekOffset: weekOffset);
+        startDate = weeklyRange['startOfWeek'];
+        endDate = weeklyRange['endOfWeek'];
+      }
+
+      // null 체크 추가
+      if (startDate == null || endDate == null) {
+        logger.e('날짜 범위가 null입니다. 현재 주차 사용');
+        final weeklyRange = DateUtils.getWeeklyRange(weekOffset: weekOffset);
+        startDate = weeklyRange['startOfWeek']!;
+        endDate = weeklyRange['endOfWeek']!;
+      }
+
+      // 필터링된 세션 데이터 가져오기
+      List<Map<String, dynamic>> results = [];
+
+      if (activityName != null && activityName.isNotEmpty) {
+        logger.d('활동명($activityName)과 날짜 범위로 필터링');
+        results = await _dbService.getSessionsWithinDateRangeAndActivityName(
+          startDate: startDate.toUtc(),
+          endDate: endDate.toUtc(),
+          activityName: activityName,
+        );
+      } else {
+        logger.d('날짜 범위만으로 필터링');
+        results = await _dbService.getSessionsWithinDateRange(
+          startDate: startDate.toUtc(),
+          endDate: endDate.toUtc(),
+        );
+      }
+
+      logger.d('필터링 결과: ${results.length}개 항목');
+      return results;
+    } catch (e) {
+      logger.e('getFilteredSessionsForWeek 오류: $e');
+      // 오류 복구 로직
+      try {
+        logger.d('오류 복구: 주차 $weekOffset 데이터 반환 시도');
+        return await getSessionsForWeek(weekOffset);
+      } catch (recoverError) {
+        logger.e('복구 시도 중 추가 오류: $recoverError');
+        return [];
+      }
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getWeeklySessionFlags() async {
     try {
       final results = _currentSessions;

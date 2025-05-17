@@ -11,7 +11,7 @@
 
 
     <application
-        android:label="100-Timer"
+        android:label="100 timer"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
         android:resizeableActivity="false">

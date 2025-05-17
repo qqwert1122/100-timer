@@ -144,13 +144,6 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
     } else {}
   }
 
-  void _loadActivities() async {
-    final activities = await _activityListFuture;
-    setState(() {
-      rawActivities = activities;
-    });
-  }
-
   Future<void> _loadInitialData() async {
     setState(() {
       _isLoading = true;

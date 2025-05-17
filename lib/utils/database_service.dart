@@ -751,6 +751,42 @@ class DatabaseService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getAllSessions() async {
+    final db = await database;
+
+    try {
+      // 삭제되지 않은 모든 세션 가져오기
+      final List<Map<String, dynamic>> results = await db.query(
+        'sessions',
+        where: 'is_deleted = 0',
+        orderBy: 'start_time DESC',
+      );
+
+      return results;
+    } catch (e) {
+      logger.d('Error in getAllSessions: $e');
+      return [];
+    }
+  }
+
+  Future<DateTime?> getEarliestSessionDate() async {
+    final db = await database;
+
+    // 가장 오래된 start_time 1개 가져오기
+    final rows = await db.rawQuery('''
+    SELECT start_time
+    FROM   sessions
+    ORDER  BY start_time ASC
+    LIMIT  1
+  ''');
+
+    if (rows.isEmpty || rows.first['start_time'] == null) return null;
+
+    final String ts = rows.first['start_time'] as String;
+
+    return DateTime.parse(ts).toLocal();
+  }
+
   Future<List<Map<String, dynamic>>> getSessionsWithinDateRange({
     required DateTime startDate,
     required DateTime endDate,
@@ -799,6 +835,55 @@ class DatabaseService {
       return results;
     } catch (e) {
       print("Error in getSessionsWithinDateRangeAndActivityId: $e");
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getSessionsWithinDateRangeAndActivityName({
+    required DateTime startDate,
+    required DateTime endDate,
+    required String activityName,
+  }) async {
+    try {
+      final db = await database;
+
+      // LIKE 검색을 사용하여 activityName이 포함된 모든 세션 검색
+      final List<Map<String, dynamic>> results = await db.rawQuery('''
+      SELECT *
+      FROM sessions
+      WHERE start_time BETWEEN ? AND ?
+      AND activity_name LIKE ?
+      ORDER BY start_time DESC
+      LIMIT 1000
+    ''', [
+        startDate.toIso8601String(),
+        endDate.toIso8601String(),
+        '%$activityName%' // LIKE 검색을 위한 와일드카드 사용
+      ]);
+
+      logger.d('활동명 검색 결과: ${results.length}개 항목 발견');
+      return results;
+    } catch (e) {
+      logger.e('활동명 검색 중 오류: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getSessionsByActivityId(String activityId) async {
+    try {
+      final db = await database;
+
+      final List<Map<String, dynamic>> results = await db.query(
+        'sessions',
+        where: 'activity_id = ? AND is_deleted = 0',
+        whereArgs: [activityId],
+        orderBy: 'start_time DESC',
+      );
+
+      logger.d('활동 ID로 세션 조회: ID=$activityId, 결과=${results.length}개');
+      return results;
+    } catch (e) {
+      logger.e('getSessionsByActivityId 오류: $e');
       return [];
     }
   }

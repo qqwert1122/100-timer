@@ -28,6 +28,10 @@ void main() async {
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
+  // 최적화
+  PaintingBinding.instance.imageCache.maximumSize = 100;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // 50MB
+
   runApp(
     MultiProvider(
       providers: [
@@ -103,8 +107,8 @@ void main() async {
     await NotificationService().initialize();
 
     // 데이터베이스 초기
-    final dbService = DatabaseService();
-    await insertTestData(dbService);
+    // final dbService = DatabaseService();
+    // await insertTestData(dbService);
   });
 
   // 앱 설정 초기화 함수
@@ -279,7 +283,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '100-timer',
+      title: '100 timer',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
