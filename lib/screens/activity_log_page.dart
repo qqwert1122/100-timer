@@ -823,33 +823,6 @@ class _ActivityLogPageState extends State<ActivityLogPage>
     return formattedTime.trim();
   }
 
-  Future<void> _deleteLog(String sessionId) async {
-    final shouldDelete = await _showDeleteConfirmationDialog();
-    if (shouldDelete) {
-      try {
-        await _dbService.deleteSession(sessionId);
-        LogCache.clear(); // 캐시 초기화
-        await _refreshLogs();
-        Fluttertoast.showToast(
-          msg: "로그가 삭제되었습니다.",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.TOP,
-          backgroundColor: Colors.redAccent,
-          textColor: Colors.white,
-        );
-      } catch (e) {
-        debugPrint('로그 삭제 중 오류 발생: $e');
-        Fluttertoast.showToast(
-          msg: "로그 삭제 중 오류가 발생했습니다.",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.TOP,
-          backgroundColor: Colors.redAccent,
-          textColor: Colors.white,
-        );
-      }
-    }
-  }
-
   void _onDateRangeSelected(DateTimeRange? dateRange) async {
     if (dateRange == null) return;
 
@@ -933,6 +906,138 @@ class _ActivityLogPageState extends State<ActivityLogPage>
       total += (group['logs'] as List).length;
     }
     return total;
+  }
+
+  Future<void> _editActivityLog(String sessionId) async {
+    final updatedLog = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => EditActivityLogModal(
+        sessionId: sessionId,
+      ),
+    );
+
+    if (updatedLog != null) {
+      _updateSingleLogItem(sessionId, updatedLog);
+    }
+  }
+
+  void _updateSingleLogItem(String sessionId, Map<String, dynamic> updatedLog) {
+    setState(() {
+      // 1. UI 데이터 업데이트 (groupedLogs)
+      bool found = false;
+
+      for (var i = 0; i < groupedLogs.length; i++) {
+        final logs = groupedLogs[i]['logs'] as List<Map<String, dynamic>>;
+        final logIndex =
+            logs.indexWhere((log) => log['session_id'] == sessionId);
+
+        if (logIndex >= 0) {
+          found = true;
+
+          // 날짜 확인
+          final oldDate = groupedLogs[i]['date'] as String;
+          final newDateStr = updatedLog['start_time'].substring(0, 10);
+
+          if (oldDate == newDateStr) {
+            // 같은 날짜 그룹 내 업데이트
+            logs[logIndex] = updatedLog;
+          } else {
+            // 날짜 변경됨 - 항목 이동 필요
+            logs.removeAt(logIndex);
+
+            // 기존 그룹이 비었으면 제거
+            if (logs.isEmpty) {
+              groupedLogs.removeAt(i);
+            }
+
+            // 새 날짜 그룹 찾기
+            int newGroupIndex =
+                groupedLogs.indexWhere((g) => g['date'] == newDateStr);
+
+            if (newGroupIndex >= 0) {
+              // 기존 그룹에 추가
+              (groupedLogs[newGroupIndex]['logs'] as List<Map<String, dynamic>>)
+                  .add(updatedLog);
+              // 시간순 정렬
+              (groupedLogs[newGroupIndex]['logs'] as List<Map<String, dynamic>>)
+                  .sort((a, b) => (b['start_time'] as String)
+                      .compareTo(a['start_time'] as String));
+            } else {
+              // 새 그룹 생성
+              groupedLogs.add({
+                'date': newDateStr,
+                'logs': [updatedLog]
+              });
+
+              // 날짜순 정렬
+              groupedLogs.sort((a, b) =>
+                  (b['date'] as String).compareTo(a['date'] as String));
+            }
+
+            // 요일 인덱스 맵 업데이트
+            dayToIndexMap = _calculateDayToIndexMap();
+          }
+          break;
+        }
+      }
+
+      // 2. 캐시 업데이트
+      if (found) {
+        LogCache.updateLogInCache(sessionId, updatedLog);
+      }
+    });
+  }
+
+  Future<void> _deleteLog(String sessionId) async {
+    final shouldDelete = await _showDeleteConfirmationDialog();
+    if (shouldDelete) {
+      try {
+        await _dbService.deleteSession(sessionId);
+        _removeSingleLogItem(sessionId);
+        Fluttertoast.showToast(
+          msg: "로그가 삭제되었습니다.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.redAccent,
+          textColor: Colors.white,
+        );
+      } catch (e) {
+        debugPrint('로그 삭제 중 오류 발생: $e');
+        Fluttertoast.showToast(
+          msg: "로그 삭제 중 오류가 발생했습니다.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.redAccent,
+          textColor: Colors.white,
+        );
+      }
+    }
+  }
+
+  void _removeSingleLogItem(String sessionId) {
+    setState(() {
+      // 1. UI 데이터에서 제거
+      for (var i = 0; i < groupedLogs.length; i++) {
+        final logs = groupedLogs[i]['logs'] as List<Map<String, dynamic>>;
+        final originalLength = logs.length;
+
+        logs.removeWhere((log) => log['session_id'] == sessionId);
+
+        // 항목이 제거되었는지 확인
+        if (logs.length < originalLength) {
+          // 그룹이 비어있으면 제거
+          if (logs.isEmpty) {
+            groupedLogs.removeAt(i);
+            // 요일 인덱스 맵 업데이트
+            dayToIndexMap = _calculateDayToIndexMap();
+          }
+          break;
+        }
+      }
+
+      // 2. 캐시에서 제거
+      LogCache.removeLogFromCache(sessionId);
+    });
   }
 
   Future<bool> _showDeleteConfirmationDialog() async {
@@ -1338,15 +1443,7 @@ class _ActivityLogPageState extends State<ActivityLogPage>
             SlidableAction(
               onPressed: (_) {
                 HapticFeedback.lightImpact();
-                Future.microtask(() {
-                  showModalBottomSheet(
-                      context: context,
-                      builder: (ctx) => EditActivityLogModal(
-                            sessionId: log['session_id'],
-                            onUpdate: _refreshLogs,
-                            onDelete: _refreshLogs,
-                          ));
-                });
+                Future.microtask(() => _editActivityLog(log['session_id']));
               },
               backgroundColor: Colors.blueAccent,
               foregroundColor: Colors.white,
