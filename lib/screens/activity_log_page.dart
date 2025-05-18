@@ -11,6 +11,7 @@ import 'package:project1/models/log_filter_type.dart';
 import 'package:project1/models/paging_mode.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
+import 'package:project1/activity_logs/widgets/activity_log_bottom.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
@@ -249,12 +250,16 @@ class _ActivityLogPageState extends State<ActivityLogPage>
   }
 
   void refreshCurrentFilter() {
-    if (_selectedActivityName != null && _selectedDateRange != null) {
+    final hasActivity =
+        _selectedActivityName != null && _selectedActivityName!.isNotEmpty;
+    final hasDateRange = _selectedDateRange != null;
+
+    if (hasActivity && hasDateRange) {
       _currentFilter = ActivityLogFilter.combined(
           _selectedActivityName!, _selectedDateRange!);
-    } else if (_selectedDateRange != null) {
+    } else if (hasDateRange) {
       _currentFilter = ActivityLogFilter.dateRange(_selectedDateRange!);
-    } else if (_selectedActivityName != null) {
+    } else if (hasActivity) {
       _currentFilter = ActivityLogFilter.activity(_selectedActivityName!);
     } else {
       _currentFilter = ActivityLogFilter.all();
@@ -262,23 +267,37 @@ class _ActivityLogPageState extends State<ActivityLogPage>
   }
 
   Future<void> _initializeLogs({bool isInitialLoad = false}) async {
-    if (_isLoadingMore && !isInitialLoad) return; // 중복 방지
+    print("=== _initializeLogs 시작 (isInitialLoad: $isInitialLoad) ===");
+    print("현재 필터 타입: ${_currentFilter.type}");
+
+    if (_isLoadingMore && !isInitialLoad) {
+      print("이미 로딩 중이므로 종료");
+      return;
+    }
+    ; // 중복 방지
+
     refreshCurrentFilter(); // 필터 확정
+    print("refreshCurrentFilter() 호출 후 필터 타입: ${_currentFilter.type}");
 
     setState(() {
       if (isInitialLoad) {
         _isLoadingMore = true;
+
+        print("초기 로드 상태 설정: _isLoadingMore = true");
       }
     });
     try {
       final mode = getPagingMode(_currentFilter.type);
 
+      print("페이징 모드: $mode");
       // 무거운 작업을 비동기로 실행
       await Future(() async {
         if (mode == PagingMode.byWeek) {
           await _loadByWeek(isInitialLoad: isInitialLoad);
+          print("byWeek 모드로 로드 시작");
         } else {
           await _loadByCount(isInitialLoad: isInitialLoad);
+          print("byCount 모드로 로드 시작");
         }
       });
     } catch (e) {
@@ -1175,13 +1194,11 @@ class _ActivityLogPageState extends State<ActivityLogPage>
     // 현재 검색 작업 취소
     _searchProcessor.cancelCurrentSearch();
 
-    if (mounted) {
-      setState(() {
-        searchController.clear();
-        _selectedActivityName = null;
-        refreshCurrentFilter();
-      });
-    }
+    setState(() {
+      searchController.clear();
+      _selectedActivityName = null;
+      refreshCurrentFilter();
+    });
 
     // 키보드 숨기기
     FocusScope.of(context).unfocus();
@@ -1200,6 +1217,12 @@ class _ActivityLogPageState extends State<ActivityLogPage>
         if (mounted) {
           _currentWeekOffset = 0;
           await _initializeLogs(isInitialLoad: true);
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _scrollController.isAttached) {
+              _scrollController.jumpTo(index: 0);
+            }
+          });
         }
       }
     });
@@ -1219,8 +1242,9 @@ class _ActivityLogPageState extends State<ActivityLogPage>
                   _onSearchChanged(query);
                 },
                 onSubmitted: (query) {
-                  if (_debounce?.isActive ?? false)
+                  if (_debounce?.isActive ?? false) {
                     _debounce!.cancel(); // 사용자가 엔터를 누르면 즉시 디바운스 취소 후 검색 실행
+                  }
                   _searchProcessor.processSearch(
                       query: query,
                       previousQuery: _selectedActivityName,
@@ -1615,40 +1639,6 @@ class _ActivityLogPageState extends State<ActivityLogPage>
     );
   }
 
-  Widget _buildBottomWidget() {
-    if (_isLoadingMore) {
-      return SizedBox();
-    } else if (_loadingError) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Center(
-          child: Column(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.redAccent),
-              const SizedBox(height: 8),
-              const Text('데이터 로드 중 오류 발생'),
-              TextButton(
-                onPressed: _loadMoreData,
-                child: const Text('다시 시도'),
-              ),
-            ],
-          ),
-        ),
-      );
-    } else if (!_hasMoreData) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Center(
-          child: Text(
-            '마지막 기록입니다',
-            style: AppTextStyles.getCaption(context),
-          ),
-        ),
-      );
-    }
-    return const SizedBox.shrink();
-  }
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -1740,7 +1730,12 @@ class _ActivityLogPageState extends State<ActivityLogPage>
                                     MediaQuery.of(context).size.height * 1.5,
                                 itemBuilder: (context, index) {
                                   if (index == groupedLogs.length) {
-                                    return _buildBottomWidget();
+                                    return ActivityLogBottom(
+                                      isLoadingMore: _isLoadingMore,
+                                      loadingError: _loadingError,
+                                      loadMoreData: () => _loadMoreData(),
+                                      hasMoreData: _hasMoreData,
+                                    );
                                   }
 
                                   if (_isRenderOptimized) {
