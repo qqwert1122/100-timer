@@ -851,8 +851,10 @@ class DatabaseService {
       final List<Map<String, dynamic>> results = await db.rawQuery('''
       SELECT *
       FROM sessions
-      WHERE start_time BETWEEN ? AND ?
-      AND activity_name LIKE ?
+      WHERE start_time >= ? 
+        AND start_time < ?
+        AND activity_name LIKE ?
+        AND is_deleted = 0
       ORDER BY start_time DESC
       LIMIT 1000
     ''', [

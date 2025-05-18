@@ -337,6 +337,39 @@ class StatsProvider extends ChangeNotifier {
     }
   }
 
+  Future<List<Map<String, dynamic>>> summarizeMonthlySessions(DateTime startDate, DateTime endDate) async {
+    Map<String, Set<dynamic>> activitySetMap = {}; // 월별 고유 활동 모음
+    Map<String, int> durationMap = {}; // 월별 총 duration
+
+    final sessions = await _dbService.getSessionsWithinDateRange(startDate: startDate, endDate: endDate);
+    for (final session in sessions) {
+      final startTime = DateTime.parse(session['start_time']).toLocal();
+      final dayKey = '${startTime.year}-${startTime.month.toString().padLeft(2, '0')}-${startTime.day.toString().padLeft(2, '0')}';
+
+      final activityId = session['activity_id'];
+      final duration = (session['duration'] ?? 0) as int;
+
+      // 고유 활동 ID 집계
+      activitySetMap.putIfAbsent(dayKey, () => <dynamic>{});
+      if (activityId != null) {
+        activitySetMap[dayKey]!.add(activityId);
+      }
+
+      // duration 누적
+      durationMap[dayKey] = (durationMap[dayKey] ?? 0) + duration;
+    }
+
+    // 날짜 순 정렬
+    final sortedKeys = activitySetMap.keys.toList()..sort();
+    return sortedKeys.map((day) {
+      return {
+        'date': day,
+        'activity_count': activitySetMap[day]!.length,
+        'tot_duration': durationMap[day] ?? 0,
+      };
+    }).toList();
+  }
+
   Future<List<Map<String, dynamic>>> getWeeklySessionFlags() async {
     try {
       final results = _currentSessions;

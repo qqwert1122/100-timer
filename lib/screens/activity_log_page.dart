@@ -1614,12 +1614,9 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     if (!_isLoadingMore) return const SizedBox.shrink();
 
     return Positioned.fill(
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.3),
-        child: Center(
-          child: CircularProgressIndicator(
-            color: AppColors.background(context),
-          ),
+      child: Center(
+        child: CircularProgressIndicator(
+          color: AppColors.textSecondary(context),
         ),
       ),
     );
