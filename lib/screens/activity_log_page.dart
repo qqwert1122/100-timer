@@ -1108,10 +1108,9 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   final _searchProcessor = SearchProcessor();
 
   void _onSearchChanged(String query) {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    if (_debounce?.isActive ?? false) _debounce!.cancel(); // 디바운스가 있다면 취소
 
-    // 디바운스 시간 더 늘림
-    _debounce = Timer(const Duration(milliseconds: 1200), () {
+    _debounce = Timer(const Duration(milliseconds: 600), () {
       // 별도의 검색 프로세서로 무거운 작업 처리
       _searchProcessor.processSearch(
           query: query,
@@ -1154,38 +1153,42 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     // 현재 검색 작업 취소
     _searchProcessor.cancelCurrentSearch();
 
-    setState(() {
-      searchController.clear();
-      _selectedActivityName = null;
-      refreshCurrentFilter();
-    });
+    // 검색 컨트롤러 지우기
+    searchController.clear();
 
-    // 키보드 숨기기
-    FocusScope.of(context).unfocus();
+    // 전체 검색 프로세스 실행 (빈 쿼리로)
+    _searchProcessor.processSearch(
+        query: '',
+        previousQuery: _selectedActivityName,
+        onQueryChanged: (newQuery) {
+          if (mounted) {
+            setState(() {
+              _selectedActivityName = null;
+              refreshCurrentFilter();
+            });
+          }
+        },
+        onBeforeSearch: () {
+          if (mounted) {
+            setState(() {
+              _hasMoreData = true;
+              _isLoadingMore = true;
+            });
+          }
+        },
+        onSearchComplete: () {
+          Future.microtask(() async {
+            if (mounted) {
+              await _initializeLogs(isInitialLoad: true);
 
-    // 비동기 캐시 초기화 및 데이터 로드
-    Future.microtask(() async {
-      // 캐시 일부만 제거 (전체 대신)
-      await LogCache.removeByPatternAsync('activity_');
-
-      if (mounted) {
-        setState(() => _isLoadingMore = true);
-
-        // 다음 프레임까지 대기하여 UI 응답성 유지
-        await Future.delayed(const Duration(milliseconds: 16));
-
-        if (mounted) {
-          _currentWeekOffset = 0;
-          await _initializeLogs(isInitialLoad: true);
-
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && _scrollController.isAttached) {
-              _scrollController.jumpTo(index: 0);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _scrollController.isAttached) {
+                  _scrollController.jumpTo(index: 0);
+                }
+              });
             }
           });
-        }
-      }
-    });
+        });
   }
 
   Widget _buildSearchBar() {
