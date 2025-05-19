@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -55,6 +57,15 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
   BannerAd? _bannerAd1;
   bool _isAdLoaded1 = false;
 
+  String getBannerAdUnitId() {
+    if (Platform.isAndroid) {
+      return 'ca-app-pub-9503898094962699/9890914412';
+    } else if (Platform.isIOS) {
+      return 'ca-app-pub-9503898094962699/7942219523';
+    }
+    return '';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -95,7 +106,7 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
     // admob 광고 초기화
     _bannerAd1 = BannerAd(
       // 이 광고 단위 ID는 Google에서 제공하는 테스트용 ID입니다.
-      adUnitId: 'ca-app-pub-9503898094962699/9890914412',
+      adUnitId: getBannerAdUnitId(),
       size: AdSize.fullBanner,
       request: AdRequest(),
       listener: BannerAdListener(

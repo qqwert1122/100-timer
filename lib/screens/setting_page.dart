@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -41,6 +43,14 @@ class _SettingPageState extends State<SettingPage> {
   // admob 광고
   BannerAd? _bannerAd1;
   bool _isAdLoaded1 = false;
+  String getBannerAdUnitId() {
+    if (Platform.isAndroid) {
+      return 'ca-app-pub-9503898094962699/7778551117';
+    } else if (Platform.isIOS) {
+      return 'ca-app-pub-9503898094962699/1818588904';
+    }
+    return '';
+  }
 
   @override
   void initState() {
@@ -52,7 +62,7 @@ class _SettingPageState extends State<SettingPage> {
 
     // admob 광고 초기화
     _bannerAd1 = BannerAd(
-      adUnitId: 'ca-app-pub-9503898094962699/7778551117',
+      adUnitId: getBannerAdUnitId(),
       size: AdSize.fullBanner,
       request: const AdRequest(),
       listener: BannerAdListener(

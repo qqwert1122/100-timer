@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -47,15 +48,33 @@ class _ChartPageState extends State<ChartPage> {
   bool _heatmapDataLoaded = false;
   bool _activityChartDataLoaded = false;
 
+  String getBannerAd01UnitId() {
+    if (Platform.isAndroid) {
+      return 'ca-app-pub-9503898094962699/5342392791';
+    } else if (Platform.isIOS) {
+      return 'ca-app-pub-9503898094962699/8038406530';
+    }
+    return '';
+  }
+
+  String getBannerAd02UnitId() {
+    if (Platform.isAndroid) {
+      return 'ca-app-pub-9503898094962699/3819791084';
+    } else if (Platform.isIOS) {
+      return 'ca-app-pub-9503898094962699/9826146838';
+    }
+    return '';
+  }
+
   @override
   void initState() {
     super.initState();
 
     // admob 광고 초기화
     _bannerAd1 = BannerAd(
-      adUnitId: 'ca-app-pub-9503898094962699/5342392791',
+      adUnitId: getBannerAd01UnitId(),
       size: AdSize.fullBanner,
-      request: AdRequest(),
+      request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (Ad ad) {
           setState(() {
@@ -71,7 +90,7 @@ class _ChartPageState extends State<ChartPage> {
     _bannerAd1!.load();
 
     _bannerAd2 = BannerAd(
-      adUnitId: 'ca-app-pub-9503898094962699/3819791084',
+      adUnitId: getBannerAd02UnitId(),
       size: AdSize.fullBanner,
       request: AdRequest(),
       listener: BannerAdListener(
