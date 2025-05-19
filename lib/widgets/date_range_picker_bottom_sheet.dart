@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
+import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:provider/provider.dart';
@@ -32,12 +33,10 @@ class DateRangePickerBottomSheet extends StatefulWidget {
   }
 
   @override
-  State<DateRangePickerBottomSheet> createState() =>
-      _DateRangePickerBottomSheetState();
+  State<DateRangePickerBottomSheet> createState() => _DateRangePickerBottomSheetState();
 }
 
-class _DateRangePickerBottomSheetState
-    extends State<DateRangePickerBottomSheet> {
+class _DateRangePickerBottomSheetState extends State<DateRangePickerBottomSheet> {
   late StatsProvider _statsProvider;
 
   late DateTime? tempRangeStart;
@@ -45,7 +44,8 @@ class _DateRangePickerBottomSheetState
   late DateTime focusedDay;
 
   List<Map<String, dynamic>> _sessionSummaries = [];
-  bool _isLoading = false;
+  bool _isInitialized = false; // 초기화 여부 추적
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -53,8 +53,7 @@ class _DateRangePickerBottomSheetState
     _statsProvider = Provider.of<StatsProvider>(context, listen: false);
 
     // 초기값 설정
-    tempRangeStart = widget.initialDateRange?.start ??
-        DateTime.now().subtract(const Duration(days: 7));
+    tempRangeStart = widget.initialDateRange?.start ?? DateTime.now().subtract(const Duration(days: 7));
     tempRangeEnd = widget.initialDateRange?.end ?? DateTime.now();
     focusedDay = DateTime.now();
 
@@ -75,28 +74,28 @@ class _DateRangePickerBottomSheetState
       final lastDay = DateTime(month.year, month.month + 1, 0);
 
       // 세션 요약 데이터 가져오기
-      final data =
-          await _statsProvider.summarizeMonthlySessions(firstDay, lastDay);
+      final data = await _statsProvider.summarizeMonthlySessions(firstDay, lastDay);
 
       if (!mounted) return;
 
       setState(() {
         _sessionSummaries = data;
         _isLoading = false;
+        _isInitialized = true;
       });
     } catch (e) {
-      print('월별 데이터 로딩 오류: $e');
+      logger.e('월별 데이터 로딩 오류: $e');
       if (!mounted) return;
 
       setState(() {
         _isLoading = false;
+        _isInitialized = true;
       });
     }
   }
 
   Map<String, dynamic> _getSummaryForDate(DateTime date) {
-    final dateStr =
-        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
     // 해당 날짜의 요약 정보 찾기
     for (final summary in _sessionSummaries) {
@@ -110,7 +109,6 @@ class _DateRangePickerBottomSheetState
   }
 
   String _formatTime(int seconds) {
-    final int safe = seconds.abs(); // 음수에 대해서는 절대값 , 음수라는 것에 대해서는 UI상으로 표현
     final hours = (seconds ~/ 3600).toString();
     final minutes = ((seconds % 3600) ~/ 60).toString().padLeft(2, '0');
     return '${hours}h ${minutes}m';
@@ -185,8 +183,7 @@ class _DateRangePickerBottomSheetState
             calendarStyle: CalendarStyle(
               cellMargin: const EdgeInsets.all(10), // 셀 주변 여백 추가
               cellPadding: const EdgeInsets.all(0), // 셀 내부 패딩 줄이기
-              rangeHighlightColor:
-                  AppColors.primary(context).withValues(alpha: 0.2),
+              rangeHighlightColor: AppColors.primary(context).withValues(alpha: 0.2),
               rangeStartDecoration: BoxDecoration(
                 color: AppColors.primary(context),
                 shape: BoxShape.circle,
@@ -215,12 +212,7 @@ class _DateRangePickerBottomSheetState
             onRangeSelected: (start, end, focusDay) {
               setState(() {
                 tempRangeStart = start;
-                // 종료일이 null이면서 시작일이 이미 선택된 경우, 같은 날짜를 종료일로 설정
-                if (end == null && start != null && tempRangeStart == start) {
-                  tempRangeEnd = start; // 같은 날짜를 종료일로 설정
-                } else {
-                  tempRangeEnd = end;
-                }
+                tempRangeEnd = end ?? start; // null이면 start와 동일하게 설정
                 focusedDay = focusDay;
               });
             },
@@ -232,6 +224,8 @@ class _DateRangePickerBottomSheetState
             },
             calendarBuilders: CalendarBuilders(
               markerBuilder: (context, date, events) {
+                if (!_isInitialized) return null;
+
                 if (_isLoading) {
                   return Positioned(
                     bottom: 1,
@@ -276,6 +270,27 @@ class _DateRangePickerBottomSheetState
               },
               // 데이터가 없는 날짜는 회색 처리
               defaultBuilder: (context, day, focusedDay) {
+                if (!_isInitialized) return null;
+
+                if (_isLoading) {
+                  return Center(
+                    child: SizedBox(
+                      width: 35,
+                      height: 15,
+                      child: Center(
+                        child: SizedBox(
+                          width: 10,
+                          height: 10,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.textSecondary(context),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
                 final summary = _getSummaryForDate(day);
                 final activityCount = summary['activity_count'] ?? 0;
 
