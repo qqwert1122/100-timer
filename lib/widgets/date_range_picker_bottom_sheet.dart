@@ -32,10 +32,12 @@ class DateRangePickerBottomSheet extends StatefulWidget {
   }
 
   @override
-  State<DateRangePickerBottomSheet> createState() => _DateRangePickerBottomSheetState();
+  State<DateRangePickerBottomSheet> createState() =>
+      _DateRangePickerBottomSheetState();
 }
 
-class _DateRangePickerBottomSheetState extends State<DateRangePickerBottomSheet> {
+class _DateRangePickerBottomSheetState
+    extends State<DateRangePickerBottomSheet> {
   late StatsProvider _statsProvider;
 
   late DateTime? tempRangeStart;
@@ -51,7 +53,8 @@ class _DateRangePickerBottomSheetState extends State<DateRangePickerBottomSheet>
     _statsProvider = Provider.of<StatsProvider>(context, listen: false);
 
     // 초기값 설정
-    tempRangeStart = widget.initialDateRange?.start ?? DateTime.now().subtract(const Duration(days: 7));
+    tempRangeStart = widget.initialDateRange?.start ??
+        DateTime.now().subtract(const Duration(days: 7));
     tempRangeEnd = widget.initialDateRange?.end ?? DateTime.now();
     focusedDay = DateTime.now();
 
@@ -72,7 +75,8 @@ class _DateRangePickerBottomSheetState extends State<DateRangePickerBottomSheet>
       final lastDay = DateTime(month.year, month.month + 1, 0);
 
       // 세션 요약 데이터 가져오기
-      final data = await _statsProvider.summarizeMonthlySessions(firstDay, lastDay);
+      final data =
+          await _statsProvider.summarizeMonthlySessions(firstDay, lastDay);
 
       if (!mounted) return;
 
@@ -91,7 +95,8 @@ class _DateRangePickerBottomSheetState extends State<DateRangePickerBottomSheet>
   }
 
   Map<String, dynamic> _getSummaryForDate(DateTime date) {
-    final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final dateStr =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
     // 해당 날짜의 요약 정보 찾기
     for (final summary in _sessionSummaries) {
@@ -180,7 +185,8 @@ class _DateRangePickerBottomSheetState extends State<DateRangePickerBottomSheet>
             calendarStyle: CalendarStyle(
               cellMargin: const EdgeInsets.all(10), // 셀 주변 여백 추가
               cellPadding: const EdgeInsets.all(0), // 셀 내부 패딩 줄이기
-              rangeHighlightColor: AppColors.primary(context).withValues(alpha: 0.2),
+              rangeHighlightColor:
+                  AppColors.primary(context).withValues(alpha: 0.2),
               rangeStartDecoration: BoxDecoration(
                 color: AppColors.primary(context),
                 shape: BoxShape.circle,
@@ -201,9 +207,6 @@ class _DateRangePickerBottomSheetState extends State<DateRangePickerBottomSheet>
                 shape: BoxShape.circle,
               ),
             ),
-            selectedDayPredicate: (day) {
-              return isSameDay(focusedDay, day);
-            },
             onDaySelected: (selectedDay, focusDay) {
               setState(() {
                 focusedDay = focusDay;
@@ -212,7 +215,12 @@ class _DateRangePickerBottomSheetState extends State<DateRangePickerBottomSheet>
             onRangeSelected: (start, end, focusDay) {
               setState(() {
                 tempRangeStart = start;
-                tempRangeEnd = end;
+                // 종료일이 null이면서 시작일이 이미 선택된 경우, 같은 날짜를 종료일로 설정
+                if (end == null && start != null && tempRangeStart == start) {
+                  tempRangeEnd = start; // 같은 날짜를 종료일로 설정
+                } else {
+                  tempRangeEnd = end;
+                }
                 focusedDay = focusDay;
               });
             },

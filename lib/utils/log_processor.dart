@@ -1,15 +1,11 @@
-// lib/utils/log_processor.dart
-
 import 'dart:async';
 import 'dart:isolate';
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:project1/utils/icon_utils.dart';
 
 // 백그라운드에서 로그 데이터 그룹화 처리하는 함수
-List<Map<String, dynamic>> groupLogsByDateIsolate(List<Map<String, dynamic>> logs) {
+List<Map<String, dynamic>> groupLogsByDateIsolate(
+    List<Map<String, dynamic>> logs) {
   // 사전 필터링으로 무효한 로그 제거
   if (logs.isEmpty) {
     return [];
@@ -31,13 +27,15 @@ List<Map<String, dynamic>> groupLogsByDateIsolate(List<Map<String, dynamic>> log
     final logs = entry.value;
 
     // 시간 문자열 비교를 사용하여 날짜/시간 파싱 작업 감소
-    logs.sort((a, b) => (b['start_time'] as String).compareTo(a['start_time'] as String));
+    logs.sort((a, b) =>
+        (b['start_time'] as String).compareTo(a['start_time'] as String));
 
     return {'date': entry.key, 'logs': logs};
   }).toList();
 
   // 날짜 문자열을 직접 비교하여 정렬 (ISO 형식이므로 가능함)
-  groupedList.sort((a, b) => (b['date'] as String).compareTo(a['date'] as String));
+  groupedList
+      .sort((a, b) => (b['date'] as String).compareTo(a['date'] as String));
 
   return groupedList;
 }
@@ -50,7 +48,8 @@ class IsolateData {
 }
 
 // isolate에서 실행할 함수
-Future<List<Map<String, dynamic>>> processLogsInBackground(IsolateData data) async {
+Future<List<Map<String, dynamic>>> processLogsInBackground(
+    IsolateData data) async {
   return groupLogsByDateIsolate(data.logs);
 }
 
@@ -67,9 +66,11 @@ class IsolateMessage {
   IsolateMessage(this.logs, this.sendPort);
 }
 
-Future<List<Map<String, dynamic>>> processLogsWithIsolate(List<Map<String, dynamic>> logs) async {
+Future<List<Map<String, dynamic>>> processLogsWithIsolate(
+    List<Map<String, dynamic>> logs) async {
   final ReceivePort receivePort = ReceivePort();
-  await Isolate.spawn(_isolateEntryPoint, IsolateMessage(logs, receivePort.sendPort));
+  await Isolate.spawn(
+      _isolateEntryPoint, IsolateMessage(logs, receivePort.sendPort));
 
   final List<Map<String, dynamic>> result = await receivePort.first;
   return result;
@@ -168,7 +169,8 @@ class LogCache {
 
   static Future<void> removeByPatternAsync(String pattern) async {
     return Future(() {
-      final keysToRemove = _cache.keys.where((key) => key.contains(pattern)).toList();
+      final keysToRemove =
+          _cache.keys.where((key) => key.contains(pattern)).toList();
       for (final key in keysToRemove) {
         _cache.remove(key);
         _lastAccessTime.remove(key);
@@ -181,6 +183,111 @@ class LogCache {
     _cleanupTimer = null;
     _cache.clear();
     _lastAccessTime.clear();
+  }
+
+  static void updateLogInCache(
+      String sessionId, Map<String, dynamic> updatedLog) {
+    // 캐시의 모든 항목 확인
+    LogCache._cache.forEach((key, value) {
+      if (value is List<Map<String, dynamic>>) {
+        bool cacheModified = false;
+
+        for (var i = 0; i < value.length; i++) {
+          final group = value[i];
+          if (group.containsKey('logs')) {
+            final logs = group['logs'] as List<Map<String, dynamic>>;
+            final logIndex =
+                logs.indexWhere((log) => log['session_id'] == sessionId);
+
+            if (logIndex >= 0) {
+              cacheModified = true;
+
+              // 날짜 확인
+              final oldDate = group['date'] as String;
+              final newDateStr = updatedLog['start_time'].substring(0, 10);
+
+              if (oldDate == newDateStr) {
+                // 같은 날짜 그룹 내 업데이트
+                logs[logIndex] = updatedLog;
+              } else {
+                // 날짜 변경됨 - 항목 이동 필요
+                logs.removeAt(logIndex);
+
+                // 기존 그룹이 비었으면 제거
+                if (logs.isEmpty) {
+                  value.removeAt(i);
+                  i--; // 인덱스 조정
+                  continue;
+                }
+
+                // 새 날짜 그룹 찾기
+                int newGroupIndex =
+                    value.indexWhere((g) => g['date'] == newDateStr);
+
+                if (newGroupIndex >= 0) {
+                  // 기존 그룹에 추가
+                  (value[newGroupIndex]['logs'] as List<Map<String, dynamic>>)
+                      .add(updatedLog);
+                  // 시간순 정렬
+                  (value[newGroupIndex]['logs'] as List<Map<String, dynamic>>)
+                      .sort((a, b) => (b['start_time'] as String)
+                          .compareTo(a['start_time'] as String));
+                } else {
+                  // 새 그룹 생성
+                  value.add({
+                    'date': newDateStr,
+                    'logs': [updatedLog]
+                  });
+
+                  // 날짜순 정렬
+                  value.sort((a, b) =>
+                      (b['date'] as String).compareTo(a['date'] as String));
+                }
+              }
+            }
+          }
+        }
+
+        // 변경된 경우 타임스탬프 업데이트
+        if (cacheModified && LogCache._lastAccessTime.containsKey(key)) {
+          LogCache._lastAccessTime[key] = DateTime.now().millisecondsSinceEpoch;
+        }
+      }
+    });
+  }
+
+// 캐시에서 항목 제거 메서드
+  static void removeLogFromCache(String sessionId) {
+    LogCache._cache.forEach((key, value) {
+      if (value is List<Map<String, dynamic>>) {
+        bool cacheModified = false;
+
+        for (var i = 0; i < value.length; i++) {
+          final group = value[i];
+          if (group.containsKey('logs')) {
+            final logs = group['logs'] as List<Map<String, dynamic>>;
+            final originalLength = logs.length;
+
+            logs.removeWhere((log) => log['session_id'] == sessionId);
+
+            if (logs.length < originalLength) {
+              cacheModified = true;
+
+              // 그룹이 비어있으면 제거
+              if (logs.isEmpty) {
+                value.removeAt(i);
+                i--; // 인덱스 조정
+              }
+            }
+          }
+        }
+
+        // 변경된 경우 타임스탬프 업데이트
+        if (cacheModified && LogCache._lastAccessTime.containsKey(key)) {
+          LogCache._lastAccessTime[key] = DateTime.now().millisecondsSinceEpoch;
+        }
+      }
+    });
   }
 }
 
@@ -227,7 +334,8 @@ class IconCache {
     return image;
   }
 
-  static void preloadIcons(List<String> iconNames, double width, double height) {
+  static void preloadIcons(
+      List<String> iconNames, double width, double height) {
     for (final name in iconNames) {
       getIcon(name, width, height);
     }

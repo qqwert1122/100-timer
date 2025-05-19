@@ -11,6 +11,7 @@ import 'package:project1/models/log_filter_type.dart';
 import 'package:project1/models/paging_mode.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
+import 'package:project1/activity_logs/widgets/activity_log_bottom.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/icon_utils.dart';
@@ -37,7 +38,8 @@ class ActivityLogPage extends StatefulWidget {
   _ActivityLogPageState createState() => _ActivityLogPageState();
 }
 
-class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAliveClientMixin {
+class _ActivityLogPageState extends State<ActivityLogPage>
+    with AutomaticKeepAliveClientMixin {
   late final DatabaseService _dbService;
   late final StatsProvider _statsProvider;
   late final LogFilterService _filterService;
@@ -52,7 +54,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   static const int _scrollDebounceMs = 200; // 스크롤 이벤트 처리 간격 (밀리초)
 
   final ItemScrollController _scrollController = ItemScrollController();
-  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
   bool isProgrammaticScroll = false;
 
   int _currentWeekOffset = 0; // byWeek 전용 - type.all, type.activity
@@ -62,7 +65,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   bool _isLoadingMore = false; // 중복 실행 방지 flag
   bool _hasMoreData = true; // 추가 load flag
   bool _loadingError = false;
-  static const int _loadMoreThreshold = 3; // 스크롤 임계치 설정: 리스트 하단에서 몇 개 남았을 때 로드할지 결정
+  static const int _loadMoreThreshold =
+      3; // 스크롤 임계치 설정: 리스트 하단에서 몇 개 남았을 때 로드할지 결정
   static const int _maxStoredWeeks = 12; // 메모리에 최대 유지할 주차 수 (예, 12주치 데이터)
 
   DateTime? _earliestSessionDate;
@@ -71,7 +75,9 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   String? _selectedActivityName;
   DateTimeRange? _selectedDateRange;
   List<Map<String, dynamic>> _activities = []; // 활동 목록 저장
-  bool get _isFilterApplied => _selectedActivityName != null || _selectedDateRange != null; // 필터 적용 여부 확인
+  bool get _isFilterApplied =>
+      _selectedActivityName != null ||
+      _selectedDateRange != null; // 필터 적용 여부 확인
   bool get _isActivityFiltered => _selectedActivityName != null; // 필터 적용 여부 확인
   bool get isDateFiltered => _selectedDateRange != null; // 필터 적용 여부 확인
   ActivityLogFilter _currentFilter = ActivityLogFilter.all();
@@ -129,7 +135,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
 
   Future<void> _loadInitialData() async {
     try {
-      // 필수 데이터 먼저 로드
+      // 가장 오래된 세션의 날짜 조회
       _earliestSessionDate = await _dbService.getEarliestSessionDate();
 
       // UI가 준비되면 로그 로드 시작
@@ -153,8 +159,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     int loadedCount = 0;
 
     // 첫 배치 로드 (지연 없이)
-    for (int groupIndex = 0; groupIndex < min(2, groupedLogs.length); groupIndex++) {
-      final logs = groupedLogs[groupIndex]['logs'] as List<Map<String, dynamic>>;
+    for (int groupIndex = 0;
+        groupIndex < min(2, groupedLogs.length);
+        groupIndex++) {
+      final logs =
+          groupedLogs[groupIndex]['logs'] as List<Map<String, dynamic>>;
       for (int i = 0; i < min(5, logs.length); i++) {
         _loadedLogItems[logs[i]['session_id']] = true;
         loadedCount++;
@@ -241,40 +250,54 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   }
 
   void refreshCurrentFilter() {
-    if (_selectedActivityName != null && _selectedDateRange != null) {
-      _currentFilter = ActivityLogFilter.combined(_selectedActivityName!, _selectedDateRange!);
-    } else if (_selectedDateRange != null) {
+    final hasActivity =
+        _selectedActivityName != null && _selectedActivityName!.isNotEmpty;
+    final hasDateRange = _selectedDateRange != null;
+
+    if (hasActivity && hasDateRange) {
+      _currentFilter = ActivityLogFilter.combined(
+          _selectedActivityName!, _selectedDateRange!);
+    } else if (hasDateRange) {
       _currentFilter = ActivityLogFilter.dateRange(_selectedDateRange!);
-    } else if (_selectedActivityName != null) {
+    } else if (hasActivity) {
       _currentFilter = ActivityLogFilter.activity(_selectedActivityName!);
     } else {
       _currentFilter = ActivityLogFilter.all();
     }
   }
 
-  Future<void> _loadEarliestAndFirstLogs() async {
-    _earliestSessionDate = await _dbService.getEarliestSessionDate();
-    await _initializeLogs(isInitialLoad: true);
-  }
-
   Future<void> _initializeLogs({bool isInitialLoad = false}) async {
-    if (_isLoadingMore && !isInitialLoad) return; // 중복 방지
+    print("=== _initializeLogs 시작 (isInitialLoad: $isInitialLoad) ===");
+    print("현재 필터 타입: ${_currentFilter.type}");
+
+    if (_isLoadingMore && !isInitialLoad) {
+      print("이미 로딩 중이므로 종료");
+      return;
+    }
+    ; // 중복 방지
+
     refreshCurrentFilter(); // 필터 확정
+    print("refreshCurrentFilter() 호출 후 필터 타입: ${_currentFilter.type}");
 
     setState(() {
       if (isInitialLoad) {
         _isLoadingMore = true;
+
+        print("초기 로드 상태 설정: _isLoadingMore = true");
       }
     });
     try {
       final mode = getPagingMode(_currentFilter.type);
 
+      print("페이징 모드: $mode");
       // 무거운 작업을 비동기로 실행
       await Future(() async {
         if (mode == PagingMode.byWeek) {
           await _loadByWeek(isInitialLoad: isInitialLoad);
+          print("byWeek 모드로 로드 시작");
         } else {
           await _loadByCount(isInitialLoad: isInitialLoad);
+          print("byCount 모드로 로드 시작");
         }
       });
     } catch (e) {
@@ -327,6 +350,24 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         }
       }
 
+      logger.d('_earliestSessionDate: $_earliestSessionDate');
+
+      if (!isInitialLoad && _earliestSessionDate != null) {
+        // 현재 주차의 시작 날짜 계산
+        final now = DateTime.now();
+        final currentWeekStart = now.subtract(
+            Duration(days: (-_currentWeekOffset) * 7 + now.weekday - 1));
+
+        // 현재 주차 시작이 가장 오래된 세션보다 이전인지 확인
+        if (currentWeekStart.isBefore(_earliestSessionDate!)) {
+          setState(() {
+            _hasMoreData = false;
+            _isLoadingMore = false;
+          });
+          return; // 더 이상 데이터가 없으므로 로드 중단
+        }
+      }
+
       final String cacheKey = 'week_${_currentFilter.type}_$_currentWeekOffset';
       List<Map<String, dynamic>> grouped;
 
@@ -342,7 +383,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         // 데이터 로드 전에 불필요한 연산 지연
         final logData = await Future(() async {
           // 데이터베이스 쿼리를 별도 격리
-          final result = await _filterService.getLogsForFilter(_currentFilter, _currentWeekOffset);
+          final result = await _filterService.getLogsForFilter(
+              _currentFilter, _currentWeekOffset);
           // UI 응답성을 위한 짧은 지연
           await Future.delayed(const Duration(milliseconds: 16));
           return result;
@@ -401,7 +443,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         groupedAll = LogCache.retrieve(cacheKey)!;
       } else {
         // 전체 범위 한 번만 쿼리 후 백그라운드에서 처리
-        final allLogs = await _filterService.getLogsForFilter(_currentFilter, 0);
+        final allLogs =
+            await _filterService.getLogsForFilter(_currentFilter, 0);
         groupedAll = await compute(computeGroupLogs, allLogs);
 
         // 캐시에 저장
@@ -498,8 +541,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     required bool isInitialLoad,
   }) {
     final positions = _itemPositionsListener.itemPositions.value;
-    final int visibleIndex = positions.isNotEmpty ? positions.map((e) => e.index).reduce(min) : 0;
-    final String? visibleDate = visibleIndex < groupedLogs.length ? groupedLogs[visibleIndex]['date'] : null;
+    final int visibleIndex =
+        positions.isNotEmpty ? positions.map((e) => e.index).reduce(min) : 0;
+    final String? visibleDate = visibleIndex < groupedLogs.length
+        ? groupedLogs[visibleIndex]['date']
+        : null;
 
     setState(() {
       if (isInitialLoad) {
@@ -562,7 +608,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   }
 
   void _onScroll() {
-    if (isProgrammaticScroll || _itemPositionsListener.itemPositions.value.isEmpty) return;
+    if (isProgrammaticScroll ||
+        _itemPositionsListener.itemPositions.value.isEmpty) return;
     // 이미 활성화된 디바운스가 있다면 무시
     if (_scrollDebounce?.isActive ?? false) return;
 
@@ -587,7 +634,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
 
     // reduce 사용을 피하여 루프로 구현 (성능 개선)
     for (final position in positions) {
-      final itemMiddle = (position.itemLeadingEdge + position.itemTrailingEdge) / 2;
+      final itemMiddle =
+          (position.itemLeadingEdge + position.itemTrailingEdge) / 2;
       final distance = (itemMiddle - screenMiddle).abs();
 
       if (distance < closestDistance) {
@@ -764,8 +812,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     final now = DateTime.now();
     final isSameYear = dateTime.year == now.year;
     final timeFormatter = DateFormat('a h시 mm분');
-    final dateFormatter = isSameYear ? DateFormat('M월 d일') : DateFormat('yyyy년 M월 d일');
-    String formattedTime = timeFormatter.format(dateTime).replaceAll('AM', '오전').replaceAll('PM', '오후');
+    final dateFormatter =
+        isSameYear ? DateFormat('M월 d일') : DateFormat('yyyy년 M월 d일');
+    String formattedTime = timeFormatter
+        .format(dateTime)
+        .replaceAll('AM', '오전')
+        .replaceAll('PM', '오후');
 
     final result = '${dateFormatter.format(dateTime)} $formattedTime';
 
@@ -788,33 +840,6 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     if (minutes > 0) formattedTime += ' $minutes분';
     if (remainingSeconds > 0) formattedTime += ' $remainingSeconds초';
     return formattedTime.trim();
-  }
-
-  Future<void> _deleteLog(String sessionId) async {
-    final shouldDelete = await _showDeleteConfirmationDialog();
-    if (shouldDelete) {
-      try {
-        await _dbService.deleteSession(sessionId);
-        LogCache.clear(); // 캐시 초기화
-        await _refreshLogs();
-        Fluttertoast.showToast(
-          msg: "로그가 삭제되었습니다.",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.TOP,
-          backgroundColor: Colors.redAccent,
-          textColor: Colors.white,
-        );
-      } catch (e) {
-        debugPrint('로그 삭제 중 오류 발생: $e');
-        Fluttertoast.showToast(
-          msg: "로그 삭제 중 오류가 발생했습니다.",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.TOP,
-          backgroundColor: Colors.redAccent,
-          textColor: Colors.white,
-        );
-      }
-    }
   }
 
   void _onDateRangeSelected(DateTimeRange? dateRange) async {
@@ -878,7 +903,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       _isLoadingMore = true; // 로딩 표시
       selectedDay = '';
     });
-    await _applyFilter(clearActivityName: true, clearDateRange: true, isRefreshNeeded: true);
+    await _applyFilter(
+        clearActivityName: true, clearDateRange: true, isRefreshNeeded: true);
 
     // 검색 필드 초기화
     if (mounted) {
@@ -899,6 +925,138 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       total += (group['logs'] as List).length;
     }
     return total;
+  }
+
+  Future<void> _editActivityLog(String sessionId) async {
+    final updatedLog = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => EditActivityLogModal(
+        sessionId: sessionId,
+      ),
+    );
+
+    if (updatedLog != null) {
+      _updateSingleLogItem(sessionId, updatedLog);
+    }
+  }
+
+  void _updateSingleLogItem(String sessionId, Map<String, dynamic> updatedLog) {
+    setState(() {
+      // 1. UI 데이터 업데이트 (groupedLogs)
+      bool found = false;
+
+      for (var i = 0; i < groupedLogs.length; i++) {
+        final logs = groupedLogs[i]['logs'] as List<Map<String, dynamic>>;
+        final logIndex =
+            logs.indexWhere((log) => log['session_id'] == sessionId);
+
+        if (logIndex >= 0) {
+          found = true;
+
+          // 날짜 확인
+          final oldDate = groupedLogs[i]['date'] as String;
+          final newDateStr = updatedLog['start_time'].substring(0, 10);
+
+          if (oldDate == newDateStr) {
+            // 같은 날짜 그룹 내 업데이트
+            logs[logIndex] = updatedLog;
+          } else {
+            // 날짜 변경됨 - 항목 이동 필요
+            logs.removeAt(logIndex);
+
+            // 기존 그룹이 비었으면 제거
+            if (logs.isEmpty) {
+              groupedLogs.removeAt(i);
+            }
+
+            // 새 날짜 그룹 찾기
+            int newGroupIndex =
+                groupedLogs.indexWhere((g) => g['date'] == newDateStr);
+
+            if (newGroupIndex >= 0) {
+              // 기존 그룹에 추가
+              (groupedLogs[newGroupIndex]['logs'] as List<Map<String, dynamic>>)
+                  .add(updatedLog);
+              // 시간순 정렬
+              (groupedLogs[newGroupIndex]['logs'] as List<Map<String, dynamic>>)
+                  .sort((a, b) => (b['start_time'] as String)
+                      .compareTo(a['start_time'] as String));
+            } else {
+              // 새 그룹 생성
+              groupedLogs.add({
+                'date': newDateStr,
+                'logs': [updatedLog]
+              });
+
+              // 날짜순 정렬
+              groupedLogs.sort((a, b) =>
+                  (b['date'] as String).compareTo(a['date'] as String));
+            }
+
+            // 요일 인덱스 맵 업데이트
+            dayToIndexMap = _calculateDayToIndexMap();
+          }
+          break;
+        }
+      }
+
+      // 2. 캐시 업데이트
+      if (found) {
+        LogCache.updateLogInCache(sessionId, updatedLog);
+      }
+    });
+  }
+
+  Future<void> _deleteLog(String sessionId) async {
+    final shouldDelete = await _showDeleteConfirmationDialog();
+    if (shouldDelete) {
+      try {
+        await _dbService.deleteSession(sessionId);
+        _removeSingleLogItem(sessionId);
+        Fluttertoast.showToast(
+          msg: "로그가 삭제되었습니다.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.redAccent,
+          textColor: Colors.white,
+        );
+      } catch (e) {
+        debugPrint('로그 삭제 중 오류 발생: $e');
+        Fluttertoast.showToast(
+          msg: "로그 삭제 중 오류가 발생했습니다.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.redAccent,
+          textColor: Colors.white,
+        );
+      }
+    }
+  }
+
+  void _removeSingleLogItem(String sessionId) {
+    setState(() {
+      // 1. UI 데이터에서 제거
+      for (var i = 0; i < groupedLogs.length; i++) {
+        final logs = groupedLogs[i]['logs'] as List<Map<String, dynamic>>;
+        final originalLength = logs.length;
+
+        logs.removeWhere((log) => log['session_id'] == sessionId);
+
+        // 항목이 제거되었는지 확인
+        if (logs.length < originalLength) {
+          // 그룹이 비어있으면 제거
+          if (logs.isEmpty) {
+            groupedLogs.removeAt(i);
+            // 요일 인덱스 맵 업데이트
+            dayToIndexMap = _calculateDayToIndexMap();
+          }
+          break;
+        }
+      }
+
+      // 2. 캐시에서 제거
+      LogCache.removeLogFromCache(sessionId);
+    });
   }
 
   Future<bool> _showDeleteConfirmationDialog() async {
@@ -968,11 +1126,16 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
             ),
             child: Container(
               padding: context.paddingHorizXS,
-              decoration: isSelected ? const BoxDecoration(shape: BoxShape.circle, color: Colors.redAccent) : null,
+              decoration: isSelected
+                  ? const BoxDecoration(
+                      shape: BoxShape.circle, color: Colors.redAccent)
+                  : null,
               child: Text(
                 daysOfWeek[index],
                 style: AppTextStyles.getBody(context).copyWith(
-                  color: isSelected ? Colors.white : AppColors.textPrimary(context),
+                  color: isSelected
+                      ? Colors.white
+                      : AppColors.textPrimary(context),
                 ),
               ),
             ),
@@ -1031,13 +1194,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     // 현재 검색 작업 취소
     _searchProcessor.cancelCurrentSearch();
 
-    if (mounted) {
-      setState(() {
-        searchController.clear();
-        _selectedActivityName = null;
-        refreshCurrentFilter();
-      });
-    }
+    setState(() {
+      searchController.clear();
+      _selectedActivityName = null;
+      refreshCurrentFilter();
+    });
 
     // 키보드 숨기기
     FocusScope.of(context).unfocus();
@@ -1056,6 +1217,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         if (mounted) {
           _currentWeekOffset = 0;
           await _initializeLogs(isInitialLoad: true);
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _scrollController.isAttached) {
+              _scrollController.jumpTo(index: 0);
+            }
+          });
         }
       }
     });
@@ -1075,7 +1242,9 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                   _onSearchChanged(query);
                 },
                 onSubmitted: (query) {
-                  if (_debounce?.isActive ?? false) _debounce!.cancel(); // 사용자가 엔터를 누르면 즉시 디바운스 취소 후 검색 실행
+                  if (_debounce?.isActive ?? false) {
+                    _debounce!.cancel(); // 사용자가 엔터를 누르면 즉시 디바운스 취소 후 검색 실행
+                  }
                   _searchProcessor.processSearch(
                       query: query,
                       previousQuery: _selectedActivityName,
@@ -1110,7 +1279,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                 },
                 decoration: InputDecoration(
                   hintText: "활동 이름을 검색하세요",
-                  hintStyle: AppTextStyles.getBody(context).copyWith(color: AppColors.textSecondary(context)),
+                  hintStyle: AppTextStyles.getBody(context)
+                      .copyWith(color: AppColors.textSecondary(context)),
                   border: InputBorder.none,
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide.none, // 테두리 없음
@@ -1128,7 +1298,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _searchFocusNode.hasFocus || searchController.text.isNotEmpty ? Icons.clear : Icons.search_rounded,
+                      _searchFocusNode.hasFocus ||
+                              searchController.text.isNotEmpty
+                          ? Icons.clear
+                          : Icons.search_rounded,
                     ),
                     onPressed: _clearSearch,
                   ),
@@ -1207,7 +1380,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     }
   }
 
-  Widget _buildDateGroup(String date, List<Map<String, dynamic>> logs, {required bool isFirstGroup}) {
+  Widget _buildDateGroup(String date, List<Map<String, dynamic>> logs,
+      {required bool isFirstGroup}) {
     final String dayOfWeek = _getDayOfWeek(date);
     const int initialVisibleItems = 5;
 
@@ -1240,20 +1414,30 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
             child: logs.length <= initialVisibleItems
                 // 적은 수의 로그는 바로 표시
                 ? Column(
-                    children: [for (int i = 0; i < logs.length; i++) _buildLogItem(logs[i], isFirstGroup && i == 0)],
+                    children: [
+                      for (int i = 0; i < logs.length; i++)
+                        _buildLogItem(logs[i], isFirstGroup && i == 0)
+                    ],
                   )
                 // 많은 수의 로그는 처음 일부만 표시하고 나머지는 접어두기
                 : Column(
                     children: [
                       // 처음 몇 개는 바로 표시
-                      for (int i = 0; i < initialVisibleItems; i++) _buildLogItem(logs[i], isFirstGroup && i == 0),
+                      for (int i = 0; i < initialVisibleItems; i++)
+                        _buildLogItem(logs[i], isFirstGroup && i == 0),
 
                       // 나머지는 접기
                       ExpansionTile(
-                        title: Text('${logs.length - initialVisibleItems}개 더보기'),
+                        title:
+                            Text('${logs.length - initialVisibleItems}개 더보기'),
                         shape: const Border(bottom: BorderSide.none),
                         collapsedShape: const Border(bottom: BorderSide.none),
-                        children: [for (int i = initialVisibleItems; i < logs.length; i++) _buildLogItem(logs[i], false)],
+                        children: [
+                          for (int i = initialVisibleItems;
+                              i < logs.length;
+                              i++)
+                            _buildLogItem(logs[i], false)
+                        ],
                       ),
                     ],
                   ),
@@ -1271,7 +1455,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       return _buildShimmerLogItem();
     }
 
-    final captionStyle = AppTextStyles.getCaption(context).copyWith(color: Colors.grey.shade500);
+    final captionStyle =
+        AppTextStyles.getCaption(context).copyWith(color: Colors.grey.shade500);
 
     Widget tile = RepaintBoundary(
       child: Slidable(
@@ -1282,15 +1467,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
             SlidableAction(
               onPressed: (_) {
                 HapticFeedback.lightImpact();
-                Future.microtask(() {
-                  showModalBottomSheet(
-                      context: context,
-                      builder: (ctx) => EditActivityLogModal(
-                            sessionId: log['session_id'],
-                            onUpdate: _refreshLogs,
-                            onDelete: _refreshLogs,
-                          ));
-                });
+                Future.microtask(() => _editActivityLog(log['session_id']));
               },
               backgroundColor: Colors.blueAccent,
               foregroundColor: Colors.white,
@@ -1308,13 +1485,15 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
           ],
         ),
         child: ListTile(
-          leading: IconCache.getIcon(log['activity_icon'], context.xl, context.xl),
+          leading:
+              IconCache.getIcon(log['activity_icon'], context.xl, context.xl),
           title: Row(
             children: [
               Expanded(
                 child: Text(
                   log['activity_name'] ?? '',
-                  style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.bold),
+                  style: AppTextStyles.getBody(context)
+                      .copyWith(fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
@@ -1337,7 +1516,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
               _buildInfoRow('시작', formatDate(log['start_time']), captionStyle),
 
               // 종료 시간
-              _buildInfoRow('종료', log['end_time'] != null ? formatDate(log['end_time']) : "진행 중", captionStyle),
+              _buildInfoRow(
+                  '종료',
+                  log['end_time'] != null
+                      ? formatDate(log['end_time'])
+                      : "진행 중",
+                  captionStyle),
 
               // 소요 시간 (있는 경우만)
               if (log['duration'] != null)
@@ -1345,7 +1529,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                   padding: const EdgeInsets.only(top: 10, bottom: 10),
                   child: Row(
                     children: [
-                      const Icon(Icons.play_circle_fill_rounded, color: Colors.grey, size: 18),
+                      const Icon(Icons.play_circle_fill_rounded,
+                          color: Colors.grey, size: 18),
                       const SizedBox(width: 3),
                       Text(
                         formatTime((log['duration'] as int)),
@@ -1454,40 +1639,6 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     );
   }
 
-  Widget _buildBottomWidget() {
-    if (_isLoadingMore) {
-      return SizedBox();
-    } else if (_loadingError) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Center(
-          child: Column(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.redAccent),
-              const SizedBox(height: 8),
-              const Text('데이터 로드 중 오류 발생'),
-              TextButton(
-                onPressed: _loadMoreData,
-                child: const Text('다시 시도'),
-              ),
-            ],
-          ),
-        ),
-      );
-    } else if (!_hasMoreData) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Center(
-          child: Text(
-            '마지막 기록입니다',
-            style: AppTextStyles.getCaption(context),
-          ),
-        ),
-      );
-    }
-    return const SizedBox.shrink();
-  }
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -1534,7 +1685,9 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                         child: Icon(
                           LucideIcons.calendarDays,
                           size: context.lg,
-                          color: isDateFiltered ? AppColors.primary(context) : AppColors.textPrimary(context),
+                          color: isDateFiltered
+                              ? AppColors.primary(context)
+                              : AppColors.textPrimary(context),
                         )),
                   ),
                 ),
@@ -1571,20 +1724,33 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                                 itemScrollController: _scrollController,
                                 itemPositionsListener: _itemPositionsListener,
                                 itemCount: groupedLogs.length + 1,
-                                initialScrollIndex: dayToIndexMap[selectedDay] ?? 0,
-                                minCacheExtent: MediaQuery.of(context).size.height * 1.5,
+                                initialScrollIndex:
+                                    dayToIndexMap[selectedDay] ?? 0,
+                                minCacheExtent:
+                                    MediaQuery.of(context).size.height * 1.5,
                                 itemBuilder: (context, index) {
                                   if (index == groupedLogs.length) {
-                                    return _buildBottomWidget();
+                                    return ActivityLogBottom(
+                                      isLoadingMore: _isLoadingMore,
+                                      loadingError: _loadingError,
+                                      loadMoreData: () => _loadMoreData(),
+                                      hasMoreData: _hasMoreData,
+                                    );
                                   }
 
                                   if (_isRenderOptimized) {
-                                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                                      final positions = _itemPositionsListener.itemPositions.value;
-                                      final visibleIndices = positions.map((pos) => pos.index).toList();
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      final positions = _itemPositionsListener
+                                          .itemPositions.value;
+                                      final visibleIndices = positions
+                                          .map((pos) => pos.index)
+                                          .toList();
 
                                       // 화면에 표시된 항목과 주변 항목 로드 우선순위 지정
-                                      if (visibleIndices.contains(index) || visibleIndices.any((i) => (i - index).abs() <= 2)) {
+                                      if (visibleIndices.contains(index) ||
+                                          visibleIndices.any(
+                                              (i) => (i - index).abs() <= 2)) {
                                         _loadLogItemsForGroup(index);
                                       }
                                     });
@@ -1592,9 +1758,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
 
                                   final logGroup = groupedLogs[index];
                                   final date = logGroup['date'] as String;
-                                  final logs = logGroup['logs'] as List<Map<String, dynamic>>;
+                                  final logs = logGroup['logs']
+                                      as List<Map<String, dynamic>>;
                                   final isFirstGroup = index == 0;
-                                  return _buildDateGroup(date, logs, isFirstGroup: isFirstGroup);
+                                  return _buildDateGroup(date, logs,
+                                      isFirstGroup: isFirstGroup);
                                 },
                               ),
                             ),
