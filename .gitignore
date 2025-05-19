@@ -45,4 +45,10 @@ app.*.map.json
 /android/app/release
 android/key.properties
 *.jks
+android/app/.cxx/
+
+# ios
+ios/build/
+ios/DerivedData/
+ios/XCBuildData/
 
