@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:project1/utils/database_service.dart';
@@ -403,6 +404,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   void _onAppResumed() async {
     logger.d('_onAppResumed called');
     try {
+      await AwesomeNotifications().resetGlobalBadge();
+
       DateTime now = DateTime.now();
       String weekStart = getWeekStart(now);
 

@@ -257,7 +257,8 @@ class NotificationService {
 
   // 알림 액션 수신 핸들러 (정적 메서드)
   static Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
-    // 사용자가 알림을 탭했을 때 특별한 동작 없음
+    // 사용자가 알림을 탭했을 때 뱃지 초기화
+    await AwesomeNotifications().resetGlobalBadge();
   }
 
   // 알림 생성 핸들러 (정적 메서드)

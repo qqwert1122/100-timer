@@ -29,7 +29,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
   List<Map<String, dynamic>> pomodoroItems = [
     {
       'title': '30',
-      'value': 1800,
+      'value': 10,
       'maxCount': 5,
       'currentCount': 0,
       'gradientColors': [Colors.greenAccent, Colors.yellow],
@@ -127,9 +127,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
               height: context.wp(2),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: index < currentCount
-                    ? Colors.white
-                    : Colors.white.withValues(alpha: 0.3),
+                color: index < currentCount ? Colors.white : Colors.white.withValues(alpha: 0.3),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.5),
                   width: 1,
@@ -185,8 +183,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                           children: [
                             Text(
                               item['title'],
-                              style: AppTextStyles.getTimeDisplay(context)
-                                  .copyWith(
+                              style: AppTextStyles.getTimeDisplay(context).copyWith(
                                 color: Colors.white,
                                 fontFamily: 'chab',
                               ),
