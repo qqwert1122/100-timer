@@ -136,6 +136,16 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       if (mounted) {
         await _initializeLogs(isInitialLoad: true);
       }
+
+      if (groupedLogs.isEmpty) {
+        while (_hasMoreData) {
+          setState(() => _isLoadingMore = false);
+          await _loadMoreData();
+
+          // 데이터를 찾았거나 더 이상 데이터가 없으면 중단
+          if (!_hasMoreData || groupedLogs.isNotEmpty) break;
+        }
+      }
     } catch (e) {
       logger.e('초기 데이터 로드 오류: $e');
       if (mounted) {
@@ -397,8 +407,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       }
 
       _hasMoreData = true;
-      logger.d('loadByWeek 종료');
-    } catch (e, s) {
+    } catch (e) {
       logger.e('e : $e');
       _loadingError = true;
     } finally {
