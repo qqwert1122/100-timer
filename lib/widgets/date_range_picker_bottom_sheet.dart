@@ -210,9 +210,15 @@ class _DateRangePickerBottomSheetState extends State<DateRangePickerBottomSheet>
               });
             },
             onRangeSelected: (start, end, focusDay) {
+              final localStart = start != null
+                  ? DateTime(start.year, start.month, start.day) // 이렇게 하면 isUtc가 false인 로컬 시간 객체가 생성됩니다
+                  : null;
+
+              final localEnd = end != null ? DateTime(end.year, end.month, end.day) : localStart; // start와 동일하게 설정
+
               setState(() {
-                tempRangeStart = start;
-                tempRangeEnd = end ?? start; // null이면 start와 동일하게 설정
+                tempRangeStart = localStart;
+                tempRangeEnd = localEnd ?? localStart; // null이면 start와 동일하게 설정
                 focusedDay = focusDay;
               });
             },
@@ -379,6 +385,7 @@ class _DateRangePickerBottomSheetState extends State<DateRangePickerBottomSheet>
         );
         return;
       }
+
       Navigator.of(context).pop(
         DateTimeRange(
           start: tempRangeStart!,

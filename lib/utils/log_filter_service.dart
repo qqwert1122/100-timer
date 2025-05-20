@@ -20,7 +20,7 @@ class LogFilterService {
       case LogFilterType.dateRange:
         return await databaseService.getSessionsWithinDateRange(
           startDate: filter.dateRange!.start.toUtc(),
-          endDate: filter.dateRange!.end.add(const Duration(days: 1)).subtract(const Duration(seconds: 1)).toUtc(),
+          endDate: filter.dateRange!.end.add(const Duration(days: 1)).toUtc(),
         );
 
       case LogFilterType.activity:
@@ -32,7 +32,7 @@ class LogFilterService {
       case LogFilterType.combined:
         return await databaseService.getSessionsWithinDateRangeAndActivityName(
           startDate: filter.dateRange!.start.toUtc(),
-          endDate: filter.dateRange!.end.add(const Duration(days: 1)).subtract(const Duration(seconds: 1)).toUtc(),
+          endDate: filter.dateRange!.end.add(const Duration(days: 1)).toUtc(),
           activityName: filter.activityName!,
         );
     }

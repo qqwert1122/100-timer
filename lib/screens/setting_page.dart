@@ -43,6 +43,7 @@ class _SettingPageState extends State<SettingPage> {
   // admob 광고
   BannerAd? _bannerAd1;
   bool _isAdLoaded1 = false;
+
   String getBannerAdUnitId() {
     if (Platform.isAndroid) {
       return 'ca-app-pub-9503898094962699/7778551117';

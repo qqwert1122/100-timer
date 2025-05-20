@@ -241,6 +241,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   }
 
   void refreshCurrentFilter() {
+    logger.d('필터 타입 변경: ${_currentFilter.type}');
+
     final hasActivity = _selectedActivityName != null && _selectedActivityName!.isNotEmpty;
     final hasDateRange = _selectedDateRange != null;
 
@@ -256,6 +258,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   }
 
   Future<void> _initializeLogs({bool isInitialLoad = false}) async {
+    logger.d('_initializeLogs 호출됨(isInitialLoad: $isInitialLoad), 현재 필터: ${_currentFilter.type}');
+
     if (_isLoadingMore && !isInitialLoad) {
       return;
     } // 중복 방지
@@ -419,8 +423,9 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       final String cacheKey = 'count_${_currentFilter.type}_all';
       List<Map<String, dynamic>> groupedAll;
 
-      if (LogCache.containsKey(cacheKey)) {
+      if (LogCache.containsKey(cacheKey) && LogCache.retrieve(cacheKey)!.isNotEmpty) {
         // 캐시된 데이터 사용
+
         groupedAll = LogCache.retrieve(cacheKey)!;
       } else {
         // 전체 범위 한 번만 쿼리 후 백그라운드에서 처리
@@ -669,6 +674,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   Future<void> _refreshLogs() async {
     // 현재 필터 상태 저장
     final bool wasFilterApplied = _isFilterApplied;
+    logger.d('_refreshLogs 호출됨, 현재 필터: ${_currentFilter.type}');
 
     setState(() {
       _isLoadingMore = false;
@@ -816,7 +822,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   void _onDateRangeSelected(DateTimeRange? dateRange) async {
     if (dateRange == null) return;
 
-    logger.d('날짜 범위 선택됨: $dateRange');
+    logger.d('날짜 범위 선택: $dateRange, 현재 활동명: $_selectedActivityName');
     try {
       // 유효성 검사 (빠른 처리)
       if (dateRange.start.isAfter(dateRange.end)) {
@@ -1382,7 +1388,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
 
                       // 나머지는 접기
                       ExpansionTile(
-                        title: Text('${logs.length - initialVisibleItems}개 더보기'),
+                        title: Text(
+                          '${logs.length - initialVisibleItems}개 더보기',
+                          style: AppTextStyles.getBody(context),
+                        ),
                         shape: const Border(bottom: BorderSide.none),
                         collapsedShape: const Border(bottom: BorderSide.none),
                         children: [for (int i = initialVisibleItems; i < logs.length; i++) _buildLogItem(logs[i], false)],
