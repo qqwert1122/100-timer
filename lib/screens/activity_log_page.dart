@@ -581,6 +581,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       }
       _manageMemoryUsage(visibleDate);
     });
+
+    if (isInitialLoad && groupedLogs.isEmpty && _hasMoreData) {
+      // 다음 프레임에서 실행해 UI 블로킹 방지
+      Future.microtask(() => _loadMoreData());
+    }
   }
 
   void _manageMemoryUsage(String? visibleDate) {
