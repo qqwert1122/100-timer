@@ -53,129 +53,108 @@ class _DashboardSectionState extends State<DashboardSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          flex: 1,
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.background(context),
-            ),
-            child: Padding(
-              padding: context.paddingSM,
-              child: FutureBuilder<List<int>>(
-                // 4. 저장된 Future 사용
-                future: _statsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("활동 완료 시간", style: AppTextStyles.getTitle(context)),
-                            SizedBox(height: context.hp(1)),
-                            Shimmer.fromColors(
-                              baseColor: Colors.grey.shade300.withValues(alpha: 0.2),
-                              highlightColor: Colors.grey.shade100.withValues(alpha: 0.2),
-                              child: Container(
-                                width: context.wp(50),
-                                height: context.hp(7),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  color: AppColors.background(context),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Shimmer.fromColors(
-                          baseColor: Colors.grey.shade300.withValues(alpha: 0.2),
-                          highlightColor: Colors.grey.shade100,
-                          child: Container(
-                            width: context.wp(24),
-                            height: context.wp(24),
-                            decoration: BoxDecoration(
-                              color: AppColors.background(context),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-
-                  if (snapshot.hasError) {
-                    return const Text('에러 발생');
-                  }
-
-                  final totalDuration = snapshot.data?[0] ?? 0;
-                  final totalSeconds = snapshot.data?[1] ?? 1;
-
-                  final formattedDuration = _formatHour(totalDuration);
-                  final tagetDuration = _formatHour(totalSeconds);
-
-                  double percent = (totalDuration / totalSeconds);
-                  String percentText = (percent * 100).toStringAsFixed(0);
-                  return Row(
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.background(context),
+      ),
+      child: Padding(
+        padding: context.paddingSM,
+        child: FutureBuilder<List<int>>(
+          // 4. 저장된 Future 사용
+          future: _statsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Column(
+                children: [
+                  Center(child: Text("활동 완료 시간", style: AppTextStyles.getTitle(context))),
+                  SizedBox(height: context.hp(3)),
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("활동 완료 시간", style: AppTextStyles.getTitle(context)),
                           SizedBox(height: context.hp(1)),
-                          Row(
-                            children: [
-                              Text(
-                                formattedDuration,
-                                style: AppTextStyles.getTimeDisplay(context).copyWith(
-                                  fontFamily: 'chab',
-                                  color: Colors.redAccent,
-                                ),
+                          Shimmer.fromColors(
+                            baseColor: Colors.grey.shade300.withValues(alpha: 0.2),
+                            highlightColor: Colors.grey.shade100.withValues(alpha: 0.2),
+                            child: Container(
+                              width: context.wp(50),
+                              height: context.hp(7),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: AppColors.background(context),
                               ),
-                              SizedBox(width: context.wp(1)),
-                              Container(
-                                width: 1,
-                                height: context.hp(2),
-                                color: Colors.grey.shade400,
-                                margin: EdgeInsets.symmetric(horizontal: context.wp(1)),
-                              ),
-                              SizedBox(width: context.wp(1)),
-                              Text(
-                                '${tagetDuration}h',
-                                style: AppTextStyles.getTimeDisplay(context).copyWith(
-                                  fontFamily: 'chab',
-                                  color: Colors.grey.shade300,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
-                      CircularPercentIndicator(
-                        radius: context.wp(12),
-                        lineWidth: context.wp(5),
-                        animation: true,
-                        percent: percent.clamp(0.0, 1.0),
-                        center: Text(
-                          '$percentText %',
-                          style: AppTextStyles.getCaption(context),
+                      Shimmer.fromColors(
+                        baseColor: Colors.grey.shade300.withValues(alpha: 0.2),
+                        highlightColor: Colors.grey.shade100,
+                        child: Container(
+                          width: context.wp(24),
+                          height: context.wp(24),
+                          decoration: BoxDecoration(
+                            color: AppColors.background(context),
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                        circularStrokeCap: CircularStrokeCap.round,
-                        progressColor: Colors.redAccent,
-                        backgroundColor: AppColors.backgroundSecondary(context),
                       ),
                     ],
-                  );
-                },
-              ),
-            ),
-          ),
+                  ),
+                ],
+              );
+            }
+
+            if (snapshot.hasError) {
+              return const Text('에러 발생');
+            }
+
+            final totalDuration = snapshot.data?[0] ?? 0;
+            final totalSeconds = snapshot.data?[1] ?? 1;
+
+            final formattedDuration = _formatHour(totalDuration);
+            final tagetDuration = _formatHour(totalSeconds);
+
+            double percent = (totalDuration / totalSeconds);
+            String percentText = (percent * 100).toStringAsFixed(0);
+            return Column(
+              children: [
+                Text("활동 완료 시간", style: AppTextStyles.getTitle(context)),
+                SizedBox(height: context.hp(1)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      formattedDuration,
+                      style: AppTextStyles.getTimeDisplay(context).copyWith(
+                        fontFamily: 'chab',
+                        color: Colors.redAccent,
+                      ),
+                    ),
+                    SizedBox(width: context.wp(1)),
+                    Container(
+                      width: 1,
+                      height: context.hp(2),
+                      color: Colors.grey.shade400,
+                      margin: EdgeInsets.symmetric(horizontal: context.wp(1)),
+                    ),
+                    SizedBox(width: context.wp(1)),
+                    Text(
+                      '${tagetDuration}h',
+                      style: AppTextStyles.getTimeDisplay(context).copyWith(
+                        fontFamily: 'chab',
+                        color: Colors.grey.shade300,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
-      ],
+      ),
     );
   }
 }
