@@ -145,8 +145,7 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
         ),
       ];
 
-  Widget buildTotalSecondsCard(
-      BuildContext context, TotalSecondsCardData card, int index) {
+  Widget buildTotalSecondsCard(BuildContext context, TotalSecondsCardData card, int index) {
     return Card(
       color: AppColors.background(context),
       margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -162,22 +161,24 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                 SizedBox(height: context.hp(1)),
                 Row(
                   children: [
-                    Text(
-                      card.title,
-                      style: AppTextStyles.getHeadline(context).copyWith(
-                        fontWeight: FontWeight.w900,
-                        fontFamily: 'neo',
+                    Flexible(
+                      child: Text(
+                        card.title,
+                        style: AppTextStyles.getHeadline(context).copyWith(
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'neo',
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                     SizedBox(width: context.wp(2)),
-                    card.value == currentTotalSeconds &&
-                            currentTotalSeconds != upComingTotalSeconds
+                    card.value == currentTotalSeconds && currentTotalSeconds != upComingTotalSeconds
                         ? Row(
                             children: [
                               Text(
                                 '이번주만 선택',
-                                style:
-                                    AppTextStyles.getCaption(context).copyWith(
+                                style: AppTextStyles.getCaption(context).copyWith(
                                   color: Colors.blueAccent,
                                   letterSpacing: -0.3,
                                 ),
@@ -191,14 +192,12 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                             ],
                           )
                         : const SizedBox(),
-                    card.value == upComingTotalSeconds &&
-                            currentTotalSeconds != upComingTotalSeconds
+                    card.value == upComingTotalSeconds && currentTotalSeconds != upComingTotalSeconds
                         ? Row(
                             children: [
                               Text(
                                 '다음 주 예정',
-                                style:
-                                    AppTextStyles.getCaption(context).copyWith(
+                                style: AppTextStyles.getCaption(context).copyWith(
                                   color: Colors.deepPurple,
                                   letterSpacing: -0.3,
                                 ),
@@ -212,14 +211,12 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                             ],
                           )
                         : const SizedBox(),
-                    card.value == currentTotalSeconds &&
-                            currentTotalSeconds == upComingTotalSeconds
+                    card.value == currentTotalSeconds && currentTotalSeconds == upComingTotalSeconds
                         ? Row(
                             children: [
                               Text(
                                 '선택됨',
-                                style:
-                                    AppTextStyles.getCaption(context).copyWith(
+                                style: AppTextStyles.getCaption(context).copyWith(
                                   color: Colors.redAccent,
                                   letterSpacing: -0.3,
                                 ),
@@ -247,58 +244,27 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
               width: double.infinity,
               child: Stack(
                 children: [
-                  Positioned(
-                    left: 0,
-                    top: 0,
-                    child: Opacity(
-                      opacity: 0.3,
-                      child: Image.asset(
-                        getIconImage(card.emoji),
-                        width: context.wp(12),
-                        height: context.wp(12),
-                        fit: BoxFit.contain,
+                  ...List.generate(4, (index) {
+                    // 위치 설정 (0: 좌상, 1: 우상, 2: 좌하, 3: 우하)
+                    final isLeft = index == 0 || index == 2;
+                    final isTop = index == 0 || index == 1;
+
+                    return Positioned(
+                      left: isLeft ? 0 : null,
+                      right: !isLeft ? 0 : null,
+                      top: isTop ? 0 : null,
+                      bottom: !isTop ? 0 : null,
+                      child: Opacity(
+                        opacity: 0.3,
+                        child: Image.asset(
+                          getIconImage(card.emoji),
+                          width: context.wp(12),
+                          height: context.wp(12),
+                          fit: BoxFit.contain,
+                        ),
                       ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 0,
-                    bottom: 0,
-                    child: Opacity(
-                      opacity: 0.3,
-                      child: Image.asset(
-                        getIconImage(card.emoji),
-                        width: context.wp(12),
-                        height: context.wp(12),
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Opacity(
-                      opacity: 0.3,
-                      child: Image.asset(
-                        getIconImage(card.emoji),
-                        width: context.wp(12),
-                        height: context.wp(12),
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Opacity(
-                      opacity: 0.3,
-                      child: Image.asset(
-                        getIconImage(card.emoji),
-                        width: context.wp(12),
-                        height: context.wp(12),
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
+                    );
+                  }),
                   Align(
                     alignment: Alignment.center,
                     child: Opacity(
@@ -324,9 +290,7 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                       changeThisWeekTotalSeconds(index);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: currentTotalSeconds == card.value
-                          ? AppColors.backgroundSecondary(context)
-                          : Colors.blueAccent,
+                      backgroundColor: currentTotalSeconds == card.value ? AppColors.backgroundSecondary(context) : Colors.blueAccent,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -335,9 +299,7 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                     label: Text(
                       '이번주만 바꾸기',
                       style: AppTextStyles.getBody(context).copyWith(
-                        color: currentTotalSeconds == card.value
-                            ? AppColors.textSecondary(context)
-                            : Colors.white,
+                        color: currentTotalSeconds == card.value ? AppColors.textSecondary(context) : Colors.white,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -353,9 +315,7 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                       changePrefTotalSeconds(index);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: upComingTotalSeconds == card.value
-                          ? AppColors.backgroundSecondary(context)
-                          : Colors.deepPurple,
+                      backgroundColor: upComingTotalSeconds == card.value ? AppColors.backgroundSecondary(context) : Colors.deepPurple,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -364,9 +324,7 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                     label: Text(
                       '이번주부터 쭉 바꾸기',
                       style: AppTextStyles.getBody(context).copyWith(
-                        color: upComingTotalSeconds == card.value
-                            ? AppColors.textSecondary(context)
-                            : Colors.white,
+                        color: upComingTotalSeconds == card.value ? AppColors.textSecondary(context) : Colors.white,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -417,9 +375,7 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                         color: AppColors.background(context),
                         borderRadius: BorderRadius.circular(50),
                       ),
-                      child: Icon(LucideIcons.x,
-                          size: context.xl,
-                          color: AppColors.textPrimary(context)),
+                      child: Icon(LucideIcons.x, size: context.xl, color: AppColors.textPrimary(context)),
                     ),
                   ),
                   SizedBox(height: context.hp(2)),
@@ -431,8 +387,7 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
                         height: context.hp(50),
                         width: double.infinity,
                         margin: const EdgeInsets.symmetric(horizontal: 8),
-                        child: buildTotalSecondsCard(
-                            context, _cards[index], index),
+                        child: buildTotalSecondsCard(context, _cards[index], index),
                       ),
                     ),
                   ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
 import 'package:intl/intl.dart';
+import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/stats_provider.dart';
@@ -28,6 +29,9 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
       }
     });
   }
+
+  List<String> lightModeColor = ["#F5F5F5", "#CFFF8D", "#9CFF2E", "#38E54D", "#06D001"];
+  List<String> darkModeColor = ["#424242", "#113311", "#0B4B0B", "#057505", "#00AA00"];
 
   @override
   Widget build(BuildContext context) {
@@ -70,13 +74,13 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
                   datasets: datasets,
                   colorMode: ColorMode.color,
                   colorsets: {
-                    0: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
-                    1: ColorService.hexToColor("#32CD32").withValues(alpha: 0.25),
-                    2: ColorService.hexToColor("#32CD32").withValues(alpha: 0.5),
-                    3: ColorService.hexToColor("#32CD32").withValues(alpha: 0.75),
-                    4: ColorService.hexToColor("#32CD32").withValues(alpha: 1),
+                    0: ColorService.hexToColor(isDarkMode ? darkModeColor[0] : lightModeColor[0]),
+                    1: ColorService.hexToColor(isDarkMode ? darkModeColor[1] : lightModeColor[1]),
+                    2: ColorService.hexToColor(isDarkMode ? darkModeColor[2] : lightModeColor[2]),
+                    3: ColorService.hexToColor(isDarkMode ? darkModeColor[3] : lightModeColor[3]),
+                    4: ColorService.hexToColor(isDarkMode ? darkModeColor[4] : lightModeColor[4]),
                   },
-                  defaultColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+                  defaultColor: AppColors.backgroundSecondary(context),
                   textColor: isDarkMode ? Colors.white70 : Colors.black87,
                   showColorTip: false,
                   size: squareSize,
@@ -131,9 +135,7 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
           width: 12,
           height: 12,
           decoration: BoxDecoration(
-            color: level == 0
-                ? (isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200)
-                : ColorService.hexToColor("#32CD32").withValues(alpha: level * 0.25),
+            color: ColorService.hexToColor(isDarkMode ? darkModeColor[level] : lightModeColor[level]),
             borderRadius: BorderRadius.circular(2),
           ),
         ),

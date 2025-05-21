@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:project1/utils/responsive_size.dart';
 
 class ToggleTotalViewSwtich extends StatefulWidget {
   final bool value;
@@ -83,16 +85,17 @@ class _ToggleTotalViewSwtich extends State<ToggleTotalViewSwtich> with SingleTic
                   shape: BoxShape.circle,
                   color: Colors.white,
                 ),
-                child: FadeTransition(
-                  opacity: _iconOpacity,
-                  child: widget.value
-                      ? const Icon(
-                          Icons.bar_chart,
-                          color: Colors.blueAccent,
-                          size: 20,
-                        )
-                      : const SizedBox.shrink(),
-                ),
+                child: widget.value
+                    ? Icon(
+                        LucideIcons.maximize2,
+                        color: Colors.blueAccent,
+                        size: context.md,
+                      )
+                    : Icon(
+                        LucideIcons.minimize2,
+                        color: Colors.grey,
+                        size: context.md,
+                      ),
               ),
             ),
           ],

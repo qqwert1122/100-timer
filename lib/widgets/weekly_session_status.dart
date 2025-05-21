@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:just_the_tooltip/just_the_tooltip.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/icon_utils.dart';
@@ -48,25 +51,11 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('집중 달성한 날', style: AppTextStyles.getTitle(context)),
-                            Text(
-                              '1시간 이상 이어서 집중한 날은 달성 표시가 돼요',
-                              style: AppTextStyles.getCaption(context),
-                            ),
-                          ],
-                        ),
-                        Image.asset(
-                          getIconImage('rocket'),
-                          width: context.xxxl,
-                          height: context.xxxl,
-                        ),
-                      ],
+                    Center(
+                      child: Text(
+                        '집중 달성한 날',
+                        style: AppTextStyles.getTitle(context),
+                      ),
                     ),
                     SizedBox(height: context.hp(3)),
                     Shimmer.fromColors(
@@ -111,25 +100,40 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('집중 달성한 날', style: AppTextStyles.getTitle(context)),
-                  Text(
-                    '1시간 이상 이어서 집중한 날은 달성 표시가 돼요',
-                    style: AppTextStyles.getCaption(context),
+          Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '집중 달성한 날',
+                  style: AppTextStyles.getTitle(context),
+                ),
+                const SizedBox(width: 8),
+                JustTheTooltip(
+                  backgroundColor: AppColors.textPrimary(context).withValues(alpha: 0.9),
+                  preferredDirection: AxisDirection.up,
+                  tailLength: 10.0,
+                  tailBaseWidth: 20.0,
+                  triggerMode: TooltipTriggerMode.tap,
+                  enableFeedback: true,
+                  content: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      '1시간 이상 집중한 날을 표시해요',
+                      style: TextStyle(
+                        color: AppColors.background(context),
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
-                ],
-              ),
-              Image.asset(
-                getIconImage('rocket'),
-                width: context.xxxl,
-                height: context.xxxl,
-              ),
-            ],
+                  child: Icon(
+                    LucideIcons.info,
+                    size: context.lg,
+                    color: AppColors.textSecondary(context),
+                  ),
+                ),
+              ],
+            ),
           ),
           SizedBox(height: context.hp(3)),
           Row(

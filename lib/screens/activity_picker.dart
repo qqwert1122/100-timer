@@ -489,13 +489,17 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
             title: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Text(
-                  isRecentList && activity['activity_name'].length >= 10
-                      ? '${activity['activity_name'].substring(0, 10)}...'
-                      : activity['activity_name'],
-                  style: AppTextStyles.getBody(context).copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null,
+                Flexible(
+                  child: Text(
+                    isRecentList && activity['activity_name'].length >= 10
+                        ? '${activity['activity_name'].substring(0, 10)}...'
+                        : activity['activity_name'],
+                    style: AppTextStyles.getBody(context).copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: activity['activity_name'] == widget.selectedActivity ? Colors.redAccent.shade200 : null,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
                 const SizedBox(width: 16),

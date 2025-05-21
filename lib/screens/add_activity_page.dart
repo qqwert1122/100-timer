@@ -130,7 +130,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
     if (activityName.isEmpty || iconName == null || selectedBaseColor == null) {
       Fluttertoast.showToast(
-        msg: "활동 이름을 입력하고 아이콘, 색상을 선택해주세요",
+        msg: "활동 이름을 입력하고 아이콘, 색깔을 선택해주세요",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.TOP,
         backgroundColor: Colors.redAccent.shade200,
@@ -612,7 +612,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 borderRadius: BorderRadius.circular(16.0),
               ),
               child: Text(
-                '활동을 오래할수록 색상이 점점 진해집니다.\n색상의 변화를 미리보고 마음에 드는 컬러를 선택해주세요.',
+                '활동을 오래할수록 색깔이 점점 진해집니다.\n색깔 변화를 미리보고 마음에 드는 컬러를 선택해주세요.',
                 style: AppTextStyles.getCaption(context),
               ),
             ),
@@ -621,7 +621,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
           Row(
             children: [
               Text(
-                "선택된 색상",
+                "선택된 색깔",
                 style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
               ),
               const SizedBox(
@@ -780,7 +780,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '색상을\n선택해주세요',
+                                      '색깔을\n선택해주세요',
                                       style: AppTextStyles.getTitle(context).copyWith(
                                         fontWeight: FontWeight.w900,
                                         color: Colors.blueAccent,

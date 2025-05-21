@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -140,23 +141,20 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
                                 overlayOpacity: 0.5,
                                 child: Consumer<TimerProvider>(
                                   builder: (context, provider, child) {
-                                    if (timerProvider.isWeeklyTargetExceeded) {
-                                      return Text(
-                                        _formatTime(duration),
-                                        style: AppTextStyles.getTimeDisplay(context).copyWith(
-                                          color: Colors.blueAccent,
-                                          fontFamily: 'chab',
-                                        ),
-                                      );
-                                    } else {
-                                      return Text(
-                                        provider.formattedTime,
-                                        style: AppTextStyles.getTimeDisplay(context).copyWith(
-                                          color: AppColors.primary(context),
-                                          fontFamily: 'chab',
-                                        ),
-                                      );
-                                    }
+                                    final text = timerProvider.isWeeklyTargetExceeded ? _formatTime(duration) : provider.formattedTime;
+
+                                    final textStyle = AppTextStyles.getTimeDisplay(context).copyWith(
+                                      color: timerProvider.isWeeklyTargetExceeded ? Colors.blueAccent : AppColors.primary(context),
+                                      fontFamily: 'chab',
+                                    );
+
+                                    return AutoSizeText(
+                                      text,
+                                      style: textStyle,
+                                      minFontSize: 32, // 최소 폰트 크기
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    );
                                   },
                                 ),
                               ),
@@ -172,7 +170,7 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
                               style: AppTextStyles.getCaption(context).copyWith(),
                             ),
                             circularStrokeCap: CircularStrokeCap.round,
-                            progressColor: timerProvider!.isWeeklyTargetExceeded ? Colors.blueAccent : Colors.redAccent,
+                            progressColor: timerProvider.isWeeklyTargetExceeded ? Colors.blueAccent : Colors.redAccent,
                             backgroundColor: AppColors.backgroundSecondary(context),
                           ),
                         ],
@@ -320,6 +318,8 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
                                       style: AppTextStyles.getBody(context).copyWith(
                                         fontWeight: FontWeight.w900,
                                       ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
                                     ),
                                   ),
                                 ],

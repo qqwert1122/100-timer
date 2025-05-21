@@ -4,6 +4,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:just_the_tooltip/just_the_tooltip.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
@@ -405,56 +407,12 @@ class _ChartPageState extends State<ChartPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text('히트맵', style: AppTextStyles.getTitle(context)),
-                    ],
-                  ),
-                  Text(
-                    '시간대별 활동을 색깔로 확인해요',
-                    style: AppTextStyles.getCaption(context),
-                  ),
-                ],
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  ToggleTotalViewSwtich(value: showAllHours, onChanged: _toggleShowAllHours),
-                  SizedBox(width: context.wp(4)),
-                  SizedBox(
-                    width: 25,
-                    height: 25,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        shape: const CircleBorder(),
-                        padding: EdgeInsets.zero,
-                        backgroundColor: AppColors.backgroundSecondary(context),
-                      ),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        statsProvider!.initializeHeatMapData();
-                        rerenderingHeatmap();
-                      },
-                      child: Icon(Icons.refresh, color: AppColors.textPrimary(context), size: 18),
-                    ),
-                  )
-                ],
-              ),
-            ],
-          ),
-
+          Center(child: Text('히트맵', style: AppTextStyles.getTitle(context))),
           SizedBox(height: context.hp(3)),
           // 높이 제한 없이 콘텐츠 전체 표시
           _heatmapDataLoaded
               ? WeeklyHeatmap(
                   key: ValueKey(refreshKey),
-                  showAllHours: showAllHours,
                 )
               : Shimmer.fromColors(
                   baseColor: Colors.grey.shade300.withValues(alpha: 0.2),
@@ -495,29 +453,38 @@ class _ChartPageState extends State<ChartPage> {
       padding: context.paddingSM,
       decoration: BoxDecoration(color: AppColors.background(context)),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('잔디심기', style: AppTextStyles.getTitle(context)),
-                  Text(
-                    '활동을 하면 달력에 잔디가 심어져요',
-                    style: AppTextStyles.getCaption(context),
+              Text('잔디심기', style: AppTextStyles.getTitle(context)),
+              const SizedBox(width: 8),
+              JustTheTooltip(
+                backgroundColor: AppColors.textPrimary(context).withValues(alpha: 0.9),
+                preferredDirection: AxisDirection.up,
+                tailLength: 10.0,
+                tailBaseWidth: 20.0,
+                triggerMode: TooltipTriggerMode.tap,
+                enableFeedback: true,
+                content: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    '매일 활동하면 달력에 잔디가 심어져요',
+                    style: TextStyle(
+                      color: AppColors.background(context),
+                      fontSize: 14,
+                    ),
                   ),
-                ],
-              ),
-              Image.asset(
-                getIconImage('seedling'),
-                width: context.xxxl,
-                height: context.xxxl,
+                ),
+                child: Icon(
+                  LucideIcons.info,
+                  size: context.lg,
+                  color: AppColors.textSecondary(context),
+                ),
               ),
             ],
           ),
-          SizedBox(height: context.hp(1)),
+          SizedBox(height: context.hp(3)),
           // 높이 제한 없이 콘텐츠 표시
           const ActivityHeatMap(),
           SizedBox(height: context.hp(1)), // 하단 여백 추가

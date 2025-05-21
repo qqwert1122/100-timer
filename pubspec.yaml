@@ -57,6 +57,8 @@ dependencies:
   showcaseview: ^4.0.1
   flutter_native_splash: ^2.4.1
   table_calendar: ^3.2.0
+  auto_size_text: ^3.0.0
+  just_the_tooltip: ^0.0.12
 
 flutter:
   uses-material-design: true

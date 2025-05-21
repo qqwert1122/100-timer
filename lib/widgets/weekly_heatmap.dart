@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
@@ -8,15 +9,13 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
 class WeeklyHeatmap extends StatefulWidget {
-  final bool showAllHours;
-
-  const WeeklyHeatmap({super.key, required this.showAllHours});
+  const WeeklyHeatmap({super.key});
 
   @override
   State<WeeklyHeatmap> createState() => _WeeklyHeatmapState();
 }
 
-class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
+class _WeeklyHeatmapState extends State<WeeklyHeatmap> with SingleTickerProviderStateMixin {
   late StatsProvider _statsProvider;
 
   // heatmapData 구조: { hourKey: { dayKey: { activityId: minutes } } }
@@ -25,6 +24,9 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
   final List<String> dayKeys = ['월', '화', '수', '목', '금', '토', '일'];
   List<String> allHourKeys = List.generate(24, (index) => '${index.toString().padLeft(2, '0')}:00');
   List<String> activeHourKeys = [];
+
+  bool _showAllHours = true;
+  List<String> get displayHourKeys => _showAllHours ? allHourKeys : activeHourKeys;
 
   final Map<String, Color> activityColorMap = {};
   final Map<String, String> activityNames = {};
@@ -124,9 +126,13 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
     }
   }
 
-  Widget buildWeeklyHeatmapWidget() {
-    List<String> displayHourKeys = widget.showAllHours ? allHourKeys : activeHourKeys;
+  void _toggleDisplayMode() {
+    setState(() {
+      _showAllHours = !_showAllHours;
+    });
+  }
 
+  Widget buildWeeklyHeatmapWidget() {
     if (!isLoading && displayHourKeys.isEmpty) {
       return const Center(
           child: Padding(
@@ -278,7 +284,29 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           buildWeeklyHeatmapWidget(),
-          const SizedBox(height: 16),
+          SizedBox(height: context.hp(2)),
+          GestureDetector(
+            onTap: _toggleDisplayMode,
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _showAllHours ? '활동한 시간만 보기' : '전체 보기',
+                    style: AppTextStyles.getBody(context).copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _showAllHours ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                    color: AppColors.textSecondary(context),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: context.hp(2)),
           buildLegend(),
         ],
       );
