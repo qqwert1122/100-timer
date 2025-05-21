@@ -29,7 +29,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
   List<Map<String, dynamic>> pomodoroItems = [
     {
       'title': '30',
-      'value': 10,
+      'value': 1800,
       'maxCount': 5,
       'currentCount': 0,
       'gradientColors': [Colors.greenAccent, Colors.yellow],
