@@ -788,6 +788,7 @@ class DatabaseService {
   }
 
   Future<bool> checkActivityNameExists(String activityName) async {
+    logger.d('dbService > checkActivityNameExists');
     final db = await database;
 
     final result = await db.rawQuery('''
@@ -796,7 +797,7 @@ class DatabaseService {
       WHERE activity_name LIKE ?
         AND is_deleted = 0
       LIMIT 1
-    ''', ['%$activityName%']);
+    ''', ['%${activityName.trim()}%']);
 
     return (result.first['count'] as int) > 0;
   }
@@ -859,6 +860,7 @@ class DatabaseService {
     required String activityName,
   }) async {
     try {
+      logger.d('dbService > getSessionsWithinDateRangeAndActivityName');
       final db = await database;
 
       // LIKE 검색을 사용하여 activityName이 포함된 모든 세션 검색
@@ -874,7 +876,7 @@ class DatabaseService {
     ''', [
         startDate.toIso8601String(),
         endDate.toIso8601String(),
-        '%$activityName%' // LIKE 검색을 위한 와일드카드 사용
+        '%${activityName.trim()}%' // LIKE 검색을 위한 와일드카드 사용
       ]);
 
       logger.d('활동명 검색 결과: ${results.length}개 항목 발견');
