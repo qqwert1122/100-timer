@@ -52,3 +52,5 @@ ios/build/
 ios/DerivedData/
 ios/XCBuildData/
 
+# appstore
+lib/config/store_secrets.dart

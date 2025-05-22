@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:project1/data/credits.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
@@ -14,11 +15,13 @@ import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/notification_service.dart';
 import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/responsive_size.dart';
+import 'package:project1/utils/review_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/widgets/footer.dart';
 import 'package:project1/widgets/total_seconds_cards.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -141,9 +144,9 @@ class _SettingPageState extends State<SettingPage> {
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> timerItems = [
       {
-        'title': '도전 시간을 변경해요',
-        'icon': 'bullseye',
-        'description': '다른 시간을 도전하세요\n바뀐 시간은 다음주부터 적용돼요',
+        'title': '목표 시간을 변경해요',
+        'image': 'bullseye',
+        'description': '나에게 맞게 목표 시간을 변경해서 도전하세요',
         'onTap': () {
           HapticFeedback.lightImpact();
           showDialog(
@@ -155,7 +158,7 @@ class _SettingPageState extends State<SettingPage> {
       },
       {
         'title': '타이머를 초기화해요',
-        'icon': 'magic_wand',
+        'image': 'magic_wand',
         'description': '이번 주차의 타이머를 초기화해요',
         'onTap': () {
           showDialog(
@@ -244,7 +247,7 @@ class _SettingPageState extends State<SettingPage> {
     final List<Map<String, dynamic>> appSettingsItems = [
       {
         'title': '화면을 켜둔 채 유지해요',
-        'icon': 'bulb',
+        'image': 'bulb',
         'description': '어플을 켜놓는 동안 화면을 켜두어요',
         'onTap': () {},
         'trailing': CupertinoSwitch(
@@ -256,7 +259,7 @@ class _SettingPageState extends State<SettingPage> {
       },
       {
         'title': '알림을 켜요',
-        'icon': 'bell',
+        'image': 'bell',
         'description': '활동에 관련된 푸시 알림을 받아요',
         'onTap': () {},
         'trailing': CupertinoSwitch(
@@ -276,8 +279,17 @@ class _SettingPageState extends State<SettingPage> {
 
     final List<Map<String, dynamic>> informationItems = [
       {
+        'title': '리뷰 남기기',
+        'image': 'star',
+        'description': '어플이 마음에 든다면 리뷰를 남겨주세요',
+        'onTap': () async {
+          await ReviewService.openStoreListing();
+        },
+        'trailing': null,
+      },
+      {
         'title': '문의하기',
-        'icon': 'email',
+        'image': 'email',
         'description': '궁금한 점을 문의하세요',
         'onTap': () async {
           const String googleFormUrl = 'https://forms.gle/thMpo1iGp97KjKXU8'; // 구글 폼 URL
@@ -297,7 +309,7 @@ class _SettingPageState extends State<SettingPage> {
       },
       {
         'title': '기여',
-        'icon': 'clapping',
+        'image': 'clapping',
         'description': '어플의 탄생에 도움을 준 분들을 확인해요',
         'onTap': () {
           _showAttributionDialog();
@@ -306,7 +318,7 @@ class _SettingPageState extends State<SettingPage> {
       },
       {
         'title': '이용약관',
-        'icon': 'notepad',
+        'image': 'notepad',
         'description': '서비스 이용약관을 확인하세요',
         'onTap': () async {
           const String termsUrl = 'https://dour-sunday-be4.notion.site/100-timer-1c67162f12b2804482cbe6124186a2ac'; // 노션 URL
@@ -326,8 +338,8 @@ class _SettingPageState extends State<SettingPage> {
       },
       {
         'title': '버전',
-        'icon': 'info',
-        'description': '현재 버전 1.0.1 | 업데이트 날짜 2025-05-19',
+        'image': 'info',
+        'description': '현재 버전 1.0.3 | 업데이트 날짜 2025-05-22',
         'onTap': () {},
         'trailing': null,
       },
@@ -365,7 +377,7 @@ class _SettingPageState extends State<SettingPage> {
                       },
                       child: ListTile(
                         leading: Image.asset(
-                          getIconImage(items[i]['icon']),
+                          getIconImage(items[i]['image']),
                           width: context.xl,
                           height: context.xl,
                           errorBuilder: (context, error, stackTrace) {

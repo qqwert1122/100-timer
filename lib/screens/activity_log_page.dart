@@ -139,10 +139,13 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         final bool activityExists = await _dbService.checkActivityNameExists(_selectedActivityName!);
 
         if (!activityExists && mounted) {
+          logger.d('더이상 검색하지 않고 종료 activityExists : $activityExists');
           setState(() {
             _loadingError = false;
             _isLoadingMore = false;
             _hasMoreData = false; // 더 이상 로드할 필요 없음을 표시
+            groupedLogs.clear(); // 기존 데이터 클리어
+            dayToIndexMap.clear(); // 요일 맵도 클리어
           });
           return; // 더 이상 진행하지 않고 종료
         }
@@ -1151,6 +1154,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
           query: query,
           previousQuery: _selectedActivityName,
           onQueryChanged: (newQuery) {
+            logger.d('query Changed');
             if (mounted) {
               setState(() {
                 _selectedActivityName = newQuery;
@@ -1160,6 +1164,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
           },
           onBeforeSearch: () {
             // 검색 시작 전 UI 업데이트
+            logger.d('before Search');
             if (mounted) {
               setState(() {
                 _hasMoreData = true;
@@ -1169,6 +1174,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
           },
           onSearchComplete: () {
             // 별도 비동기 작업으로 로그 초기화
+            logger.d('search Complete');
             Future.microtask(() async {
               if (mounted) {
                 await _loadInitialData();
