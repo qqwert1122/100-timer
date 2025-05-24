@@ -36,7 +36,7 @@ dependencies:
   flutter_slidable: ^4.0.0
   uuid: ^4.5.0
   sqflite: ^2.3.3+1
-  path_provider: ^2.1.4
+  path_provider: ^2.1.5
   intl: ^0.20.2
   scrollable_positioned_list: ^0.3.8
   flutter_heatmap_calendar: ^1.0.5
@@ -46,12 +46,12 @@ dependencies:
   url_launcher: ^6.3.1
   wakelock_plus: ^1.2.8
   device_info_plus: ^11.1.1
-  fl_chart: ^0.69.2
+  fl_chart: ^1.0.0
   cupertino_icons: ^1.0.6
   lucide_icons: ^0.257.0
   fluttertoast: ^8.2.12
   awesome_notifications: ^0.10.1
-  just_audio: ^0.9.46
+  just_audio: ^0.10.3
   google_mobile_ads: ^6.0.0
   carousel_slider: ^5.0.0
   showcaseview: ^4.0.1
@@ -59,7 +59,9 @@ dependencies:
   table_calendar: ^3.2.0
   auto_size_text: ^3.0.0
   just_the_tooltip: ^0.0.12
-  in_app_review : ^2.0.10
+  in_app_review: ^2.0.10
+  permission_handler: ^12.0.0
+  image_gallery_saver_plus: ^4.0.1
 
 flutter:
   uses-material-design: true
@@ -93,7 +95,7 @@ dev_dependencies:
   mockito: ^5.4.4
   build_runner: ^2.4.13
   meta: ^1.15.0
-  flutter_lints: ^3.0.0
+  flutter_lints: ^5.0.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

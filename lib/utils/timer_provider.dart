@@ -80,8 +80,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   int _remainingSeconds = 360000; // 기본값 100시간 (초 단위)
   int get remainingSeconds => _remainingSeconds.clamp(0, _totalSeconds);
 
-  String get formattedTime => _formatTime(isWeeklyTargetExceeded ? -_remainingSeconds : _remainingSeconds);
-  String get formattedHour => _formatHour(_remainingSeconds);
+  String get formattedTime => _formatTime(isWeeklyTargetExceeded ? _totalSessionDuration : _remainingSeconds);
+  String get formattedExceededTime => _formatHour(_totalSessionDuration - _totalSeconds);
   String get formattedActivityTime => _formatTime(_currentSessionDuration.clamp(0, _totalSeconds));
   String get formattedTotalSessionDuration => _formatTime(_totalSessionDuration);
   String get formattedTotalSessionHour => _formatHour(_totalSessionDuration);

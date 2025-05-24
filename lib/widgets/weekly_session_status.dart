@@ -40,7 +40,7 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
       builder: (context, statsProvider, child) {
         return FutureBuilder<List<Map<String, dynamic>>>(
           key: ValueKey("weekly-sessions-${statsProvider.weekOffset}"),
-          future: statsProvider.getWeeklySessionFlags(),
+          future: statsProvider.getWeeklyStreak(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Container(
@@ -194,11 +194,20 @@ class _WeeklySessionStatusState extends State<WeeklySessionStatus> {
         return sessionDate.year == currentDay.year && sessionDate.month == currentDay.month && sessionDate.day == currentDay.day;
       }).toList();
 
-      // long_session_flag가 있으면 완료된 것으로 처리
-      bool hasLongSession = daySessions.any((session) => session['long_session_flag'] == 1);
+      int totalDaySeconds = 0;
+
+      for (var session in daySessions) {
+        logger.d('session: $session');
+        totalDaySeconds += (session['duration'] as int? ?? 0);
+      }
+
+      logger.d('totalDaySeconds: $totalDaySeconds');
+      bool hasCompletedDay = totalDaySeconds >= 3600; // 1시간 이상
+
+      logger.d('hasCompletedDay: $hasCompletedDay');
 
       DayStatusType status;
-      if (hasLongSession) {
+      if (hasCompletedDay) {
         status = DayStatusType.completed;
       } else {
         if (isBeforeInstallation) {
