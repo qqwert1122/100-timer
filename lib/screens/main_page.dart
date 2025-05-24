@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:project1/daily_report/screens/daily_report_page.dart';
 import 'package:project1/screens/activity_log_page.dart';
 import 'package:project1/screens/chart_page.dart';
 import 'package:project1/screens/goal_feature_intro_page.dart';
@@ -44,12 +45,13 @@ class _MainPageState extends State<MainPage> {
       timerTab = TimerPage(timerData: timerProvider.timerData!);
     }
 
-    // 4개의 탭에 해당하는 페이지들
+    // 6개의 탭에 해당하는 페이지들
     _pages = [
       timerTab,
       const ActivityLogPage(),
-      GoalFeatureIntroPage(),
+      const DailyReportPage(),
       const ChartPage(),
+      const GoalFeatureIntroPage(),
       const SettingPage(),
     ];
 
@@ -115,12 +117,16 @@ class _MainPageState extends State<MainPage> {
                       label: '기록',
                     ),
                     BottomNavigationBarItem(
-                      icon: Icon(LucideIcons.flag),
-                      label: '목표',
+                      icon: Icon(LucideIcons.sparkles),
+                      label: '리포트',
                     ),
                     BottomNavigationBarItem(
                       icon: Icon(LucideIcons.lineChart),
                       label: '통계',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(LucideIcons.flag),
+                      label: '목표',
                     ),
                     BottomNavigationBarItem(
                       icon: Icon(LucideIcons.settings2),

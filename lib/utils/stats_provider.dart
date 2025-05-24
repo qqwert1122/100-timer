@@ -370,7 +370,7 @@ class StatsProvider extends ChangeNotifier {
     }).toList();
   }
 
-  Future<List<Map<String, dynamic>>> getWeeklySessionFlags() async {
+  Future<List<Map<String, dynamic>>> getWeeklyStreak() async {
     try {
       final results = _currentSessions;
 
@@ -378,8 +378,8 @@ class StatsProvider extends ChangeNotifier {
         DateTime sessionDate = DateTime.parse(session['start_time']);
         return {
           'start_time': session['start_time'],
-          'long_session_flag': session['long_session_flag'],
-          'weekday': sessionDate.weekday, // 1 (월) ~ 7 (일)
+          'duration': session['duration'],
+          'weekday': sessionDate.weekday,
         };
       }).toList();
 

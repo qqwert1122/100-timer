@@ -25,9 +25,7 @@ class AppColors {
   }
 
   static Color backgroundTertiary(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xff3A3F35) // 기존보다 살짝 어두운 톤
-        : const Color(0xffE0E0E0); // ✅ 진한 회색 계열
+    return Theme.of(context).brightness == Brightness.dark ? const Color(0xff3A3F35) : const Color(0xffE0E0E0);
   }
 
   // 텍스트 on 배경 색상 (배경에 쓰이는 텍스트 색상)

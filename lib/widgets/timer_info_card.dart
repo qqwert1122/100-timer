@@ -2,6 +2,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:lottie/lottie.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/theme/app_color.dart';
@@ -35,40 +36,38 @@ class TimerInfoCard extends StatefulWidget {
   State<TimerInfoCard> createState() => _TimerInfoCardState();
 }
 
-class _TimerInfoCardState extends State<TimerInfoCard> {
+class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateMixin {
   StatsProvider? statsProvider;
   TimerProvider? timerProvider;
 
   int totalDuration = 0;
   int totalSeconds = 1;
 
-  List<int> _dailyDurations = List.filled(7, 0);
-  List<double> _dailyPercents = List.filled(7, 0.0);
-
-  late int duration;
-  late int total;
+  // 애니메이션 컨트롤러
+  late AnimationController _congratulationsController;
 
   @override
   void initState() {
     super.initState();
     statsProvider = Provider.of<StatsProvider>(context, listen: false);
     _loadWeeklyStats();
+
+    // 축하 애니메이션 컨트롤러 초기화
+    _congratulationsController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    );
+    _congratulationsController.repeat();
+  }
+
+  @override
+  void dispose() {
+    _congratulationsController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadWeeklyStats() async {
     await statsProvider!.getWeeklyProgressCircle();
-  }
-
-  String _formatHour(int seconds) {
-    final hours = seconds ~/ 3600;
-    return '$hours';
-  }
-
-  String _formatTime(int seconds) {
-    final int safe = seconds.abs(); // 음수에 대해서는 절대값 , 음수라는 것에 대해서는 UI상으로 표현
-    final hours = (seconds ~/ 3600).toString().padLeft(2, '0');
-    final minutes = ((seconds % 3600) ~/ 60).toString().padLeft(2, '0');
-    return '${hours}h ${minutes}m';
   }
 
   @override
@@ -88,7 +87,7 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
         final totalSeconds = statsProvider.totalSeconds;
         final dailyPercents = statsProvider.dailyPercents;
 
-        double percent = (totalDuration / totalSeconds).clamp(0.0, 1.0);
+        double percent = (totalDuration / totalSeconds);
         String percentText = (percent * 100).toStringAsFixed(0);
 
         return Padding(
@@ -141,37 +140,92 @@ class _TimerInfoCardState extends State<TimerInfoCard> {
                                 overlayOpacity: 0.5,
                                 child: Consumer<TimerProvider>(
                                   builder: (context, provider, child) {
-                                    final text = timerProvider.isWeeklyTargetExceeded ? _formatTime(duration) : provider.formattedTime;
+                                    final text = provider.formattedTime;
 
-                                    final textStyle = AppTextStyles.getTimeDisplay(context).copyWith(
-                                      color: timerProvider.isWeeklyTargetExceeded ? Colors.blueAccent : AppColors.primary(context),
-                                      fontFamily: 'chab',
-                                    );
-
-                                    return AutoSizeText(
+                                    final textWidget = AutoSizeText(
                                       text,
-                                      style: textStyle,
-                                      minFontSize: 32, // 최소 폰트 크기
+                                      style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                        color: AppColors.primary(context),
+                                        fontFamily: 'chab',
+                                      ),
+                                      minFontSize: 32,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     );
+                                    return timerProvider.isWeeklyTargetExceeded
+                                        ? Shimmer.fromColors(
+                                            baseColor: AppColors.primary(context),
+                                            highlightColor: AppColors.primary(context).withValues(alpha: 0.5),
+                                            child: textWidget)
+                                        : textWidget;
                                   },
                                 ),
                               ),
+                              timerProvider.isWeeklyTargetExceeded
+                                  ? Shimmer.fromColors(
+                                      baseColor: AppColors.primary(context),
+                                      highlightColor: AppColors.background(context),
+                                      child: Text(
+                                        '이번주 ${timerProvider.formattedExceededTime}시간 만큼 초과 달성했어요',
+                                        style: AppTextStyles.getBody(context).copyWith(
+                                          color: AppColors.primary(context).withValues(alpha: 0.5),
+                                          fontSize: context.sm,
+                                        ),
+                                      ),
+                                    )
+                                  : const SizedBox()
                             ],
                           ),
-                          CircularPercentIndicator(
-                            radius: context.wp(10),
-                            lineWidth: context.wp(5),
-                            animation: true,
-                            percent: percent.clamp(0.0, 1.0),
-                            center: Text(
-                              '$percentText %',
-                              style: AppTextStyles.getCaption(context).copyWith(),
-                            ),
-                            circularStrokeCap: CircularStrokeCap.round,
-                            progressColor: timerProvider.isWeeklyTargetExceeded ? Colors.blueAccent : Colors.redAccent,
-                            backgroundColor: AppColors.backgroundSecondary(context),
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              timerProvider.isWeeklyTargetExceeded
+                                  ? Shimmer.fromColors(
+                                      baseColor: AppColors.primary(context),
+                                      highlightColor: AppColors.primary(context).withValues(alpha: 0.5),
+                                      enabled: timerProvider.isWeeklyTargetExceeded,
+                                      child: CircularPercentIndicator(
+                                        radius: context.wp(10),
+                                        lineWidth: context.wp(5),
+                                        animation: true,
+                                        percent: percent.clamp(0.0, 1.0),
+                                        center: Text(
+                                          '$percentText %',
+                                          style: AppTextStyles.getCaption(context).copyWith(),
+                                        ),
+                                        circularStrokeCap: CircularStrokeCap.round,
+                                        progressColor: AppColors.primary(context),
+                                        backgroundColor: AppColors.backgroundSecondary(context),
+                                      ),
+                                    )
+                                  : CircularPercentIndicator(
+                                      radius: context.wp(10),
+                                      lineWidth: context.wp(5),
+                                      animation: true,
+                                      percent: percent.clamp(0.0, 1.0),
+                                      center: Text(
+                                        '$percentText %',
+                                        style: AppTextStyles.getCaption(context).copyWith(),
+                                      ),
+                                      circularStrokeCap: CircularStrokeCap.round,
+                                      progressColor: AppColors.primary(context),
+                                      backgroundColor: AppColors.backgroundSecondary(context),
+                                    ),
+                              if (timerProvider.isWeeklyTargetExceeded)
+                                Positioned.fill(
+                                  child: OverflowBox(
+                                    maxWidth: context.wp(40), // 원하는 최대 크기
+                                    maxHeight: context.wp(40),
+                                    child: Lottie.asset(
+                                      'assets/images/congraturations.json',
+                                      repeat: true,
+                                      controller: _congratulationsController,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ],
                       ),
