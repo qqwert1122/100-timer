@@ -17,7 +17,8 @@ class TotalActivitySummaryWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sortedActivities = activityTimes.entries.toList()..sort((a, b) => b.value['duration'].compareTo(a.value['duration']));
+    final sortedActivities = activityTimes.entries.toList()
+      ..sort((a, b) => b.value['duration'].compareTo(a.value['duration']));
 
     return Column(
       children: [
@@ -54,7 +55,9 @@ class TotalActivitySummaryWidget extends StatelessWidget {
                           width: 30,
                           height: 30,
                           decoration: BoxDecoration(
-                            color: ColorService.hexToColor(activity.value['activity_color']).withValues(alpha: 0.8),
+                            color: ColorService.hexToColor(
+                                    activity.value['activity_color'])
+                                .withValues(alpha: 0.8),
                             shape: BoxShape.circle,
                           ),
                           child: Center(
@@ -67,12 +70,15 @@ class TotalActivitySummaryWidget extends StatelessWidget {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          activity.key.length >= 4 ? '${activity.key.substring(0, 4)}...' : activity.key,
+                          activity.key.length >= 4
+                              ? '${activity.key.substring(0, 4)}...'
+                              : activity.key,
                           style: TextStyle(fontSize: 10),
                         ),
                         Text(
                           timeStr,
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 10, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -110,18 +116,31 @@ class HourlyBarChartPainter extends CustomPainter {
     }
 
     for (final data in chartData) {
-      final hour = data['hour'] as int;
+      final startHour = data['hour'] as int;
+      final minutes = data['minutes'] as double;
       final activityName = data['activity_name'] as String;
       final colorStr = data['activity_color'] as String;
-      final minutes = data['minutes'] as double;
 
-      if (!hourlyActivityData[hour]!.containsKey(activityName)) {
-        hourlyActivityData[hour]![activityName] = {
-          'minutes': 0.0,
-          'color': colorStr,
-        };
+      // duration을 시간대별로 분배
+      double remainingMinutes = minutes;
+      int currentHour = startHour;
+
+      while (remainingMinutes > 0 && currentHour < 24) {
+        double minutesForThisHour =
+            (remainingMinutes > 60) ? 60 : remainingMinutes;
+
+        if (!hourlyActivityData[currentHour]!.containsKey(activityName)) {
+          hourlyActivityData[currentHour]![activityName] = {
+            'minutes': 0.0,
+            'color': colorStr,
+          };
+        }
+        hourlyActivityData[currentHour]![activityName]!['minutes'] +=
+            minutesForThisHour;
+
+        remainingMinutes -= minutesForThisHour;
+        currentHour++;
       }
-      hourlyActivityData[hour]![activityName]!['minutes'] += minutes;
     }
 
     // 최대값 찾기
@@ -205,7 +224,8 @@ class HourlyBarChartPainter extends CustomPainter {
 
       // 활동별 막대 쌓기 (기존 로직)
       final sortedActivities = hourData.keys.toList()
-        ..sort((a, b) => (hourData[b]!['minutes'] as double).compareTo(hourData[a]!['minutes'] as double));
+        ..sort((a, b) => (hourData[b]!['minutes'] as double)
+            .compareTo(hourData[a]!['minutes'] as double));
 
       for (final activityName in sortedActivities) {
         final activityData = hourData[activityName]!;
@@ -224,7 +244,7 @@ class HourlyBarChartPainter extends CustomPainter {
 
         final RRect roundRect = RRect.fromRectAndRadius(
           Rect.fromLTWH(barLeft, barTop, barWidth, barHeight),
-          const Radius.circular(1),
+          const Radius.circular(0),
         );
         canvas.drawRRect(roundRect, barPaint);
 

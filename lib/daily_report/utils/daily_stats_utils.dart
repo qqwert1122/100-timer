@@ -4,7 +4,8 @@ class DailyStatsUtils {
   static final DatabaseService _databaseService = DatabaseService();
 
   static Future<DailyStatsResult> getDailyStats(DateTime selectedDate) async {
-    final selected = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final selected =
+        DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
 
     // 세션 데이터 조회
     final sessions = await _databaseService.getSessionsWithinDateRange(
@@ -30,7 +31,8 @@ class DailyStatsUtils {
 
   // 총 활동시간 반환 (초 단위)
   static Future<int> getTotalActivityTime(DateTime selectedDate) async {
-    final selected = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final selected =
+        DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     final sessions = await _databaseService.getSessionsWithinDateRange(
       startDate: selected,
       endDate: selected.add(Duration(days: 1)),
@@ -48,8 +50,10 @@ class DailyStatsUtils {
   }
 
 // 활동별 시간 반환 (Map<활동명, 초>)
-  static Future<Map<String, Map<String, dynamic>>> getActivityTimes(DateTime selectedDate) async {
-    final selected = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+  static Future<Map<String, Map<String, dynamic>>> getActivityTimes(
+      DateTime selectedDate) async {
+    final selected =
+        DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     final sessions = await _databaseService.getSessionsWithinDateRange(
       startDate: selected,
       endDate: selected.add(Duration(days: 1)),
@@ -78,8 +82,10 @@ class DailyStatsUtils {
     return activityTimes;
   }
 
-  static Future<List<Map<String, dynamic>>> getHourlyActivityChart(DateTime selectedDate) async {
-    final selected = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+  static Future<List<Map<String, dynamic>>> getHourlyActivityChart(
+      DateTime selectedDate) async {
+    final selected =
+        DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     final sessions = await _databaseService.getSessionsWithinDateRange(
       startDate: selected,
       endDate: selected.add(Duration(days: 1)),
@@ -90,16 +96,35 @@ class DailyStatsUtils {
       if (session['end_time'] != null) {
         final start = DateTime.parse(session['start_time']);
         final end = DateTime.parse(session['end_time']);
-        final hour = start.hour;
-        final minutes = end.difference(start).inMinutes.toDouble();
 
-        hourlyData.add({
-          'hour': hour,
-          'activity_name': session['activity_name'],
-          'activity_color': session['activity_color'],
-          'activity_icon': session['activity_icon'],
-          'minutes': minutes,
-        });
+// 시간대별로 분배
+        DateTime currentHour =
+            DateTime(start.year, start.month, start.day, start.hour);
+        DateTime sessionEnd = end;
+
+        while (currentHour.isBefore(sessionEnd)) {
+          DateTime nextHour = currentHour.add(Duration(hours: 1));
+          DateTime segmentEnd =
+              nextHour.isAfter(sessionEnd) ? sessionEnd : nextHour;
+
+          // 현재 시간대에서 실제 시작/종료 시간 계산
+          DateTime segmentStart =
+              currentHour.isBefore(start) ? start : currentHour;
+          double segmentMinutes =
+              segmentEnd.difference(segmentStart).inMinutes.toDouble();
+
+          if (segmentMinutes > 0) {
+            hourlyData.add({
+              'hour': currentHour.hour,
+              'activity_name': session['activity_name'],
+              'activity_color': session['activity_color'],
+              'activity_icon': session['activity_icon'],
+              'minutes': segmentMinutes,
+            });
+          }
+
+          currentHour = nextHour;
+        }
       }
     }
     return hourlyData;
@@ -125,9 +150,11 @@ class DailyStatsUtils {
     return streak;
   }
 
-  static Future<Map<String, dynamic>> compareWithYesterday(DateTime selectedDate) async {
+  static Future<Map<String, dynamic>> compareWithYesterday(
+      DateTime selectedDate) async {
     final today = await getTotalActivityTime(selectedDate);
-    final yesterday = await getTotalActivityTime(selectedDate.subtract(Duration(days: 1)));
+    final yesterday =
+        await getTotalActivityTime(selectedDate.subtract(Duration(days: 1)));
 
     final difference = today - yesterday;
     final isIncrease = difference > 0;
@@ -136,7 +163,8 @@ class DailyStatsUtils {
 
     String displayText;
     if (diffHours > 0) {
-      displayText = '어제보다\n$diffHours시간 $diffMinutes분 ${isIncrease ? '증가' : '감소'}';
+      displayText =
+          '어제보다\n$diffHours시간 $diffMinutes분 ${isIncrease ? '증가' : '감소'}';
     } else {
       displayText = '어제보다\n$diffMinutes분 ${isIncrease ? '증가' : '감소'}';
     }

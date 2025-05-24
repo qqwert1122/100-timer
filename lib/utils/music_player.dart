@@ -29,6 +29,8 @@ class MusicPlayer {
         return 'assets/sounds/city.mp3';
       case '보리밭에 부는 바람':
         return 'assets/sounds/wheat_in_the_wind.mp3';
+      case 'Infinite Hope':
+        return 'assets/sounds/infinite_hope.mp3';
       default:
         return 'assets/sounds/waves.wav';
     }

@@ -24,13 +24,10 @@ class _MusicBottomSheetState extends State<MusicBottomSheet> {
   late String currentMusic;
 
   // 음악 목록
-  final List<String> musicList = [
-    '지저귀는 새',
-    '파도',
-    '비 내리는 날',
-    '도시',
-    '보리밭에 부는 바람'
-  ];
+  final Map<String, List<String>> musicCategories = {
+    '화이트노이즈': ['지저귀는 새', '파도', '비 내리는 날', '도시', '보리밭에 부는 바람'],
+    '뮤직': ['Infinite Hope'],
+  };
 
   @override
   void initState() {
@@ -90,36 +87,49 @@ class _MusicBottomSheetState extends State<MusicBottomSheet> {
           ),
           SizedBox(height: context.hp(2)),
           Expanded(
-            child: ListView.builder(
-              itemCount: musicList.length,
-              itemBuilder: (context, index) {
-                final music = musicList[index];
-                final isSelected = music == currentMusic;
-
-                return ListTile(
-                  title: Text(
-                    music,
-                    style: AppTextStyles.getBody(context).copyWith(
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected
-                          ? Colors.redAccent
-                          : AppColors.textPrimary(context),
+              child: ListView(
+            children: musicCategories.entries.map((category) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      category.key,
+                      style: AppTextStyles.getBody(context).copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textSecondary(context),
+                      ),
                     ),
                   ),
-                  trailing: isSelected
-                      ? const Icon(Icons.pause_circle_filled_rounded,
-                          color: Colors.redAccent)
-                      : Icon(Icons.play_circle_fill_rounded,
-                          color: AppColors.textSecondary(context)),
-                  onTap: () {
-                    selectMusic(music);
-                    Navigator.pop(context);
-                  },
-                );
-              },
-            ),
-          ),
+                  ...category.value.map((music) {
+                    final isSelected = music == currentMusic;
+                    return ListTile(
+                      title: Text(
+                        music,
+                        style: AppTextStyles.getBody(context).copyWith(
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? Colors.redAccent
+                              : AppColors.textPrimary(context),
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? const Icon(Icons.pause_circle_filled_rounded,
+                              color: Colors.redAccent)
+                          : Icon(Icons.play_circle_fill_rounded,
+                              color: AppColors.textSecondary(context)),
+                      onTap: () {
+                        selectMusic(music);
+                        Navigator.pop(context);
+                      },
+                    );
+                  }),
+                ],
+              );
+            }).toList(),
+          )),
         ],
       ),
     );
@@ -127,7 +137,7 @@ class _MusicBottomSheetState extends State<MusicBottomSheet> {
 
   // 음악 목록을 외부에서 접근할 수 있는 getter 메서드
   List<String> getMusicList() {
-    return musicList;
+    return musicCategories.values.expand((list) => list).toList();
   }
 }
 
