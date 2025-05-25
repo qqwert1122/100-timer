@@ -31,6 +31,10 @@ class MusicPlayer {
         return 'assets/sounds/wheat_in_the_wind.mp3';
       case 'Infinite Hope':
         return 'assets/sounds/infinite_hope.mp3';
+      case 'Light Bright':
+        return 'assets/sounds/light_bright.mp3';
+      case 'Back To Your Heart':
+        return 'assets/sounds/back_to_your_heart.mp3';
       default:
         return 'assets/sounds/waves.wav';
     }

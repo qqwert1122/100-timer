@@ -26,7 +26,7 @@ class _MusicBottomSheetState extends State<MusicBottomSheet> {
   // 음악 목록
   final Map<String, List<String>> musicCategories = {
     '화이트노이즈': ['지저귀는 새', '파도', '비 내리는 날', '도시', '보리밭에 부는 바람'],
-    '뮤직': ['Infinite Hope'],
+    '뮤직': ['Infinite Hope', 'Light Bright', 'Back To Your Heart'],
   };
 
   @override
@@ -92,12 +92,12 @@ class _MusicBottomSheetState extends State<MusicBottomSheet> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  SizedBox(height: context.hp(2)),
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    padding: context.paddingHorizSM,
                     child: Text(
                       category.key,
                       style: AppTextStyles.getBody(context).copyWith(
-                        fontWeight: FontWeight.bold,
                         color: AppColors.textSecondary(context),
                       ),
                     ),
@@ -108,18 +108,13 @@ class _MusicBottomSheetState extends State<MusicBottomSheet> {
                       title: Text(
                         music,
                         style: AppTextStyles.getBody(context).copyWith(
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected
-                              ? Colors.redAccent
-                              : AppColors.textPrimary(context),
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? Colors.redAccent : AppColors.textPrimary(context),
                         ),
                       ),
                       trailing: isSelected
-                          ? const Icon(Icons.pause_circle_filled_rounded,
-                              color: Colors.redAccent)
-                          : Icon(Icons.play_circle_fill_rounded,
-                              color: AppColors.textSecondary(context)),
+                          ? const Icon(Icons.pause_circle_filled_rounded, color: Colors.redAccent)
+                          : Icon(Icons.play_circle_fill_rounded, color: AppColors.textSecondary(context)),
                       onTap: () {
                         selectMusic(music);
                         Navigator.pop(context);

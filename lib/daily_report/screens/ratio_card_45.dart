@@ -86,6 +86,7 @@ class _RatioCard45State extends State<RatioCard45> {
                               style: AppTextStyles.getHeadline(context).copyWith(
                                 fontFamily: 'Neo',
                                 letterSpacing: -0.3,
+                                color: AppColors.textPrimary(context),
                               ),
                             ),
                             SizedBox(width: context.wp(2)),
@@ -110,6 +111,18 @@ class _RatioCard45State extends State<RatioCard45> {
                           selectedDate: widget.selectedDate,
                           currentStreak: widget.currentSteak,
                           ratio: '4:5',
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            '타이머100',
+                            style: AppTextStyles.getCaption(context).copyWith(
+                              color: AppColors.textSecondary(context).withValues(alpha: 0.2),
+                              letterSpacing: -0.3,
+                              height: 1.0,
+                              fontFamily: 'Neo',
+                            ),
+                          ),
                         ),
                       ],
                     ),
