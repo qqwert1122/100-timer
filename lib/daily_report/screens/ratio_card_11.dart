@@ -145,6 +145,18 @@ class _RatioCard11State extends State<RatioCard11> {
                             ],
                           ),
                         ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            '타이머100',
+                            style: AppTextStyles.getCaption(context).copyWith(
+                              color: AppColors.textSecondary(context).withValues(alpha: 0.2),
+                              letterSpacing: -0.3,
+                              height: 1.0,
+                              fontFamily: 'Neo',
+                            ),
+                          ),
+                        ),
                       ],
                     ),
             ),

@@ -28,18 +28,32 @@ class DailyReportCardTitle extends StatelessWidget {
         ? AppTextStyles.getHeadline(context).copyWith(
             fontFamily: 'Neo',
             fontSize: context.xxl,
+            color: AppColors.textSecondary(context),
           )
-        : AppTextStyles.getTitle(context).copyWith(
-            fontFamily: 'Neo',
-          );
+        : ratio == '1:1'
+            ? AppTextStyles.getTitle(context).copyWith(
+                fontFamily: 'Neo',
+                color: AppColors.textSecondary(context),
+              )
+            : AppTextStyles.getTitle(context).copyWith(
+                fontFamily: 'Neo',
+                color: AppColors.textSecondary(context),
+              );
 
     final TextStyle dateStyles = ratio == '4:5'
         ? AppTextStyles.getTitle(context).copyWith(
-            fontFamily: 'Neo',
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary(context),
           )
-        : AppTextStyles.getBody(context).copyWith(
-            fontFamily: 'Neo',
-          );
+        : ratio == '1:1'
+            ? AppTextStyles.getBody(context).copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary(context),
+              )
+            : AppTextStyles.getCaption(context).copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary(context),
+              );
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -55,10 +69,15 @@ class DailyReportCardTitle extends StatelessWidget {
             Text(date, style: dateStyles),
             Text(
               year,
-              style: AppTextStyles.getBody(context).copyWith(
-                fontFamily: 'Neo',
-                color: AppColors.backgroundTertiary(context),
-              ),
+              style: ratio == '9:16'
+                  ? AppTextStyles.getCaption(context).copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary(context),
+                    )
+                  : AppTextStyles.getBody(context).copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary(context),
+                    ),
             ),
           ],
         ),

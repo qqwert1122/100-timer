@@ -92,6 +92,7 @@ class _RatioCard916State extends State<RatioCard916> {
               selectedDate: widget.selectedDate,
               ratio: '9:16',
             ),
+            SizedBox(height: context.hp(2)),
             Expanded(
               child: widget.isDataInsufficient
                   ? Center(child: DataInsufficientWidget())
@@ -100,18 +101,26 @@ class _RatioCard916State extends State<RatioCard916> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Text(
+                              '오늘 달성한 시간',
+                              style: AppTextStyles.getCaption(context).copyWith(
+                                letterSpacing: -0.3,
+                                color: AppColors.textSecondary(context),
+                              ),
+                            ),
                             Text(
                               _formatTime(widget.totalSeconds),
                               style: AppTextStyles.getHeadline(context).copyWith(
                                 fontFamily: 'Neo',
                                 letterSpacing: -0.3,
+                                color: AppColors.textPrimary(context),
                               ),
                             ),
-                            SizedBox(width: context.wp(2)),
                             Text(
-                              widget.comparisonData['displayText'] ?? '',
+                              widget.comparisonData['oneLineText'] ?? '',
                               style: AppTextStyles.getCaption(context).copyWith(
                                 color: (widget.comparisonData['isIncrease'] ?? false) ? Colors.redAccent : Colors.blueAccent,
                                 letterSpacing: -0.3,
@@ -120,19 +129,32 @@ class _RatioCard916State extends State<RatioCard916> {
                             ),
                           ],
                         ),
+                        SizedBox(height: context.hp(1)),
                         TotalActivitySummaryWidget(
                           ratio: '9:16',
                           hourlyData: widget.hourlyData,
                           activityTimes: widget.activityTimes,
                         ),
-                        SizedBox(height: context.hp(4)),
+                        SizedBox(height: context.hp(2)),
                         Padding(
-                          padding: context.paddingSM,
+                          padding: context.paddingHorizSM,
                           child: SevenDayStreakWidget(
                             dailyTimes: widget.sevenDayTimes,
                             selectedDate: widget.selectedDate,
                             currentStreak: widget.currentSteak,
                             ratio: '9:16',
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            '타이머100',
+                            style: AppTextStyles.getCaption(context).copyWith(
+                              color: AppColors.textSecondary(context).withValues(alpha: 0.2),
+                              letterSpacing: -0.3,
+                              height: 1.0,
+                              fontFamily: 'Neo',
+                            ),
                           ),
                         ),
                       ],
