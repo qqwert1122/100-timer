@@ -38,8 +38,10 @@
 		<string>타이머 진행 상황과 완료를 알려드리기 위해 알림 센터 권한이 필요합니다</string>
 		<key>NSUserNotificationUsageDescription</key>
 		<string>타이머 진행 상황을 알려드리기 위해 알림 권한이 필요합니다.</string>
-		<key>NSPhotoLibraryAddUsageDescription</key>
+		<key>NSPhotoLibraryUsageDescription</key>
 		<string>사진을 저장하기 위해 사진 라이브러리 접근이 필요합니다.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>스크린샷을 사진첩에 저장하기 위해 사진 접근 권한이 필요합니다.</string>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
 		<key>UIBackgroundModes</key>

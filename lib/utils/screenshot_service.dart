@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:project1/utils/logger_config.dart';
 
 class ScreenshotService {
   static final ScreenshotService _instance = ScreenshotService._internal();
@@ -105,10 +106,11 @@ class ScreenshotService {
         return _PermissionResult(isGranted: true);
       } else {
         // Android 9 이하
+
         return await _requestAndroidStoragePermission();
       }
     } else if (Platform.isIOS) {
-      return await _requestIOSPhotosPermission();
+      return _PermissionResult(isGranted: true);
     }
 
     return _PermissionResult(
@@ -211,52 +213,13 @@ class ScreenshotService {
     );
   }
 
-  Future<_PermissionResult> _requestIOSPhotosPermission() async {
-    final status = await Permission.photos.status;
-
-    if (status.isGranted || status.isLimited) {
-      return _PermissionResult(isGranted: true);
-    }
-
-    if (status.isDenied || status.isRestricted) {
-      final result = await Permission.photos.request();
-
-      if (result.isGranted || result.isLimited) {
-        return _PermissionResult(isGranted: true);
-      } else if (result.isPermanentlyDenied) {
-        return _PermissionResult(
-          isGranted: false,
-          isPermanentlyDenied: true,
-          message: '사진 접근 권한이 필요합니다. 설정에서 권한을 허용해주세요.',
-        );
-      } else {
-        return _PermissionResult(
-          isGranted: false,
-          message: '사진 접근 권한이 필요합니다.',
-        );
-      }
-    }
-
-    if (status.isPermanentlyDenied) {
-      return _PermissionResult(
-        isGranted: false,
-        isPermanentlyDenied: true,
-        message: '사진 접근 권한이 필요합니다. 설정에서 권한을 허용해주세요.',
-      );
-    }
-
-    return _PermissionResult(
-      isGranted: false,
-      message: '권한을 확인할 수 없습니다.',
-    );
-  }
-
   Future<_CaptureResult> _captureScreenshot({
     required GlobalKey boundaryKey,
     required double pixelRatio,
   }) async {
     try {
-      final RenderRepaintBoundary? boundary = boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      final RenderRepaintBoundary? boundary = boundaryKey.currentContext
+          ?.findRenderObject() as RenderRepaintBoundary?;
 
       if (boundary == null) {
         return _CaptureResult(
@@ -266,7 +229,8 @@ class ScreenshotService {
       }
 
       final ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
-      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
 
       if (byteData == null) {
         return _CaptureResult(
