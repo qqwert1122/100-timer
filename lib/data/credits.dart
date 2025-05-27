@@ -193,6 +193,18 @@ const List<Map<String, dynamic>> creditList = [
     'link': 'https://pub.dev/packages/in_app_review',
   },
   {
+    'category': '오픈 소스 라이브러리',
+    'title': 'permission_handler',
+    'description': '이 어플리케이션은 permission_handler 라이브러리를 사용했어요.',
+    'link': 'https://pub.dev/packages/permission_handler',
+  },
+  {
+    'category': '오픈 소스 라이브러리',
+    'title': 'image_gallery_saver_plus',
+    'description': '이 어플리케이션은 image_gallery_saver_plus 라이브러리를 사용했어요.',
+    'link': 'https://pub.dev/packages/image_gallery_saver_plus',
+  },
+  {
     'category': '폰트',
     'title': '나눔휴먼,나눔스퀘어네오',
     'description': '이 어플리케이션은 나눔휴먼체, 나눔스퀘어네오체를 사용했어요',
