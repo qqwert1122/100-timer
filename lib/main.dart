@@ -30,8 +30,7 @@ void main() async {
 
   // 최적화
   PaintingBinding.instance.imageCache.maximumSize = 100;
-  PaintingBinding.instance.imageCache.maximumSizeBytes =
-      50 * 1024 * 1024; // 50MB
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // 50MB
 
   runApp(
     MultiProvider(
@@ -48,8 +47,7 @@ void main() async {
             return statsProvider;
           },
         ),
-        ChangeNotifierProxyProvider2<DatabaseService, StatsProvider,
-            TimerProvider>(
+        ChangeNotifierProxyProvider2<DatabaseService, StatsProvider, TimerProvider>(
           create: (context) {
             final dbService = context.read<DatabaseService>();
             final statsProvider = context.read<StatsProvider>();
@@ -212,8 +210,7 @@ class _MyAppState extends State<MyApp> {
     ];
 
     for (var act in defaultActivities) {
-      bool duplicate =
-          await _dbService.isActivityNameDuplicate(act['activity_name']);
+      bool duplicate = await _dbService.isActivityNameDuplicate(act['activity_name']);
       if (!duplicate) {
         await _dbService.addActivity(
           activityName: act['activity_name'],
@@ -302,8 +299,7 @@ class _MyAppState extends State<MyApp> {
               ),
             );
           }
-          if (snapshot.connectionState == ConnectionState.waiting ||
-              !_timerProvider.isTimerProviderInit) {
+          if (snapshot.connectionState == ConnectionState.waiting || !_timerProvider.isTimerProviderInit) {
             return const Scaffold(
               body: Center(
                 child: SizedBox(
