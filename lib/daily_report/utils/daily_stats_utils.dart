@@ -81,7 +81,7 @@ class DailyStatsUtils {
   static Future<List<Map<String, dynamic>>> getHourlyActivityChart(DateTime selectedDate) async {
     final selected = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     final sessions = await _databaseService.getSessionsWithinDateRange(
-      startDate: selected,
+      startDate: selected.subtract(Duration(days: 1)),
       endDate: selected.add(Duration(days: 1)),
     );
 
@@ -91,7 +91,7 @@ class DailyStatsUtils {
         final start = DateTime.parse(session['start_time']);
         final end = DateTime.parse(session['end_time']);
 
-// 시간대별로 분배
+        // 시간대별로 분배
         DateTime currentHour = DateTime(start.year, start.month, start.day, start.hour);
         DateTime sessionEnd = end;
 
@@ -104,13 +104,15 @@ class DailyStatsUtils {
           double segmentMinutes = segmentEnd.difference(segmentStart).inMinutes.toDouble();
 
           if (segmentMinutes > 0) {
-            hourlyData.add({
-              'hour': currentHour.hour,
-              'activity_name': session['activity_name'],
-              'activity_color': session['activity_color'],
-              'activity_icon': session['activity_icon'],
-              'minutes': segmentMinutes,
-            });
+            if (currentHour.year == selected.year && currentHour.month == selected.month && currentHour.day == selected.day) {
+              hourlyData.add({
+                'hour': currentHour.hour,
+                'activity_name': session['activity_name'],
+                'activity_color': session['activity_color'],
+                'activity_icon': session['activity_icon'],
+                'minutes': segmentMinutes,
+              });
+            }
           }
 
           currentHour = nextHour;

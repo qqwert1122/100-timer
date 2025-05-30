@@ -132,6 +132,17 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       // 가장 오래된 세션의 날짜 조회
       _earliestSessionDate = await _dbService.getEarliestSessionDate();
 
+      if (_earliestSessionDate == null) {
+        setState(() {
+          _loadingError = false;
+          _isLoadingMore = false;
+          _hasMoreData = false;
+          groupedLogs.clear();
+          dayToIndexMap.clear();
+        });
+        return;
+      }
+
       // 활동명 검색일 경우 해당 활동이 DB에 없다면 조회 루프를 돌리지 않음.
       if ((_currentFilter.type == LogFilterType.activity || _currentFilter.type == LogFilterType.combined) &&
           _selectedActivityName != null) {

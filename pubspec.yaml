@@ -71,13 +71,13 @@ flutter:
     - assets/sounds/
     - assets/logos/
 
+    # For details regarding fonts from package dependencies,
+    # see https://flutter.dev/custom-fonts/#from-packages
+
   fonts:
     - family: NanumHuman
       fonts:
         - asset: assets/fonts/NanumHumanRegular.ttf
-
-    # For details regarding fonts from package dependencies,
-    # see https://flutter.dev/custom-fonts/#from-packages
 
     - family: chab
       fonts:
