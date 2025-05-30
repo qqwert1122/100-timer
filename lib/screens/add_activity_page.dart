@@ -167,7 +167,6 @@ class _AddActivityPageState extends State<AddActivityPage> {
           newActivityName: activityName,
           newActivityIcon: iconName,
           newActivityColor: colorValue,
-          newIsFavorite: 0,
         );
         Navigator.pop(
           context,
