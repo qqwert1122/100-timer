@@ -198,7 +198,10 @@ class LogCache {
 
               // 날짜 확인
               final oldDate = group['date'] as String;
-              final newDateStr = updatedLog['start_time'].substring(0, 10);
+              final utcDateTime = DateTime.parse(updatedLog['start_time']);
+              final localDateTime = utcDateTime.toLocal();
+              final newDateStr =
+                  '${localDateTime.year}-${localDateTime.month.toString().padLeft(2, '0')}-${localDateTime.day.toString().padLeft(2, '0')}';
 
               if (oldDate == newDateStr) {
                 // 같은 날짜 그룹 내 업데이트

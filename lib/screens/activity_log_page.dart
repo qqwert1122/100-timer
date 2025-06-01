@@ -7,11 +7,12 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:project1/activity_logs/screens/log_detail_botton_sheet.dart';
 import 'package:project1/models/log_filter_type.dart';
 import 'package:project1/models/paging_mode.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
-import 'package:project1/activity_logs/widgets/activity_log_bottom.dart';
+import 'package:project1/activity_logs/widgets/activity_logs_bottom.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/log_filter_service.dart';
@@ -22,7 +23,6 @@ import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/search_processor.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/widgets/date_range_picker_bottom_sheet.dart';
-import 'package:project1/widgets/edit_activity_log_modal.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:shimmer/shimmer.dart';
@@ -546,7 +546,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         await _refreshLogs();
       }
     } catch (e) {
-      print('필터 적용 오류: $e');
+      logger.e('필터 적용 오류: $e');
       // 오류 알림 표시
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -748,7 +748,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         });
       }
     } catch (e) {
-      print('새로고침 오류: $e');
+      logger.e('새로고침 오류: $e');
       if (mounted) {
         setState(() => _loadingError = true);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -907,7 +907,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
         }
       });
     } catch (e) {
-      print('날짜 범위 적용 오류: $e');
+      logger.e('날짜 범위 적용 오류: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('날짜 범위 적용 중 오류가 발생했습니다.')),
@@ -946,79 +946,27 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
     return total;
   }
 
-  Future<void> _editActivityLog(String sessionId) async {
+  Future<void> _editActivityLog(Map<String, dynamic> log) async {
     final updatedLog = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => EditActivityLogModal(
-        sessionId: sessionId,
+      isScrollControlled: true,
+      builder: (ctx) => LogDetailBottonSheet(
+        log: log,
+        editMode: true,
       ),
     );
 
     if (updatedLog != null) {
-      _updateSingleLogItem(sessionId, updatedLog);
+      logger.d('updatedLog after : $updatedLog');
+
+      // Provider를 통해 전체 데이터를 다시 로드
+      await _statsProvider.updateCurrentSessions();
+
+      await LogCache.clearAsync();
+      await _refreshLogs();
+      // setState를 통해 UI 새로고침
+      setState(() {});
     }
-  }
-
-  void _updateSingleLogItem(String sessionId, Map<String, dynamic> updatedLog) {
-    setState(() {
-      // 1. UI 데이터 업데이트 (groupedLogs)
-      bool found = false;
-
-      for (var i = 0; i < groupedLogs.length; i++) {
-        final logs = groupedLogs[i]['logs'] as List<Map<String, dynamic>>;
-        final logIndex = logs.indexWhere((log) => log['session_id'] == sessionId);
-
-        if (logIndex >= 0) {
-          found = true;
-
-          // 날짜 확인
-          final oldDate = groupedLogs[i]['date'] as String;
-          final newDateStr = updatedLog['start_time'].substring(0, 10);
-
-          if (oldDate == newDateStr) {
-            // 같은 날짜 그룹 내 업데이트
-            logs[logIndex] = updatedLog;
-          } else {
-            // 날짜 변경됨 - 항목 이동 필요
-            logs.removeAt(logIndex);
-
-            // 기존 그룹이 비었으면 제거
-            if (logs.isEmpty) {
-              groupedLogs.removeAt(i);
-            }
-
-            // 새 날짜 그룹 찾기
-            int newGroupIndex = groupedLogs.indexWhere((g) => g['date'] == newDateStr);
-
-            if (newGroupIndex >= 0) {
-              // 기존 그룹에 추가
-              (groupedLogs[newGroupIndex]['logs'] as List<Map<String, dynamic>>).add(updatedLog);
-              // 시간순 정렬
-              (groupedLogs[newGroupIndex]['logs'] as List<Map<String, dynamic>>)
-                  .sort((a, b) => (b['start_time'] as String).compareTo(a['start_time'] as String));
-            } else {
-              // 새 그룹 생성
-              groupedLogs.add({
-                'date': newDateStr,
-                'logs': [updatedLog]
-              });
-
-              // 날짜순 정렬
-              groupedLogs.sort((a, b) => (b['date'] as String).compareTo(a['date'] as String));
-            }
-
-            // 요일 인덱스 맵 업데이트
-            dayToIndexMap = _calculateDayToIndexMap();
-          }
-          break;
-        }
-      }
-
-      // 2. 캐시 업데이트
-      if (found) {
-        LogCache.updateLogInCache(sessionId, updatedLog);
-      }
-    });
   }
 
   Future<void> _deleteLog(String sessionId) async {
@@ -1035,7 +983,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
           textColor: Colors.white,
         );
       } catch (e) {
-        debugPrint('로그 삭제 중 오류 발생: $e');
+        logger.e('로그 삭제 중 오류 발생: $e');
         Fluttertoast.showToast(
           msg: "로그 삭제 중 오류가 발생했습니다.",
           toastLength: Toast.LENGTH_SHORT,
@@ -1469,7 +1417,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
             SlidableAction(
               onPressed: (_) {
                 HapticFeedback.lightImpact();
-                Future.microtask(() => _editActivityLog(log['session_id']));
+                Future.microtask(() => _editActivityLog(log));
               },
               backgroundColor: Colors.blueAccent,
               foregroundColor: Colors.white,
@@ -1487,6 +1435,15 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
           ],
         ),
         child: ListTile(
+          onTap: () => showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: AppColors.background(context),
+            builder: (context) {
+              HapticFeedback.lightImpact();
+              return LogDetailBottonSheet(log: log);
+            },
+          ),
           leading: IconCache.getIcon(log['activity_icon'], context.xl, context.xl),
           title: Row(
             mainAxisAlignment: MainAxisAlignment.start,
@@ -1721,7 +1678,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                                 minCacheExtent: MediaQuery.of(context).size.height * 1.5,
                                 itemBuilder: (context, index) {
                                   if (index == groupedLogs.length) {
-                                    return ActivityLogBottom(
+                                    return ActivityLogsBottom(
                                       isLoadingMore: _isLoadingMore,
                                       loadingError: _loadingError,
                                       loadMoreData: () => _loadMoreData(),
@@ -1764,13 +1721,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   Widget _buildLoadingOverlay() {
     if (!_isLoadingMore) return const SizedBox.shrink();
 
-    return Positioned.fill(
-      child: Center(
-        child: CircularProgressIndicator(
-          color: AppColors.textSecondary(context),
-        ),
-      ),
-    );
+    return Positioned.fill(child: Center(child: CircularProgressIndicator(color: Colors.grey)));
   }
 
   void _loadLogItemsForGroup(int groupIndex) {

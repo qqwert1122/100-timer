@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
+import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
@@ -24,7 +25,7 @@ class _ActivityHeatMapState extends State<ActivityHeatMap> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final statsProvider = Provider.of<StatsProvider>(context, listen: false);
       if (statsProvider.heatMapDataSet.isEmpty) {
-        print("히트맵 데이터가 비어있습니다. 데이터를 초기화합니다.");
+        logger.d("히트맵 데이터가 비어있습니다. 데이터를 초기화합니다.");
         statsProvider.initializeHeatMapData();
       }
     });

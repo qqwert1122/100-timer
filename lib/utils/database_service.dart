@@ -38,7 +38,7 @@ class DatabaseService {
     // 데이터베이스 열기 또는 생성
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDb,
       onUpgrade: _onUpgrade, // 마이그레이션 처리
     );
@@ -90,6 +90,19 @@ class DatabaseService {
         timezone TEXT,
         long_session_flag INTEGER
       ) 
+    ''');
+
+    await db.execute('''
+      CREATE TABLE breaks (
+        break_id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT,
+        deleted_at TEXT,
+        FOREIGN KEY (session_id) REFERENCES sessions (session_id) ON DELETE CASCADE
+      )
     ''');
 
     await db.execute('''
@@ -147,11 +160,32 @@ class DatabaseService {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    logger.i("Database upgrading from version $oldVersion to $newVersion");
     try {
-      if (oldVersion < 1) {}
+      if (oldVersion < 2) {
+        logger.i("Applying upgrade to version 2...");
+        await _upgradeToVersion2(db);
+      }
     } catch (e) {
       // error log
+
+      logger.e("Database upgrade error : $e");
     }
+  }
+
+  Future<void> _upgradeToVersion2(Database db) async {
+    await db.execute('''
+      CREATE TABLE breaks (
+        break_id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT,
+        deleted_at TEXT,
+        FOREIGN KEY (session_id) REFERENCES sessions (session_id) ON DELETE CASCADE
+      )
+    ''');
   }
 
   /*
@@ -215,8 +249,6 @@ class DatabaseService {
   }
 
   Future<String?> getTimerId(String weekStart) async {
-    final db = await database;
-
     try {
       final result = await getTimer(weekStart);
       if (result == null) return null;
@@ -407,9 +439,8 @@ class DatabaseService {
 
           // 최대값 + 1로 새 순서 설정
           update['favorite_order'] = maxOrder + 1;
-          print('새로운 즐겨찾기 순서 할당: ${maxOrder + 1}');
         } catch (e) {
-          print('즐겨찾기 순서 조회 오류: $e');
+          logger.e('즐겨찾기 순서 조회 오류: $e');
           // 오류 시 기본값 할당
           update['favorite_order'] = 999;
         }
@@ -822,7 +853,7 @@ class DatabaseService {
 
       return results;
     } catch (e) {
-      print("Error in getSessionsWithinDateRange: $e");
+      logger.e("Error in getSessionsWithinDateRange: $e");
       return [];
     }
   }
@@ -849,7 +880,7 @@ class DatabaseService {
 
       return results;
     } catch (e) {
-      print("Error in getSessionsWithinDateRangeAndActivityId: $e");
+      logger.e("Error in getSessionsWithinDateRangeAndActivityId: $e");
       return [];
     }
   }
@@ -904,6 +935,28 @@ class DatabaseService {
       logger.e('getSessionsByActivityId 오류: $e');
       return [];
     }
+  }
+
+  Future<Map<String, dynamic>?> getNextSession(String currentSessionId) async {
+    final db = await database;
+
+    // 현재 세션 정보 가져오기
+    final currentSession = await getSession(currentSessionId);
+    if (currentSession == null) return null;
+
+    final currentEndTime = currentSession['end_time'];
+    if (currentEndTime == null) return null;
+
+    // 현재 세션 종료 이후 가장 빠른 세션 찾기
+    final result = await db.query(
+      'sessions',
+      where: 'start_time > ? AND is_deleted = 0',
+      whereArgs: [currentEndTime],
+      orderBy: 'start_time ASC',
+      limit: 1,
+    );
+
+    return result.isNotEmpty ? result.first : null;
   }
 
   Future<void> endSession({
@@ -973,6 +1026,7 @@ class DatabaseService {
     required String activityName,
     required String activityColor,
     required String activityIcon,
+    String? endTime,
   }) async {
     final db = await database;
 
@@ -1002,6 +1056,10 @@ class DatabaseService {
           'activity_color': activityColor,
           'activity_icon': activityIcon,
         };
+
+        if (endTime != null) {
+          updateData['end_time'] = endTime;
+        }
 
         await txn.update(
           'sessions',
@@ -1033,6 +1091,137 @@ class DatabaseService {
       );
     } catch (e) {
       // error log
+    }
+  }
+
+  /*
+
+    @break
+
+  */
+
+  Future<void> createBreak({required String sessionId}) async {
+    final db = await database;
+    final now = DateTime.now().toUtc().toIso8601String();
+    final breakId = const Uuid().v4();
+
+    try {
+      await db.insert('breaks', {
+        'break_id': breakId,
+        'session_id': sessionId,
+        'start_time': now,
+        'end_time': null,
+        'created_at': now,
+        'updated_at': now,
+        'deleted_at': null,
+      });
+    } catch (e) {
+      logger.e('error in createBreak : $e');
+    }
+  }
+
+  Future<void> endBreak({required String sessionId}) async {
+    final db = await database;
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    try {
+      await db.transaction((txn) async {
+        final updateData = {
+          'updated_at': now,
+          'end_time': now,
+        };
+
+        await txn.update(
+          'breaks',
+          updateData,
+          where: 'session_id = ? AND end_time IS NULL AND deleted_at IS NULL',
+          whereArgs: [sessionId],
+        );
+      });
+    } catch (e) {
+      // error log
+
+      logger.d('Error in endBreak: $e');
+    }
+  }
+
+  Future<bool> updateBreak({
+    required String breakId,
+    required String startTime,
+    String? endTime,
+  }) async {
+    final db = await database;
+
+    try {
+      final result = await db.update(
+        'breaks',
+        {
+          'start_time': startTime,
+          'end_time': endTime,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'break_id = ?',
+        whereArgs: [breakId],
+      );
+
+      return result > 0;
+    } catch (e) {
+      logger.d('Error updating break: $e');
+      return false;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getBreaks({required String sessionId}) async {
+    final db = await database;
+
+    try {
+      final List<Map<String, dynamic>> results = await db.query(
+        'breaks',
+        where: 'session_id = ? AND deleted_at IS NULL',
+        whereArgs: [sessionId],
+        orderBy: 'start_time ASC',
+      );
+
+      return results;
+    } catch (e) {
+      logger.d('Error in getAllBreaks: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getFinishedBreaks({required String sessionId}) async {
+    final db = await database;
+
+    try {
+      final List<Map<String, dynamic>> results = await db.query(
+        'breaks',
+        where: 'session_id = ? AND deleted_at IS NULL AND end_time IS NOT NULL',
+        whereArgs: [sessionId],
+        orderBy: 'start_time DESC',
+      );
+
+      return results;
+    } catch (e) {
+      logger.d('Error in getFinishedBreaks: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getLiveBreaks({required String sessionId}) async {
+    final db = await database;
+
+    try {
+      final List<Map<String, dynamic>> results = await db.query(
+        'breaks',
+        where: 'session_id = ? AND end_time IS NULL',
+        whereArgs: [sessionId],
+        orderBy: 'start_time DESC',
+      );
+
+      return results;
+    } catch (e) {
+      logger.d('Error in getLiveSessions: $e');
+      return [];
     }
   }
 }

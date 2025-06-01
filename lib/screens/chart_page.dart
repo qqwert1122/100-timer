@@ -1,21 +1,18 @@
 import 'dart:io';
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:just_the_tooltip/just_the_tooltip.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
-import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/widgets/activity_heat_map.dart';
 import 'package:project1/widgets/dahboard_section.dart';
-import 'package:project1/widgets/toggle_total_view_swtich.dart';
 import 'package:project1/widgets/weekly_activity_chart.dart';
 import 'package:project1/widgets/weekly_heatmap.dart';
 import 'package:project1/widgets/weekly_session_status.dart';
@@ -85,7 +82,7 @@ class _ChartPageState extends State<ChartPage> {
         },
         onAdFailedToLoad: (Ad ad, LoadAdError error) {
           ad.dispose();
-          print('BannerAd failed to load: $error');
+          logger.e('BannerAd failed to load: $error');
         },
       ),
     );
@@ -103,7 +100,7 @@ class _ChartPageState extends State<ChartPage> {
         },
         onAdFailedToLoad: (Ad ad, LoadAdError error) {
           ad.dispose();
-          print('BannerAd failed to load: $error');
+          logger.e('BannerAd failed to load: $error');
         },
       ),
     );
@@ -159,8 +156,7 @@ class _ChartPageState extends State<ChartPage> {
     if (!mounted || _scrollController == null) return;
 
     // 오프셋 섹션이 상단에 도달했는지 확인 (임계값 설정)
-    double offsetSectionThreshold =
-        context.hp(8) + 5 + context.xl + context.hp(2);
+    double offsetSectionThreshold = context.hp(8) + 5 + context.xl + context.hp(2);
     bool shouldPin = _scrollController!.offset > offsetSectionThreshold;
 
     if (shouldPin != _isOffsetSectionPinned) {
@@ -337,8 +333,7 @@ class _ChartPageState extends State<ChartPage> {
                   ),
                   Text(
                     stats.getSelectedWeekLabel(),
-                    style: AppTextStyles.getBody(context)
-                        .copyWith(fontWeight: FontWeight.w900),
+                    style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
                   ),
                   IconButton(
                     icon: Icon(
@@ -366,8 +361,7 @@ class _ChartPageState extends State<ChartPage> {
 
                             // 데이터 로드 및 스크롤 위치 복원
                             WidgetsBinding.instance.addPostFrameCallback((_) {
-                              _preloadDataAndRestoreScroll(
-                                  currentScrollPosition);
+                              _preloadDataAndRestoreScroll(currentScrollPosition);
                             });
                           },
                   ),
@@ -393,8 +387,7 @@ class _ChartPageState extends State<ChartPage> {
     // 데이터 로드 완료 후 스크롤 위치 복원
     if (mounted && _scrollController?.hasClients == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollController!.jumpTo(scrollPosition.clamp(
-            0.0, _scrollController!.position.maxScrollExtent));
+        _scrollController!.jumpTo(scrollPosition.clamp(0.0, _scrollController!.position.maxScrollExtent));
 
         // 리스너 재연결
         _scrollController?.addListener(_onScroll);
@@ -402,8 +395,7 @@ class _ChartPageState extends State<ChartPage> {
     }
   }
 
-  Widget _buildHeatmapSection(
-      BuildContext context, TimerProvider timerProvider) {
+  Widget _buildHeatmapSection(BuildContext context, TimerProvider timerProvider) {
     return Container(
       padding: context.paddingSM,
       decoration: BoxDecoration(
@@ -437,8 +429,7 @@ class _ChartPageState extends State<ChartPage> {
     );
   }
 
-  Widget _buildActivityTimeSection(
-      BuildContext context, TimerProvider timerProvider) {
+  Widget _buildActivityTimeSection(BuildContext context, TimerProvider timerProvider) {
     return Container(
       // padding: context.paddingSM,
       decoration: BoxDecoration(
@@ -466,8 +457,7 @@ class _ChartPageState extends State<ChartPage> {
               Text('잔디심기', style: AppTextStyles.getTitle(context)),
               const SizedBox(width: 8),
               JustTheTooltip(
-                backgroundColor:
-                    AppColors.textPrimary(context).withValues(alpha: 0.9),
+                backgroundColor: AppColors.textPrimary(context).withValues(alpha: 0.9),
                 preferredDirection: AxisDirection.up,
                 tailLength: 10.0,
                 tailBaseWidth: 20.0,
@@ -519,15 +509,12 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => maxHeight;
 
   @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return SizedBox.expand(child: child);
   }
 
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return maxHeight != oldDelegate.maxHeight ||
-        minHeight != oldDelegate.minHeight ||
-        child != oldDelegate.child;
+    return maxHeight != oldDelegate.maxHeight || minHeight != oldDelegate.minHeight || child != oldDelegate.child;
   }
 }

@@ -67,13 +67,7 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     if (_pages.isEmpty) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(
-            color: Colors.grey,
-          ),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator(color: Colors.grey)));
     }
 
     final bool isTimerRunningPage = _pages[_selectedIndex] is TimerRunningPage;

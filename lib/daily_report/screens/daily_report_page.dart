@@ -243,9 +243,7 @@ class _DailyReportPageState extends State<DailyReportPage> with SingleTickerProv
                             currentSteak: currentStreak,
                           );
                         default:
-                          return CircularProgressIndicator(
-                            color: Colors.grey,
-                          );
+                          return CircularProgressIndicator(color: Colors.grey);
                       }
                     },
                   ),

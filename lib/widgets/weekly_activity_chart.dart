@@ -4,6 +4,7 @@ import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:provider/provider.dart';
@@ -33,10 +34,10 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart> with SingleTi
 
     // 애니메이션 디버깅을 위한 리스너 추가
     _animationController.addStatusListener((status) {
-      print("Animation status: $status");
+      logger.d("Animation status: $status");
     });
     _animationController.addListener(() {
-      print("Animation value: ${_animationController.value}");
+      logger.d("Animation value: ${_animationController.value}");
       // 애니메이션 값이 변경될 때마다 화면 갱신 강제
       setState(() {});
     });
@@ -49,7 +50,6 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart> with SingleTi
   }
 
   void _updateSelectedActivity(String activityName) {
-    print("Activity selected: $activityName");
     setState(() {
       if (selectedActivityName == activityName) {
         selectedActivityName = "";
@@ -61,7 +61,7 @@ class _WeeklyActivityChartState extends State<WeeklyActivityChart> with SingleTi
     // 애니메이션 재시작 (setState 전에 호출)
     _animationController.reset();
     _animationController.forward().then((_) {
-      print("애니메이션 완료");
+      logger.d("애니메이션 완료");
     });
 
     setState(() {
@@ -496,9 +496,6 @@ class BarChartPainter extends CustomPainter {
   bool shouldRepaint(covariant BarChartPainter oldDelegate) {
     // animationValue 변경이 있는지 확인하고 디버깅 출력
     final shouldRedraw = oldDelegate.selectedActivityName != selectedActivityName || oldDelegate.animationValue != animationValue;
-
-    print("애니메이션 값: $animationValue, 이전 값: ${oldDelegate.animationValue}, 다시 그리기: $shouldRedraw");
-
     return shouldRedraw;
   }
 }
