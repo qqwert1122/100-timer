@@ -253,13 +253,11 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   void didChangeDependencies() {
     // isRunning 값에 따라 애니메이션 컨트롤
     super.didChangeDependencies();
-    print('timer_running_page : didChangeDependencies');
 
     final isRunning = Provider.of<TimerProvider>(context, listen: false).isRunning;
 
     // Initialize animations only if timer is running and not already initialized
     if (isRunning && !_isAnimationInitialized) {
-      print('Initializing animations - Timer is running');
       _isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
       _initAnimations();
       _isAnimationInitialized = true;
@@ -270,7 +268,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
         }
       });
     } else if (!isRunning && _isAnimationInitialized) {
-      print('Disposing animations - Timer is not running');
       _disposeAnimations();
       _isAnimationInitialized = false;
     }
@@ -292,8 +289,6 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
   }
 
   Future<void> _handleStop({bool isSessionTargetExceeded = false, int? targetDuration}) async {
-    logger.d('@@@ timer_running_page @@@ : handleStop({$isSessionTargetExceeded, $targetDuration})');
-
     final timer = timerProvider.timerData!;
     try {
       // 메시지 Timer 정리
@@ -326,7 +321,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
         );
       }
     } catch (e) {
-      print('Error handling stop: $e');
+      logger.e('Error handling stop: $e');
     }
   }
 
@@ -624,7 +619,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                 return CircularProgressIndicator(
                   key: _circleKey,
                   value: animatedProgress,
-                  backgroundColor: _isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                  color: Colors.grey,
                   valueColor: AlwaysStoppedAnimation<Color>(activityColor),
                   strokeWidth: 8,
                   strokeCap: StrokeCap.round,

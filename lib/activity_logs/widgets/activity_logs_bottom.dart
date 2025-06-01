@@ -1,24 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:project1/theme/app_text_style.dart';
 
-class ActivityLogBottom extends StatefulWidget {
+class ActivityLogsBottom extends StatefulWidget {
   final bool isLoadingMore;
   final bool loadingError;
   final Future<void> Function() loadMoreData;
   final bool hasMoreData;
 
-  const ActivityLogBottom(
-      {required this.isLoadingMore,
-      required this.loadingError,
-      required this.loadMoreData,
-      required this.hasMoreData,
-      super.key});
+  const ActivityLogsBottom(
+      {required this.isLoadingMore, required this.loadingError, required this.loadMoreData, required this.hasMoreData, super.key});
 
   @override
-  State<ActivityLogBottom> createState() => _ActivityLogBottomState();
+  State<ActivityLogsBottom> createState() => _ActivityLogsBottomState();
 }
 
-class _ActivityLogBottomState extends State<ActivityLogBottom> {
+class _ActivityLogsBottomState extends State<ActivityLogsBottom> {
   @override
   Widget build(BuildContext context) {
     if (widget.isLoadingMore) {

@@ -125,8 +125,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   Future<void> initializeFromLastSession() async {
     try {
-      print('### timerProvider ### : initializeFromLastSession()');
-
       // 이미 초기화되었는지 확인
       if (_isTimerProviderInit) return;
 
@@ -155,7 +153,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
       // timer_state가 RUNNING일 경우
       if (timer['timer_state'] == 'RUNNING') {
-        logger.d('### timerProvider ### : initializeFromLastSession >> timer[timer_state] == RUNNING');
         _currentState = 'RUNNING';
         _isRunning = true;
 
@@ -170,14 +167,10 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         // 시간이 경과했으므로 목표 시간 초과 여부 확인
         int? sessiontargetDuration = session['target_duration'];
         if (sessiontargetDuration != null && totalDuration >= sessiontargetDuration) {
-          print(
-              'timerProvider: initializeFromLastSession >> timer[timer_state] == RUNNING >> sessiontargetDuration != null && totalDuration >= sessiontargetDuration');
           // session의 targetDuration을 초과했을 경우 세션 완료 처리
           await stopTimer(isSessionTargetExceeded: true, sessionId: sessionId);
           _isSessionTargetExceeded = true;
         } else {
-          print('timerProvider: initializeFromLastSession >> timer[timer_state] == RUNNING >> else');
-
           // targetDuration이 null일 경우
           // 또는 targetDuration을 초과하지 않았을 경우 duration과 targetDuration 업데이트
           _currentSessionDuration = totalDuration;
@@ -196,7 +189,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
           );
         }
       } else if (timer['timer_state'] == 'PAUSED') {
-        print('timerProvider: initializeFromLastSession >> timer[timer_state] == PAUSED');
         // 세션 상태 복원
         _currentState = 'PAUSED';
         _isRunning = true;
@@ -441,7 +433,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         notifyListeners();
       }
     } catch (e) {
-      print('Error in _onAppResumed: $e');
+      logger.e('Error in _onAppResumed: $e');
     }
   }
 
@@ -668,7 +660,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     try {
       // sessionId 유효성 검사
       if (sessionId.isEmpty) {
-        print('Warning: Invalid sessionId provided to resumeTimer');
         sessionId = _timerData?['current_session_id'];
       }
 
@@ -709,6 +700,8 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         },
       );
 
+      await _dbService.endBreak(sessionId: sessionId); // 휴식 종료
+
       // UI 업데이트가 아직 안되었으면 처리
       if (!updateUIImmediately) {
         _currentState = 'RUNNING';
@@ -727,7 +720,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         await _schedulePmdrCompletion(scheduledSec: remaining, targetSec: _currentSessionTargetDuration!);
       }
     } catch (e) {
-      print('Error in resumeTimer: $e');
+      logger.e('Error in resumeTimer: $e');
     }
   }
 
@@ -742,6 +735,9 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     // 백그라운드에서 DB 업데이트
     try {
       DateTime now = DateTime.now().toUtc();
+      final sessionId = _timerData!['current_session_id'];
+
+      // timer 상태 업데이트
       await _dbService.updateTimer(
         _timerData!['timer_id'],
         {
@@ -749,6 +745,9 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
           'timer_state': 'PAUSED',
         },
       );
+
+      _cleanupBreaks(sessionId: sessionId); // 중복 휴식 방지
+      await _dbService.createBreak(sessionId: sessionId); // 휴식 생성
 
       if (!updateUIImmediately) {
         _currentState = 'PAUSED';
@@ -763,7 +762,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         await _cancelPmdrCompletion();
       }
     } catch (e) {
-      print('Error in pauseTimer: $e');
+      logger.e('Error in pauseTimer: $e');
     }
   }
 
@@ -807,7 +806,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<void> stopTimer({required bool isSessionTargetExceeded, required String sessionId}) async {
-    print('### timerProvider ### : stopTimer($isSessionTargetExceeded, $sessionId)');
     try {
       // 타이머 즉시 중지
       _timer?.cancel();
@@ -837,6 +835,12 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         endTime: endTime.toIso8601String(),
         duration: totalDuration,
       );
+
+      final breaks = await _dbService.getLiveBreaks(sessionId: sessionId);
+
+      if (breaks.isNotEmpty) {
+        await _dbService.endBreak(sessionId: sessionId);
+      }
 
       // 2) _timerData 및 'timer_id' 체크
       if (_timerData == null || !_timerData!.containsKey('timer_id')) return;
@@ -923,12 +927,20 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
     logger.d('currentSession : $currentSession');
 
     for (var session in sessions) {
-      logger.d('${session['session_id']}-${session['session_state']}');
-
       if (session['session_state'] == 'RUNNING' && session['session_id'] != currentSessionId) {
         logger.d('terminate > ${session['session_id']}');
         await _dbService.terminateSession(sessionId: session['session_id']);
       }
+    }
+  }
+
+  Future<void> _cleanupBreaks({required String sessionId}) async {
+    logger.d('cleanupBreaks 작동');
+
+    final breaks = await _dbService.getLiveBreaks(sessionId: sessionId);
+
+    if (breaks.isNotEmpty) {
+      await _dbService.endBreak(sessionId: sessionId);
     }
   }
 

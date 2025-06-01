@@ -244,7 +244,7 @@ class _DateRangePickerBottomSheetState extends State<DateRangePickerBottomSheet>
                           height: 10,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppColors.textSecondary(context),
+                            color: Colors.grey,
                           ),
                         ),
                       ),
@@ -289,7 +289,7 @@ class _DateRangePickerBottomSheetState extends State<DateRangePickerBottomSheet>
                           height: 10,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppColors.textSecondary(context),
+                            color: Colors.grey,
                           ),
                         ),
                       ),

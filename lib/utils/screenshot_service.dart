@@ -63,7 +63,7 @@ class ScreenshotService {
 
       return saveResult;
     } catch (e) {
-      debugPrint('ScreenshotService error: $e');
+      logger.e('ScreenshotService error: $e');
       return ScreenshotResult(
         success: false,
         message: '저장 중 오류가 발생했습니다.',
@@ -94,8 +94,6 @@ class ScreenshotService {
     if (Platform.isAndroid) {
       final androidInfo = await DeviceInfoPlugin().androidInfo;
 
-      debugPrint('Android SDK: ${androidInfo.version.sdkInt}');
-
       if (androidInfo.version.sdkInt >= 33) {
         // Android 13 이상: 먼저 저장을 시도
         // ImageGallerySaver는 Scoped Storage를 사용하므로
@@ -123,17 +121,13 @@ class ScreenshotService {
     try {
       final status = await Permission.photos.status;
 
-      debugPrint('Android 13 Photos permission status: $status');
-
       if (status.isGranted) {
         return _PermissionResult(isGranted: true);
       }
 
       if (status.isDenied) {
         // 권한 요청 다이얼로그 표시
-        debugPrint('Requesting photos permission...');
         final result = await Permission.photos.request();
-        debugPrint('Photos permission request result: $result');
 
         if (result.isGranted) {
           return _PermissionResult(isGranted: true);
@@ -165,7 +159,7 @@ class ScreenshotService {
         message: '권한 상태를 확인할 수 없습니다.',
       );
     } catch (e) {
-      debugPrint('Permission error: $e');
+      logger.e('Permission error: $e');
       return _PermissionResult(
         isGranted: false,
         message: '권한 요청 중 오류가 발생했습니다.',
@@ -218,8 +212,7 @@ class ScreenshotService {
     required double pixelRatio,
   }) async {
     try {
-      final RenderRepaintBoundary? boundary = boundaryKey.currentContext
-          ?.findRenderObject() as RenderRepaintBoundary?;
+      final RenderRepaintBoundary? boundary = boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
 
       if (boundary == null) {
         return _CaptureResult(
@@ -229,8 +222,7 @@ class ScreenshotService {
       }
 
       final ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
-      final ByteData? byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
       if (byteData == null) {
         return _CaptureResult(
@@ -245,7 +237,7 @@ class ScreenshotService {
         imageData: byteData.buffer.asUint8List(),
       );
     } catch (e) {
-      debugPrint('Screenshot capture error: $e');
+      logger.e('Screenshot capture error: $e');
       return _CaptureResult(
         success: false,
         message: '스크린샷 캡처 중 오류가 발생했습니다.',
@@ -278,7 +270,7 @@ class ScreenshotService {
         );
       }
     } catch (e) {
-      debugPrint('Gallery save error: $e');
+      logger.e('Gallery save error: $e');
       return ScreenshotResult(
         success: false,
         message: '갤러리 저장 중 오류가 발생했습니다.',

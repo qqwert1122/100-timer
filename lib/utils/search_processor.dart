@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:project1/utils/log_processor.dart';
+import 'package:project1/utils/logger_config.dart';
 
 class SearchProcessor {
   static final SearchProcessor _instance = SearchProcessor._internal();
@@ -71,7 +72,7 @@ class SearchProcessor {
       // 검색 완료 콜백 (로그 초기화 등)
       onSearchComplete();
     } catch (e) {
-      print('검색 처리 오류: $e');
+      logger.e('검색 처리 오류: $e');
     } finally {
       // 작업 완료 표시
       if (!_currentSearchOperation!.isCompleted) {

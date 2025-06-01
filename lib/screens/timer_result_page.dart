@@ -117,7 +117,7 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
         },
         onAdFailedToLoad: (Ad ad, LoadAdError error) {
           ad.dispose();
-          print('BannerAd failed to load: $error');
+          logger.e('BannerAd failed to load: $error');
         },
       ),
     );

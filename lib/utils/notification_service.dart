@@ -111,7 +111,7 @@ class NotificationService {
         ),
       );
     } on PlatformException catch (e) {
-      debugPrint('AwesomeNotif error: ${e.code} ${e.message}');
+      logger.e('AwesomeNotif error: ${e.code} ${e.message}');
       return;
     }
   }
@@ -148,7 +148,7 @@ class NotificationService {
         ),
       );
     } on PlatformException catch (e) {
-      debugPrint('AwesomeNotif error: ${e.code} ${e.message}');
+      logger.e('AwesomeNotif error: ${e.code} ${e.message}');
       return;
     }
   }
@@ -179,7 +179,7 @@ class NotificationService {
         schedule: NotificationCalendar.fromDate(date: reminderTime),
       );
     } on PlatformException catch (e) {
-      debugPrint('AwesomeNotif error: ${e.code} ${e.message}');
+      logger.e('AwesomeNotif error: ${e.code} ${e.message}');
       return;
     }
   }
@@ -214,7 +214,7 @@ class NotificationService {
         schedule: NotificationCalendar.fromDate(date: newScheduledTime),
       );
     } on PlatformException catch (e) {
-      debugPrint('AwesomeNotif error: ${e.code} ${e.message}');
+      logger.e('AwesomeNotif error: ${e.code} ${e.message}');
       return;
     }
   }

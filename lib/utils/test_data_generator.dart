@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:project1/utils/logger_config.dart';
 import 'package:uuid/uuid.dart';
 import 'package:project1/utils/database_service.dart';
 
@@ -18,7 +19,7 @@ class TestDataGenerator {
     await _insertTestSessions(monthsOfHistory);
     await _insertTestTodos();
 
-    print('모든 테스트 데이터가 성공적으로 주입되었습니다. $monthsOfHistory개월치 세션 이력이 생성되었습니다.');
+    logger.d('모든 테스트 데이터가 성공적으로 주입되었습니다. $monthsOfHistory개월치 세션 이력이 생성되었습니다.');
   }
 
   /// 테스트용 타이머 데이터 생성 및 주입
@@ -62,7 +63,7 @@ class TestDataGenerator {
       }
     }
 
-    print('$monthsOfHistory개월치 타이머 데이터가 주입되었습니다.');
+    logger.d('$monthsOfHistory개월치 타이머 데이터가 주입되었습니다.');
   }
 
   /// 테스트용 세션 데이터 생성 및 주입
@@ -70,14 +71,14 @@ class TestDataGenerator {
     // 활동 데이터 가져오기
     final activities = await _dbService.getActivities();
     if (activities.isEmpty) {
-      print('활동 데이터가 없습니다. 세션 데이터를 생성할 수 없습니다.');
+      logger.d('활동 데이터가 없습니다. 세션 데이터를 생성할 수 없습니다.');
       return;
     }
 
     // 모든 타이머 가져오기
     final timers = await _dbService.getAllTimers();
     if (timers.isEmpty) {
-      print('타이머 데이터가 없습니다. 세션 데이터를 생성할 수 없습니다.');
+      logger.d('타이머 데이터가 없습니다. 세션 데이터를 생성할 수 없습니다.');
       return;
     }
 
@@ -217,19 +218,19 @@ class TestDataGenerator {
           }
         }
       } catch (e) {
-        print('주 $weekStart에 대한 세션 생성 중 오류: $e');
+        logger.d('주 $weekStart에 대한 세션 생성 중 오류: $e');
         continue;
       }
     }
 
-    print('총 세션 데이터 $totalSessions개가 주입되었습니다.');
+    logger.d('총 세션 데이터 $totalSessions개가 주입되었습니다.');
   }
 
   /// 테스트용 할 일 데이터 생성 및 주입
   Future<void> _insertTestTodos() async {
     final activities = await _dbService.getActivities();
     if (activities.isEmpty) {
-      print('활동 데이터가 없습니다. 할 일 데이터를 생성할 수 없습니다.');
+      logger.d('활동 데이터가 없습니다. 할 일 데이터를 생성할 수 없습니다.');
       return;
     }
 
@@ -278,7 +279,7 @@ class TestDataGenerator {
       await _dbService.insertTodo(todo);
     }
 
-    print('할 일 데이터 ${todos.length}개가 주입되었습니다.');
+    logger.d('할 일 데이터 ${todos.length}개가 주입되었습니다.');
   }
 
   /// ISO 형식의 날짜 문자열 반환 (날짜만)

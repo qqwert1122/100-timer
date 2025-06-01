@@ -13,7 +13,7 @@ import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/responsive_size.dart';
-import 'package:project1/utils/time.formatter.dart';
+import 'package:project1/utils/time_formatter.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -573,10 +573,7 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
   /// "전체 활동" 탭 – CustomScrollView 내에 검색 영역, 섹션 헤더 및 ReorderableListView 구성
   Widget _buildAllTab() {
     if (_isLoading) {
-      return Center(
-          child: CircularProgressIndicator(
-        color: AppColors.backgroundSecondary(context),
-      ));
+      return Center(child: CircularProgressIndicator(color: Colors.grey));
     }
 
     // 검색 시 전체(즐겨찾기+일반) 활동으로 필터링
@@ -753,7 +750,7 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
   /// "최근 활동" 탭 – last_used_at 내림차순 ListView로 노출 (startActionPane 없이)
   Widget _buildRecentTab() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: Colors.grey));
     }
 
     if (_recentActivities.isEmpty) {
@@ -934,7 +931,6 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
                             isSearching = false;
                           });
                         }
-                        print('Debounced search executed: $query');
                       });
                     },
                     onSubmitted: (query) {
@@ -951,7 +947,6 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
                           isSearching = false;
                         });
                       }
-                      print('onSubmitted: $query');
                     },
                     decoration: InputDecoration(
                       hintText: "활동 이름을 검색하세요",

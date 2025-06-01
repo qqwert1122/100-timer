@@ -279,7 +279,7 @@ class _SettingPageState extends State<SettingPage> {
 
     final List<Map<String, dynamic>> informationItems = [
       {
-        'title': '리뷰 남기기',
+        'title': '별점 5점 남기러 가기',
         'image': 'star',
         'description': '어플이 마음에 든다면 리뷰를 남겨주세요',
         'onTap': () async {

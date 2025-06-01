@@ -1,4 +1,5 @@
 import 'package:just_audio/just_audio.dart';
+import 'package:project1/utils/logger_config.dart';
 
 class MusicPlayer {
   static final MusicPlayer _instance = MusicPlayer._internal();
@@ -63,7 +64,7 @@ class MusicPlayer {
       // 재생 시작
       await _audioPlayer.play();
     } catch (e) {
-      print('음악 재생 오류: $e');
+      logger.e('음악 재생 오류: $e');
       // 에러 발생 시 기본 음악으로 대체하거나 오류 메시지 표시 등의 처리
     }
   }
