@@ -205,8 +205,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   Future<void> setTimer() async {
     try {
-      logger.d('[timerProvider] setTimer');
-
       String weekStart = getWeekStart(DateTime.now()); // 해당 주차
       final rawTimerData = await _dbService.getTimer(weekStart); // 해당 주차의 timerData
 
@@ -267,17 +265,19 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   Future<Map<String, dynamic>> _createNewTimer(String weekStart) async {
     try {
-      logger.d('[timerProvider] create New Timer');
-      int userTotalSeconds = PrefsService().totalSeconds;
-
       String timerId = const Uuid().v4();
+      Map<String, dynamic>? checkResult = await checkRecentTimer();
+      String? sessionId = checkResult?['session_id'];
+      String timerState = checkResult?['timer_state'] ?? 'STOP';
+      int userTotalSeconds = PrefsService().totalSeconds;
       String nowUtcStr = DateTime.now().toUtc().toIso8601String();
+
       Map<String, dynamic> timerData = {
         'timer_id': timerId,
-        'current_session_id': null,
+        'current_session_id': sessionId,
         'week_start': weekStart,
         'total_seconds': userTotalSeconds,
-        'timer_state': 'STOP',
+        'timer_state': timerState,
         'created_at': nowUtcStr,
         'deleted_at': null,
         'last_started_at': null,
@@ -293,6 +293,39 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       // error log
       return {};
     }
+  }
+
+  Future<Map<String, dynamic>?> checkRecentTimer() async {
+    Map<String, dynamic>? recentTimer = await _dbService.getRecentTimer();
+    String nowUtcStr = DateTime.now().toUtc().toIso8601String();
+
+    if (recentTimer == null || recentTimer['timer_state'] == 'STOP') return null;
+
+    if (recentTimer['current_session_id'] == null) {
+      await _updateTimerToStop(recentTimer['timer_id'], nowUtcStr);
+      return null;
+    }
+
+    Map<String, dynamic>? currentSession = await _dbService.getSession(recentTimer['current_session_id']);
+
+    if (currentSession == null || currentSession['session_state'] == 'ENDED') {
+      await _updateTimerToStop(recentTimer['timer_id'], nowUtcStr);
+      return null;
+    }
+
+    await _updateTimerToStop(recentTimer['timer_id'], nowUtcStr);
+    return {
+      'session_id': recentTimer['current_session_id'],
+      'timer_state': recentTimer['timer_state'],
+    };
+  }
+
+  Future<void> _updateTimerToStop(String timerId, String timestamp) async {
+    await _dbService.updateTimer(timerId, {
+      'timer_state': 'STOP',
+      'last_updated_at': timestamp,
+      'current_session_id': null,
+    });
   }
 
   // 현재 활동 정보를 설정하는 메서드
@@ -416,8 +449,6 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
         DateTime lastUpdatedAt = DateTime.parse(lastSession['last_updated_at']);
         int elapsedSeconds = now.difference(lastUpdatedAt).inSeconds;
 
-        logger.d('onAppresumed에 따른 session 시간 계산 : $lastUpdatedAt');
-        logger.d('onAppresumed에 따른 session 시간 계산 : $elapsedSeconds');
         // 세션의 진행 시간을 업데이트 (백그라운드에서 경과한 시간 포함)
         int updatedDuration = lastSession['duration'] + elapsedSeconds;
         await _dbService.updateSession(
