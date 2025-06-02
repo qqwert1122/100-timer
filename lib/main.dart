@@ -245,18 +245,20 @@ class _MyAppState extends State<MyApp> {
 
 // 기본 타이머 생성 메서드
   Future<Map<String, dynamic>> _createDefaultTimer() async {
-    logger.d('@@@ main @@@ _createDefaultTimer()');
+    final timerId = const Uuid().v4();
+    Map<String, dynamic>? checkResult = await _timerProvider.checkRecentTimer();
+    String? sessionId = checkResult?['session_id'];
+    String timerState = checkResult?['timer_state'] ?? 'STOP';
     final now = DateTime.now();
     final weekStart = getWeekStart(now);
-    final timerId = const Uuid().v4();
     final userTotalSeconds = PrefsService().totalSeconds;
 
     final timer = {
       'timer_id': timerId,
-      'current_session_id': null,
+      'current_session_id': sessionId,
       'week_start': weekStart,
       'total_seconds': userTotalSeconds,
-      'timer_state': 'STOP', // 'STOP'이면 TimerPage, 그 외면 TimerRunningPage로 이동
+      'timer_state': timerState,
       'created_at': now.toUtc().toIso8601String(),
       'deleted_at': null,
       'last_started_at': null,

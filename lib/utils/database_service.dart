@@ -264,6 +264,28 @@ class DatabaseService {
     }
   }
 
+  Future<Map<String, dynamic>?> getRecentTimer() async {
+    final db = await database;
+
+    try {
+      final List<Map<String, dynamic>> result = await db.query(
+        'timers',
+        where: 'is_deleted = 0',
+        orderBy: 'week_start DESC',
+        limit: 1,
+      );
+
+      if (result.isNotEmpty) {
+        return result.first;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      // error log
+      return null;
+    }
+  }
+
   // 타이머 업데이트
   Future<void> updateTimer(String timerId, Map<String, dynamic> updatedData) async {
     final db = await database;

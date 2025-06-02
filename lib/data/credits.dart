@@ -205,6 +205,12 @@ const List<Map<String, dynamic>> creditList = [
     'link': 'https://pub.dev/packages/image_gallery_saver_plus',
   },
   {
+    'category': '오픈 소스 라이브러리',
+    'title': 'timeline_tile',
+    'description': '이 어플리케이션은 timeline_tile 라이브러리를 사용했어요.',
+    'link': 'https://pub.dev/packages/timeline_tile',
+  },
+  {
     'category': '폰트',
     'title': '나눔휴먼,나눔스퀘어네오',
     'description': '이 어플리케이션은 나눔휴먼체, 나눔스퀘어네오체를 사용했어요',
