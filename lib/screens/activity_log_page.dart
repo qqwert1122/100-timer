@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,7 +64,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   bool _hasMoreData = true; // 추가 load flag
   bool _loadingError = false;
   static const int _loadMoreThreshold = 3; // 스크롤 임계치 설정: 리스트 하단에서 몇 개 남았을 때 로드할지 결정
-  static const int _maxStoredWeeks = 12; // 메모리에 최대 유지할 주차 수 (예, 12주치 데이터)
+  static const int _maxStoredWeeks = 6; // 메모리에 최대 유지할 주차 수 (예, 6주치 데이터)
 
   DateTime? _earliestSessionDate;
 
@@ -947,6 +948,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
   }
 
   Future<void> _editActivityLog(Map<String, dynamic> log) async {
+    await FacebookAppEvents().logEvent(
+      name: 'show_log_detail',
+      valueToSum: 1,
+    );
     final updatedLog = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -956,9 +961,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
       ),
     );
 
+    logger.d('updatedLog after : $updatedLog');
     if (updatedLog != null) {
-      logger.d('updatedLog after : $updatedLog');
-
       // Provider를 통해 전체 데이터를 다시 로드
       await _statsProvider.updateCurrentSessions();
 
@@ -1131,9 +1135,13 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
               });
             }
           },
-          onSearchComplete: () {
+          onSearchComplete: () async {
             // 별도 비동기 작업으로 로그 초기화
             logger.d('search Complete');
+            await FacebookAppEvents().logEvent(
+              name: 'search_log_by_name',
+              valueToSum: 1,
+            );
             Future.microtask(() async {
               if (mounted) {
                 await _loadInitialData();
@@ -1201,7 +1209,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
               child: TextField(
                 controller: searchController,
                 textInputAction: TextInputAction.search,
-                onChanged: (query) {
+                onChanged: (query) async {
+                  await FacebookAppEvents().logEvent(
+                    name: 'search_log_by_name',
+                    valueToSum: 1,
+                  );
                   _onSearchChanged(query);
                 },
                 onSubmitted: (query) {
@@ -1227,7 +1239,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
                           });
                         }
                       },
-                      onSearchComplete: () {
+                      onSearchComplete: () async {
+                        await FacebookAppEvents().logEvent(
+                          name: 'search_log_by_name',
+                          valueToSum: 1,
+                        );
                         Future.microtask(() async {
                           if (mounted) {
                             await _loadInitialData();
@@ -1317,6 +1333,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
           end: DateTime.now(),
         );
       }
+
+      await FacebookAppEvents().logEvent(
+        name: 'search_log_by_date',
+        valueToSum: 1,
+      );
 
       // 바텀시트 표시 - 정적 메서드 사용
       final result = await DateRangePickerBottomSheet.show(
@@ -1435,15 +1456,29 @@ class _ActivityLogPageState extends State<ActivityLogPage> with AutomaticKeepAli
           ],
         ),
         child: ListTile(
-          onTap: () => showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: AppColors.background(context),
-            builder: (context) {
-              HapticFeedback.lightImpact();
-              return LogDetailBottonSheet(log: log);
-            },
-          ),
+          onTap: () async {
+            HapticFeedback.lightImpact();
+            await FacebookAppEvents().logEvent(
+              name: 'show_log_edit_page',
+              valueToSum: 1,
+            );
+
+            final updatedLog = await showModalBottomSheet<Map<String, dynamic>>(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: AppColors.background(context),
+              builder: (context) {
+                return LogDetailBottonSheet(log: log);
+              },
+            );
+
+            if (updatedLog != null) {
+              await _statsProvider.updateCurrentSessions();
+              await LogCache.clearAsync();
+              await _refreshLogs();
+              setState(() {});
+            }
+          },
           leading: IconCache.getIcon(log['activity_icon'], context.xl, context.xl),
           title: Row(
             mainAxisAlignment: MainAxisAlignment.start,

@@ -1,3 +1,4 @@
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -99,7 +100,7 @@ class _DailyReportPageState extends State<DailyReportPage> with SingleTickerProv
     ));
   }
 
-  void _changeSize(String sizeType) {
+  void _changeSize(String sizeType) async {
     if (_selectedSize == sizeType) return;
 
     setState(() {
@@ -108,10 +109,15 @@ class _DailyReportPageState extends State<DailyReportPage> with SingleTickerProv
     _setupAnimations(sizeType);
     _animationController.reset();
     _animationController.forward();
+
     HapticFeedback.lightImpact();
+    await FacebookAppEvents().logEvent(
+      name: 'daily_report_change_size',
+      valueToSum: 1,
+    );
   }
 
-  void _changeDate(int days) {
+  void _changeDate(int days) async {
     final newDate = selectedDate.add(Duration(days: days));
     final today = DateTime.now();
 
@@ -125,6 +131,10 @@ class _DailyReportPageState extends State<DailyReportPage> with SingleTickerProv
     logger.d(selectedDate);
     _loadDailyStats();
     HapticFeedback.lightImpact();
+    await FacebookAppEvents().logEvent(
+      name: 'daily_report_change_date',
+      valueToSum: 1,
+    );
   }
 
   void _loadDailyStats() async {
@@ -143,16 +153,18 @@ class _DailyReportPageState extends State<DailyReportPage> with SingleTickerProv
       sevenDays.add(dayTotal);
     }
 
-    setState(() {
-      isDataInsufficient = result.isDataInsufficient;
-      totalSeconds = total;
-      activityTimes = tempActivityTimes;
-      activities = tempActivities;
-      hourlyData = tempHourlyData;
-      sevenDayTimes = sevenDays;
-      comparisonData = tempComparison;
-      currentStreak = streak;
-    });
+    if (mounted) {
+      setState(() {
+        isDataInsufficient = result.isDataInsufficient;
+        totalSeconds = total;
+        activityTimes = tempActivityTimes;
+        activities = tempActivities;
+        hourlyData = tempHourlyData;
+        sevenDayTimes = sevenDays;
+        comparisonData = tempComparison;
+        currentStreak = streak;
+      });
+    }
   }
 
   @override
@@ -295,6 +307,10 @@ class _DailyReportPageState extends State<DailyReportPage> with SingleTickerProv
           Expanded(
             child: ElevatedButton.icon(
               onPressed: () async {
+                await FacebookAppEvents().logEvent(
+                  name: 'daily_report_screenshot',
+                  valueToSum: 5,
+                );
                 final result = await screenshotService.captureAndSave(
                   boundaryKey: _dailyReportRepaintBoundaryKey,
                   fileName: 'timer100_daily_report_${DateTime.now().millisecondsSinceEpoch}',

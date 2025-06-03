@@ -52,6 +52,9 @@ android {
   
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
+        resValue "string", "facebook_app_id", keystoreProperties['facebookAppId']
+        resValue "string", "facebook_client_token", keystoreProperties['facebookClientToken']
+        resValue "string", "fb_login_protocol_scheme", "fb${keystoreProperties['facebookAppId']}"
     }
 
     signingConfigs {

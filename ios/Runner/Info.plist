@@ -72,5 +72,9 @@
 		<array>
    			<integer>1</integer>
 		</array>
+		<key>CFBundleURLSchemes</key>
+        <array>
+            <string>fb725203649963444</string>
+        </array>	
 	</dict>
 </plist>

@@ -1,3 +1,4 @@
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -237,6 +238,16 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
             return GestureDetector(
               onTap: () async {
                 HapticFeedback.lightImpact();
+                await FacebookAppEvents().logEvent(
+                  name: 'timer_start',
+                  parameters: {
+                    'mode': 'focus',
+                    'target': item['value'] as int,
+                    'activity': timerProvider.currentActivityName,
+                    'isWeeklyTargetExceeded': timerProvider.isWeeklyTargetExceeded,
+                  },
+                  valueToSum: 5,
+                );
                 final int target = item['value'] as int; // 초 단위
                 try {
                   await timerProvider.startTimer(

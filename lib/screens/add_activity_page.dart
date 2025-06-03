@@ -1,3 +1,4 @@
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -168,6 +169,11 @@ class _AddActivityPageState extends State<AddActivityPage> {
           newActivityIcon: iconName,
           newActivityColor: colorValue,
         );
+
+        await FacebookAppEvents().logEvent(
+          name: 'update_activity',
+          valueToSum: 2,
+        );
         Navigator.pop(
           context,
           {
@@ -184,6 +190,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
           activityColor: colorValue,
           isDefault: false,
           parentActivityId: null,
+        );
+        await FacebookAppEvents().logEvent(
+          name: 'create_activity',
+          valueToSum: 2,
         );
         Fluttertoast.showToast(
           msg: "활동이 성공적으로 추가되었습니다",

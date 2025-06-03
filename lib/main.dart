@@ -1,3 +1,4 @@
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -105,6 +106,10 @@ void main() async {
 
     // ④ 알림
     await NotificationService().initialize();
+
+    // meta 광고 최적화
+    final facebookAppEvents = FacebookAppEvents();
+    facebookAppEvents.setAutoLogAppEventsEnabled(true);
 
     // 데이터베이스 초기
     // final dbService = DatabaseService();

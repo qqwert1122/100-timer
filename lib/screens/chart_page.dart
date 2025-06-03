@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -121,7 +122,7 @@ class _ChartPageState extends State<ChartPage> {
   }
 
   @override
-  void didChangeDependencies() {
+  void didChangeDependencies() async {
     super.didChangeDependencies();
 
     timerProvider = Provider.of<TimerProvider>(context);
@@ -150,6 +151,11 @@ class _ChartPageState extends State<ChartPage> {
         _lineChartDataLoaded = true;
       });
     }
+
+    await FacebookAppEvents().logEvent(
+      name: 'chart_init',
+      valueToSum: 2,
+    );
   }
 
   void _onScroll() {
@@ -308,9 +314,13 @@ class _ChartPageState extends State<ChartPage> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.chevron_left),
-                    onPressed: () {
+                    onPressed: () async {
                       HapticFeedback.lightImpact();
 
+                      await FacebookAppEvents().logEvent(
+                        name: 'chart_change_date',
+                        valueToSum: 1,
+                      );
                       // 현재 스크롤 위치 저장
                       double currentScrollPosition = 0;
                       if (_scrollController?.hasClients == true) {
@@ -342,9 +352,13 @@ class _ChartPageState extends State<ChartPage> {
                     ),
                     onPressed: isCurrentWeek
                         ? null
-                        : () {
+                        : () async {
                             HapticFeedback.lightImpact();
 
+                            await FacebookAppEvents().logEvent(
+                              name: 'chart_change_date',
+                              valueToSum: 1,
+                            );
                             // 현재 스크롤 위치 저장
                             double currentScrollPosition = 0;
                             if (_scrollController?.hasClients == true) {

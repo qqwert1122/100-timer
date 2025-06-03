@@ -1,3 +1,4 @@
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -62,10 +63,10 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
     _sessionData = Map.from(widget.log);
     _loadBreaks();
 
-    activityId = widget.log['activity_id'];
-    activityName = widget.log['activity_name'];
-    activityIcon = widget.log['activity_icon'];
-    activityColor = widget.log['activity_color'];
+    activityId = widget.log['activity_id'] ?? '';
+    activityName = widget.log['activity_name'] ?? '활동이름';
+    activityIcon = widget.log['activity_icon'] ?? 'category';
+    activityColor = widget.log['activity_color'] ?? '#000000';
     editMode = widget.editMode;
 
     futureActivityList = _statsProvider.getActivities(); // 활동 불러오기
@@ -140,28 +141,28 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
                   _breaks[index]['start_time'] = startDateTime!.toUtc().toIso8601String();
                   _breaks[index]['end_time'] = endDateTime.toUtc().toIso8601String();
                 }
+                if (_sessionData['end_time'] != null) {
+                  final sessionStart = DateTime.parse(_sessionData['start_time']);
+                  final sessionEnd = DateTime.parse(_sessionData['end_time']);
+                  int totalSessionSeconds = sessionEnd.difference(sessionStart).inSeconds;
 
-                // break 변경시에도 duration 재계산
-                final sessionStart = DateTime.parse(_sessionData['start_time']);
-                final sessionEnd = DateTime.parse(_sessionData['end_time']);
-                int totalSessionSeconds = sessionEnd.difference(sessionStart).inSeconds;
+                  int totalBreakSeconds = 0;
+                  for (var breakItem in _breaks) {
+                    if (breakItem['end_time'] != null) {
+                      final breakStart = DateTime.parse(breakItem['start_time']);
+                      final breakEnd = DateTime.parse(breakItem['end_time']);
+                      totalBreakSeconds += breakEnd.difference(breakStart).inSeconds;
+                    }
+                  }
 
-                int totalBreakSeconds = 0;
-                for (var breakItem in _breaks) {
-                  final breakStart = DateTime.parse(breakItem['start_time']);
-                  final breakEnd = DateTime.parse(breakItem['end_time']);
-                  totalBreakSeconds += breakEnd.difference(breakStart).inSeconds;
+                  _sessionData['duration'] = totalSessionSeconds - totalBreakSeconds;
                 }
-
-                _sessionData['duration'] = totalSessionSeconds - totalBreakSeconds;
               });
             },
           );
         },
       );
     } else {
-      DateTime time = DateTime.parse(item['time']).toLocal();
-
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -183,15 +184,23 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
 
                 _sessionData['end_time'] = endDateTime.toUtc().toIso8601String();
 
+                if (_breaks.isNotEmpty && _breaks.last['end_time'] == null) {
+                  final lastBreakStart = DateTime.parse(_breaks.last['start_time']);
+                  if (endDateTime.isAfter(lastBreakStart)) {
+                    _breaks.last['end_time'] = endDateTime.toUtc().toIso8601String();
+                  }
+                }
+
                 final sessionStart = DateTime.parse(_sessionData['start_time']);
-                final sessionEnd = DateTime.parse(_sessionData['end_time']);
-                int totalSessionSeconds = sessionEnd.difference(sessionStart).inSeconds;
+                int totalSessionSeconds = endDateTime.difference(sessionStart).inSeconds;
 
                 int totalBreakSeconds = 0;
                 for (var breakItem in _breaks) {
-                  final breakStart = DateTime.parse(breakItem['start_time']);
-                  final breakEnd = DateTime.parse(breakItem['end_time']);
-                  totalBreakSeconds += breakEnd.difference(breakStart).inSeconds;
+                  if (breakItem['end_time'] != null) {
+                    final breakStart = DateTime.parse(breakItem['start_time']);
+                    final breakEnd = DateTime.parse(breakItem['end_time']);
+                    totalBreakSeconds += breakEnd.difference(breakStart).inSeconds;
+                  }
                 }
 
                 _sessionData['duration'] = totalSessionSeconds - totalBreakSeconds;
@@ -247,6 +256,10 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
         activityColor: activityColor,
       );
     }
+    await FacebookAppEvents().logEvent(
+      name: 'update_log',
+      valueToSum: 2,
+    );
 
     _statsProvider.updateCurrentSessions();
     _timerProvider.refreshRemainingSeconds();
@@ -254,7 +267,7 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
     Navigator.of(context).pop(updatedLog); // _sessionData -> updatedLog
   }
 
-  Widget _buildTitleRow({required String label, required String color, required String icon, required int duration}) {
+  Widget _buildTitleRow({required String label, required String color, required String icon, int? duration}) {
     return Row(
       children: [
         Container(
@@ -310,13 +323,37 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
           ),
         ),
         Text(
-          formatTime(duration),
+          formatTime(duration ?? 0),
           style: AppTextStyles.getTitle(context).copyWith(
             fontWeight: FontWeight.w900,
           ),
         ),
       ],
     );
+  }
+
+  String _getTimelineDate(Map<String, dynamic> item) {
+    final timeString = item['type'] == 'break' ? item['start_time'] : item['time'];
+    return timeString != null ? formatDateOnly(timeString) : '';
+  }
+
+  String _getTimelineTimeText(Map<String, dynamic> item) {
+    if (item['type'] == 'break') {
+      final endTime = item['end_time'];
+      return endTime != null
+          ? '${formatTimeOnly(item['start_time'])}부터\n${formatTimeOnly(endTime)}까지'
+          : '${formatTimeOnly(item['start_time'])}부터\n진행중';
+    } else {
+      final time = item['time'];
+      return time != null ? formatTimeOnly(time) : '진행중';
+    }
+  }
+
+  String _getBreakDuration(Map<String, dynamic> item) {
+    if (item['type'] != 'break' || item['end_time'] == null) {
+      return '';
+    }
+    return _calculateBreakDuration(item['start_time'], item['end_time']);
   }
 
   Widget _buildTimeline() {
@@ -359,8 +396,8 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
         final item = timelineItems[index];
         final afterItem = index < timelineItems.length - 1 ? timelineItems[index + 1] : null;
 
-        String currentDate = formatDateOnly(item['time'] ?? item['start_time']);
-        String previousDate = index > 0 ? formatDateOnly(timelineItems[index - 1]['time'] ?? timelineItems[index - 1]['start_time']) : '';
+        final currentDate = _getTimelineDate(item);
+        final previousDate = index > 0 ? _getTimelineDate(timelineItems[index - 1]) : '';
 
         return TimelineTile(
           alignment: TimelineAlign.manual,
@@ -414,7 +451,7 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
                             SizedBox(width: context.wp(2)),
                             if (item['type'] == 'break')
                               Text(
-                                _calculateBreakDuration(item['start_time'], item['end_time']),
+                                _getBreakDuration(item),
                                 style: AppTextStyles.getCaption(context).copyWith(
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -422,9 +459,7 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
                           ],
                         ),
                         Text(
-                          item['type'] == 'break'
-                              ? '${formatTimeOnly(item['start_time'])}부터\n${formatTimeOnly(item['end_time'])}까지'
-                              : formatTimeOnly(item['time']),
+                          _getTimelineTimeText(item),
                           style: AppTextStyles.getCaption(context).copyWith(
                             color: AppColors.textSecondary(context),
                           ),

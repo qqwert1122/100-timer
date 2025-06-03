@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -398,6 +399,10 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
           // 즐겨찾기 토글
           SlidableAction(
             onPressed: (context) async {
+              await FacebookAppEvents().logEvent(
+                name: 'favorite_activity',
+                valueToSum: 1,
+              );
               HapticFeedback.lightImpact();
               await _toggleFavorite(activity);
             },
@@ -410,8 +415,12 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
           // 순서 변경 액션 - 클릭 시 드래그 가능하다는 메시지 노출
           if (!isRecentList)
             SlidableAction(
-              onPressed: (context) {
+              onPressed: (context) async {
                 HapticFeedback.lightImpact();
+                await FacebookAppEvents().logEvent(
+                  name: 'order_activities',
+                  valueToSum: 1,
+                );
                 setState(() {
                   isEditingOrder = !isEditingOrder;
                 });
@@ -812,7 +821,11 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
                       targetBorderRadius: BorderRadius.circular(16),
                       overlayOpacity: 0.5,
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          await FacebookAppEvents().logEvent(
+                            name: 'press_new_activity',
+                            valueToSum: 1,
+                          );
                           _navigateToAddActivityPage(context);
                         },
                         style: ElevatedButton.styleFrom(
@@ -839,7 +852,11 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
                     ),
                     SizedBox(width: context.wp(2)),
                     ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        await FacebookAppEvents().logEvent(
+                          name: 'change_order_activities',
+                          valueToSum: 1,
+                        );
                         setState(() {
                           isEditingOrder = !isEditingOrder;
                         });
@@ -915,12 +932,19 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
                   child: TextField(
                     controller: searchController,
                     textInputAction: TextInputAction.search,
-                    onChanged: (query) {
+                    onChanged: (query) async {
                       // 기존에 실행 중인 디바운스 타이머가 있으면 취소
                       if (_debounce?.isActive ?? false) _debounce!.cancel();
-                      _debounce = Timer(const Duration(milliseconds: 300), () {
+                      _debounce = Timer(const Duration(milliseconds: 300), () async {
                         // 300ms 후에 검색어가 있는지 확인 후 검색 실행
                         if (query.trim().isNotEmpty) {
+                          await FacebookAppEvents().logEvent(
+                            name: 'search_activities',
+                            parameters: {
+                              'query': query,
+                            },
+                            valueToSum: 1,
+                          );
                           _onActivitySearch(query);
                           setState(() {
                             isSearching = true;
@@ -933,10 +957,17 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
                         }
                       });
                     },
-                    onSubmitted: (query) {
+                    onSubmitted: (query) async {
                       // 사용자가 엔터를 누르면 즉시 디바운스 취소 후 검색 실행
                       if (_debounce?.isActive ?? false) _debounce!.cancel();
                       if (query.trim().isNotEmpty) {
+                        await FacebookAppEvents().logEvent(
+                          name: 'search_activities',
+                          parameters: {
+                            'query': query,
+                          },
+                          valueToSum: 1,
+                        );
                         _onActivitySearch(query);
                         setState(() {
                           isSearching = true;

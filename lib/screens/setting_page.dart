@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -113,6 +114,10 @@ class _SettingPageState extends State<SettingPage> {
   }
 
   Future<void> _saveWakelockState(bool value) async {
+    await FacebookAppEvents().logEvent(
+      name: 'change_settings',
+      valueToSum: 1,
+    );
     PrefsService().keepScreenOn = value;
     WakelockPlus.toggle(enable: value);
     if (!mounted) return;
@@ -127,6 +132,10 @@ class _SettingPageState extends State<SettingPage> {
   }
 
   Future<void> _saveAlarmFlag(bool value) async {
+    await FacebookAppEvents().logEvent(
+      name: 'change_settings',
+      valueToSum: 1,
+    );
     PrefsService().alarmFlag = value;
     if (!mounted) return;
     setState(() => alarmFlag = value);
@@ -147,8 +156,12 @@ class _SettingPageState extends State<SettingPage> {
         'title': '목표 시간을 변경해요',
         'image': 'bullseye',
         'description': '나에게 맞게 목표 시간을 변경해서 도전하세요',
-        'onTap': () {
+        'onTap': () async {
           HapticFeedback.lightImpact();
+          await FacebookAppEvents().logEvent(
+            name: 'open_total_seconds',
+            valueToSum: 1,
+          );
           showDialog(
               context: context,
               builder: (BuildContext context) {
@@ -160,7 +173,11 @@ class _SettingPageState extends State<SettingPage> {
         'title': '타이머를 초기화해요',
         'image': 'magic_wand',
         'description': '이번 주차의 타이머를 초기화해요',
-        'onTap': () {
+        'onTap': () async {
+          await FacebookAppEvents().logEvent(
+            name: 'clear_sessions',
+            valueToSum: 1,
+          );
           showDialog(
             context: context,
             builder: (ctx) {
@@ -283,6 +300,10 @@ class _SettingPageState extends State<SettingPage> {
         'image': 'star',
         'description': '어플이 마음에 든다면 리뷰를 남겨주세요',
         'onTap': () async {
+          await FacebookAppEvents().logEvent(
+            name: 'click_review',
+            valueToSum: 20,
+          );
           await ReviewService.openStoreListing();
         },
         'trailing': null,
@@ -293,6 +314,10 @@ class _SettingPageState extends State<SettingPage> {
         'description': '궁금한 점을 문의하세요',
         'onTap': () async {
           const String googleFormUrl = 'https://forms.gle/thMpo1iGp97KjKXU8'; // 구글 폼 URL
+          await FacebookAppEvents().logEvent(
+            name: 'click_ask_foam',
+            valueToSum: 5,
+          );
           if (await canLaunchUrl(Uri.parse(googleFormUrl))) {
             await launchUrl(
               Uri.parse(googleFormUrl),

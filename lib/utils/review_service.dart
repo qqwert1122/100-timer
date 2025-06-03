@@ -1,3 +1,4 @@
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:project1/config/store_secret.dart';
@@ -35,6 +36,10 @@ class ReviewService {
 
       if (shouldRequestReview) {
         logger.i('리뷰 조건을 충족했습니다. 리뷰를 요청합니다.');
+        await FacebookAppEvents().logEvent(
+          name: 'request_review',
+          valueToSum: 30,
+        );
         bool success = await requestReview();
         if (success) {
           await setReviewRequested();

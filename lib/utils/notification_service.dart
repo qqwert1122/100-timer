@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' as io;
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:project1/utils/logger_config.dart';
@@ -79,6 +80,12 @@ class NotificationService {
     );
 
     PrefsService().alarmFlag = granted;
+    if (granted) {
+      await FacebookAppEvents().logEvent(
+        name: 'accept_notification',
+        valueToSum: 2,
+      );
+    }
     return granted;
   }
 
@@ -258,6 +265,10 @@ class NotificationService {
   // 알림 액션 수신 핸들러 (정적 메서드)
   static Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
     // 사용자가 알림을 탭했을 때 뱃지 초기화
+    await FacebookAppEvents().logEvent(
+      name: 'reset_badge',
+      valueToSum: 1,
+    );
     await AwesomeNotifications().resetGlobalBadge();
   }
 

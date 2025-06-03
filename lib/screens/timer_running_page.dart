@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -412,8 +413,12 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     showMusicBottomSheet(
       context: context,
       currentMusic: musicPlayer.currentMusic,
-      onMusicSelected: (music) {
+      onMusicSelected: (music) async {
         musicPlayer.playMusic(music);
+        await FacebookAppEvents().logEvent(
+          name: 'play_music',
+          valueToSum: 2,
+        );
         setState(() {
           _isMusicOn = true;
         }); // UI 업데이트
@@ -774,7 +779,11 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                       baseColor: _isMusicOn ? Colors.redAccent : AppColors.textPrimary(context),
                       highlightColor: _isMusicOn ? Colors.yellowAccent : AppColors.textPrimary(context),
                       child: IconButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          await FacebookAppEvents().logEvent(
+                            name: 'click_music',
+                            valueToSum: 1,
+                          );
                           _showMusicBottomSheet();
                           HapticFeedback.lightImpact();
                         },
@@ -806,7 +815,11 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                     targetBorderRadius: BorderRadius.circular(16),
                     overlayOpacity: 0.5,
                     child: IconButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        await FacebookAppEvents().logEvent(
+                          name: 'change_settings',
+                          valueToSum: 1,
+                        );
                         _toggleAlarm();
                       },
                       icon: Image.asset(
@@ -836,7 +849,11 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
                     targetBorderRadius: BorderRadius.circular(16),
                     overlayOpacity: 0.5,
                     child: IconButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        await FacebookAppEvents().logEvent(
+                          name: 'change_settings',
+                          valueToSum: 1,
+                        );
                         _toggleLightOn();
                       },
                       icon: Image.asset(
@@ -883,7 +900,11 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          onPressed: () {
+          onPressed: () async {
+            await FacebookAppEvents().logEvent(
+              name: 'timer_ended',
+              valueToSum: 2,
+            );
             // 활동 종료 전 모달창 띄우기
             showDialog(
               context: context,
@@ -948,8 +969,12 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
     final fontColor = currentState == 'RUNNING' ? Colors.grey : Colors.white;
 
     // 상태에 따른 버튼 동작
-    void onPressed() {
+    void onPressed() async {
       HapticFeedback.lightImpact();
+      await FacebookAppEvents().logEvent(
+        name: 'timer_paused',
+        valueToSum: 2,
+      );
       final bool isCurrentlyRunning = currentState == 'RUNNING';
 
       // 1. 즉시 UI 상태 변경 (버튼 색상 및 텍스트)

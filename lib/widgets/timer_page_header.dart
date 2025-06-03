@@ -1,3 +1,4 @@
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -42,9 +43,7 @@ class _TimerPageHeaderState extends State<TimerPageHeader> {
   Widget build(BuildContext context) {
     return Consumer<TimerProvider>(
       builder: (context, timerProvider, child) {
-        final totalSeconds = timerProvider.timerData != null
-            ? (timerProvider.timerData!['total_seconds'] / 3600).toInt()
-            : 100; // 기본값
+        final totalSeconds = timerProvider.timerData != null ? (timerProvider.timerData!['total_seconds'] / 3600).toInt() : 100; // 기본값
 
         return Padding(
           padding: context.paddingHorizSM,
@@ -52,8 +51,12 @@ class _TimerPageHeaderState extends State<TimerPageHeader> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               GestureDetector(
-                onTap: () {
+                onTap: () async {
                   HapticFeedback.lightImpact();
+                  await FacebookAppEvents().logEvent(
+                    name: 'open_total_seconds',
+                    valueToSum: 1,
+                  );
                   showDialog(
                       context: context,
                       builder: (BuildContext context) {
