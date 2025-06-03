@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -281,7 +282,11 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
                   Expanded(
                     flex: 7,
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        await FacebookAppEvents().logEvent(
+                          name: 'timer_result',
+                          valueToSum: 1,
+                        );
                         // 타이머 데이터 갱신 로직 추가
                         statsProvider.updateCurrentSessions();
                         // 남은 시간 갱신 및 상태 업데이트

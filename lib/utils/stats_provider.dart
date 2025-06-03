@@ -31,9 +31,9 @@ class StatsProvider extends ChangeNotifier {
 
   /*
 
-    Offset
+      Offset
 
-  */
+    */
 
   List<Map<String, dynamic>> _currentSessions = [];
   List<Map<String, dynamic>> get currentSessions => _currentSessions;
@@ -91,9 +91,9 @@ class StatsProvider extends ChangeNotifier {
 
   /*
 
-    Activity
+      Activity
 
-  */
+    */
 
   Future<Map<String, dynamic>?> getDefaultActivity() async {
     try {
@@ -107,11 +107,11 @@ class StatsProvider extends ChangeNotifier {
       return defaultActivity.isNotEmpty ? defaultActivity : null;
     } catch (e) {
       logger.e('''
-        [statsProvider]
-        - 위치 : getDefaultActivity
-        - 오류 유형: ${e.runtimeType}
-        - 메시지: ${e.toString()}
-      ''');
+          [statsProvider]
+          - 위치 : getDefaultActivity
+          - 오류 유형: ${e.runtimeType}
+          - 메시지: ${e.toString()}
+        ''');
       return null;
     }
   }
@@ -207,9 +207,9 @@ class StatsProvider extends ChangeNotifier {
 
   /*
 
-    Sessions
+      Sessions
 
-  */
+    */
 
   Future<int> getTotalDurationForDate(DateTime date) async {
     try {
@@ -391,19 +391,30 @@ class StatsProvider extends ChangeNotifier {
     try {
       logger.d('[statsProvider] get Total Duration For Current Week');
 
-      final weeklyRange = DateUtils.getWeeklyRange(weekOffset: 0);
-      DateTime startUtc = weeklyRange['startOfWeek']!.toUtc();
-      DateTime endUtc = weeklyRange['endOfWeek']!.toUtc();
+      final weeklyRange = DateUtils.getWeeklyRange(weekOffset: 0); // 이번주의 범위 가져오기
+      DateTime startUtc = weeklyRange['startOfWeek']!.toUtc(); // 이번주 월요일
+      DateTime endUtc = weeklyRange['endOfWeek']!.toUtc(); // 이번주 일요일
 
+      // 이번주 시작일과 종료일 사이의 sessions를 불러오기
       final sessions = await _dbService.getSessionsWithinDateRange(
         startDate: startUtc,
         endDate: endUtc,
       );
 
-      // 휴식시간 제외한 실제 활동시간 계산
-      return await _getActualActivityDuration(sessions);
+      // 조회한 세션들의 duration을 모두 합산
+      final totalDuration = sessions.fold<int>(
+        0,
+        (sum, session) => sum + (session['duration'] as int? ?? 0),
+      );
+
+      return totalDuration;
     } catch (e) {
-      logger.e('Error in getTotalDurationForCurrentWeek: $e');
+      logger.e('''
+          [statsProvider]
+          - 위치 : getTotalDurationForCurrentWeek
+          - 오류 유형: ${e.runtimeType}
+          - 메시지: ${e.toString()}
+        ''');
       return 0;
     }
   }
@@ -493,18 +504,17 @@ class StatsProvider extends ChangeNotifier {
   Future<List<Map<String, dynamic>>> getWeeklyActivityChart() async {
     try {
       final sessions = _currentSessions;
+
+      // 요일별, 활동별 데이터 집계
       final Map<String, Map<String, dynamic>> aggregatedData = {};
 
       for (final session in sessions) {
         final startTime = DateTime.parse(session['start_time']).toLocal();
-        final weekday = startTime.weekday;
+        final weekday = startTime.weekday; // 1 (월요일) ~ 7 (일요일)
         final activityName = session['activity_name'];
         final activityColor = session['activity_color'];
         final activityIcon = session['activity_icon'];
-
-        // 휴식시간 제외한 실제 활동시간 계산
-        final sessionDuration = await _getActualActivityDuration([session]);
-        final durationMinutes = sessionDuration / 60.0;
+        final durationMinutes = (session['duration'] as int) / 60.0;
 
         final key = '$activityName-$activityColor-$weekday';
 
@@ -521,17 +531,22 @@ class StatsProvider extends ChangeNotifier {
         aggregatedData[key]!['minutes'] += durationMinutes;
       }
 
+      // 데이터 리스트로 변환
       final result = aggregatedData.values.toList();
+
+      // 요일별 정렬
       result.sort((a, b) => (a['weekday'] as int).compareTo(b['weekday'] as int));
 
       return result;
     } catch (e) {
-      logger.e('Error fetching weekly line chart data: $e');
+      // error log
+
+      print('Error fetching weekly line chart data: $e');
       return [];
     }
   }
 
-  // 활동 데이터를 저장할 맵
+  // 활동 데이터를 저장할 맵More actions
   Map<DateTime, int> _heatMapDataSet = {};
 
   // heatMapDataSet의 getter
@@ -542,6 +557,7 @@ class StatsProvider extends ChangeNotifier {
       int selectedYear = year ?? now.year;
       int selectedMonth = month ?? now.month;
 
+      // 선택한 월의 시작일과 종료일 계산
       DateTime monthStart = DateTime(selectedYear, selectedMonth, 1);
       DateTime monthEnd;
       if (selectedMonth == 12) {
@@ -550,6 +566,7 @@ class StatsProvider extends ChangeNotifier {
         monthEnd = DateTime(selectedYear, selectedMonth + 1, 1);
       }
 
+      // DB에서 세션 데이터를 가져옴
       List<Map<String, dynamic>> logs = await _dbService.getSessionsWithinDateRange(
         startDate: monthStart,
         endDate: monthEnd,
@@ -559,21 +576,31 @@ class StatsProvider extends ChangeNotifier {
       for (var log in logs) {
         try {
           String? startTimeString = log['start_time'];
+          int duration = log['duration'] ?? 0;
+
           if (startTimeString != null && startTimeString.isNotEmpty) {
             DateTime date = DateTime.parse(startTimeString).toLocal();
+            // 날짜만 사용하기 위해 시간 정보를 제거
             DateTime dateOnly = DateTime(date.year, date.month, date.day);
-
-            // 휴식시간 제외한 실제 활동시간 계산
-            int actualDuration = await _getActualActivityDuration([log]);
-            int effectiveDuration = max(0, actualDuration);
+            int effectiveDuration = max(0, duration);
 
             _heatMapDataSet.update(
               dateOnly,
-              (existing) => existing + effectiveDuration,
-              ifAbsent: () => effectiveDuration,
+              (existing) {
+                int newValue = existing + effectiveDuration;
+                return newValue;
+              },
+              ifAbsent: () {
+                return effectiveDuration;
+              },
             );
-          }
+          } else {}
         } catch (e) {}
+      }
+
+      if (_heatMapDataSet.isEmpty) {
+      } else {
+        _heatMapDataSet.forEach((date, seconds) {});
       }
 
       notifyListeners();
@@ -628,11 +655,11 @@ class StatsProvider extends ChangeNotifier {
       logger.d('[statsProvider] Weekly stats loaded successfully');
     } catch (e) {
       logger.e('''
-        [statsProvider]
-        - 위치: loadWeeklyStats
-        - 오류 유형: ${e.runtimeType}
-        - 메시지: ${e.toString()}
-      ''');
+          [statsProvider]
+          - 위치: loadWeeklyStats
+          - 오류 유형: ${e.runtimeType}
+          - 메시지: ${e.toString()}
+        ''');
     }
   }
 

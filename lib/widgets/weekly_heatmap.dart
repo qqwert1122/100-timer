@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
+import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +18,7 @@ class WeeklyHeatmap extends StatefulWidget {
 
 class _WeeklyHeatmapState extends State<WeeklyHeatmap> with SingleTickerProviderStateMixin {
   late StatsProvider _statsProvider;
+  late DatabaseService _dbService;
 
   // heatmapData 구조: { hourKey: { dayKey: { activityId: minutes } } }
   Map<String, Map<String, Map<String, int>>> heatmapData = {};
@@ -38,6 +40,7 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> with SingleTickerProvider
   void initState() {
     super.initState();
     _statsProvider = Provider.of<StatsProvider>(context, listen: false);
+    _dbService = Provider.of<DatabaseService>(context, listen: false);
     // 리스너 추가: weekOffset 변경 시 heatmap 재생성
     _statsProvider.addListener(_onStatsProviderChanged);
     generateWeeklyHeatmap();
@@ -74,37 +77,56 @@ class _WeeklyHeatmapState extends State<WeeklyHeatmap> with SingleTickerProvider
 
       for (var session in sessions) {
         String activityId = session['activity_id'];
+        String sessionId = session['session_id'];
         DateTime startTime = DateTime.parse(session['start_time']).toLocal();
         DateTime endTime = session['end_time'] != null ? DateTime.parse(session['end_time']).toLocal() : DateTime.now();
         Color color = ColorService.hexToColor(session['activity_color']);
         activityColorMap[session['activity_id']] = color;
         activityNames[session['activity_id']] = session['activity_name'];
-        // session_duration 활용 (초 단위)
-        int sessionDuration = session['duration'] ?? 0;
-        int totalSeconds = endTime.difference(startTime).inSeconds;
-        if (totalSeconds == 0) totalSeconds = 1;
-        double ratio = sessionDuration / totalSeconds;
+
+        // 해당 세션의 휴식시간 조회
+        final breaks = await _dbService.getFinishedBreaks(sessionId: sessionId);
 
         DateTime current = startTime;
         while (current.isBefore(endTime)) {
           DateTime nextHour = DateTime(current.year, current.month, current.day, current.hour + 1);
           DateTime segmentEnd = endTime.isBefore(nextHour) ? endTime : nextHour;
 
-          int rawMinutes = segmentEnd.difference(current).inMinutes;
-          int activeMinutes = (rawMinutes * ratio).round(); // 휴식 제외 비율 반영
+          // 이 시간 구간에서 휴식시간 계산
+          int breakMinutesInSegment = 0;
+          for (var breakItem in breaks) {
+            DateTime breakStart = DateTime.parse(breakItem['start_time']).toLocal();
+            DateTime breakEnd = DateTime.parse(breakItem['end_time']).toLocal();
+
+            // 휴식시간과 현재 시간구간의 겹치는 부분 계산
+            DateTime overlapStart = breakStart.isAfter(current) ? breakStart : current;
+            DateTime overlapEnd = breakEnd.isBefore(segmentEnd) ? breakEnd : segmentEnd;
+
+            if (overlapStart.isBefore(overlapEnd)) {
+              breakMinutesInSegment += overlapEnd.difference(overlapStart).inMinutes;
+            }
+          }
+
+          int totalMinutesInSegment = segmentEnd.difference(current).inMinutes;
+          int activeMinutes = totalMinutesInSegment - breakMinutesInSegment;
+          activeMinutes = activeMinutes.clamp(0, totalMinutesInSegment);
 
           String hourKey = '${current.hour.toString().padLeft(2, '0')}:00';
           String dayKey = dayKeys[current.weekday - 1];
 
           activeHourSet.add(hourKey);
 
-          tempHeatmapData.putIfAbsent(hourKey, () => {});
-          tempHeatmapData[hourKey]!.putIfAbsent(dayKey, () => {});
-          tempHeatmapData[hourKey]![dayKey]!.update(
-            activityId,
-            (value) => value + activeMinutes,
-            ifAbsent: () => activeMinutes,
-          );
+          if (activeMinutes > 0) {
+            activeHourSet.add(hourKey);
+
+            tempHeatmapData.putIfAbsent(hourKey, () => {});
+            tempHeatmapData[hourKey]!.putIfAbsent(dayKey, () => {});
+            tempHeatmapData[hourKey]![dayKey]!.update(
+              activityId,
+              (value) => value + activeMinutes,
+              ifAbsent: () => activeMinutes,
+            );
+          }
           current = segmentEnd;
         }
       }

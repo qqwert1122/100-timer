@@ -90,23 +90,37 @@ class _TimePickerModalState extends State<TimePickerModal> {
 
     if (isBreakType) {
       final _startDate = DateTime.parse(widget.item['start_time']).toLocal();
-      final _endDate = DateTime.parse(widget.item['end_time']).toLocal();
-
       selectedStartDate = DateTime(_startDate.year, _startDate.month, _startDate.day);
-      selectedEndDate = DateTime(_endDate.year, _endDate.month, _endDate.day);
-
       startHours = _startDate.hour;
       startMinutes = _startDate.minute;
       startSeconds = _startDate.second;
-      endHours = _endDate.hour;
-      endMinutes = _endDate.minute;
-      endSeconds = _endDate.second;
+      if (widget.item['end_time'] != null) {
+        final _endDate = DateTime.parse(widget.item['end_time']).toLocal();
+        selectedEndDate = DateTime(_endDate.year, _endDate.month, _endDate.day);
+        endHours = _endDate.hour;
+        endMinutes = _endDate.minute;
+        endSeconds = _endDate.second;
+      } else {
+        // 진행중인 휴식: 시작시간 + 1시간을 기본값으로
+        final defaultEnd = _startDate.add(Duration(hours: 1));
+        selectedEndDate = DateTime(defaultEnd.year, defaultEnd.month, defaultEnd.day);
+        endHours = defaultEnd.hour;
+        endMinutes = defaultEnd.minute;
+        endSeconds = 0;
+      }
     } else {
-      final timeDate = DateTime.parse(widget.item['time']).toLocal();
-
-      selectedEndDate = DateTime(timeDate.year, timeDate.month, timeDate.day);
-      endHours = timeDate.hour;
-      endMinutes = timeDate.minute;
+      if (widget.item['time'] != null) {
+        final timeDate = DateTime.parse(widget.item['time']).toLocal();
+        selectedEndDate = DateTime(timeDate.year, timeDate.month, timeDate.day);
+        endHours = timeDate.hour;
+        endMinutes = timeDate.minute;
+      } else {
+        // 진행중인 세션: 현재 시간을 기본값으로
+        final now = DateTime.now();
+        selectedEndDate = DateTime(now.year, now.month, now.day);
+        endHours = now.hour;
+        endMinutes = now.minute;
+      }
     }
   }
 
@@ -391,7 +405,7 @@ class _TimePickerModalState extends State<TimePickerModal> {
                 children: [
                   Expanded(
                     child: CupertinoPicker(
-                      scrollController: isEndTime ? _endHoursController : (isBreakType ? _startHoursController : null),
+                      scrollController: isEndTime ? _endHoursController : (isBreakType ? _startHoursController : _endHoursController),
                       itemExtent: 40,
                       onSelectedItemChanged: (int index) {
                         if (validHours.isNotEmpty && index < validHours.length) {

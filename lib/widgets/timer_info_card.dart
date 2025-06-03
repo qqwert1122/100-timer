@@ -1,4 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -301,8 +302,12 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                 ),
                 overlayOpacity: 0.5,
                 child: GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     HapticFeedback.lightImpact();
+                    await FacebookAppEvents().logEvent(
+                      name: 'open_activities',
+                      valueToSum: 1,
+                    );
                     widget.showActivityModal();
                   },
                   child: Container(

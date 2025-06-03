@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -394,6 +395,16 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin, Wi
                                           color: Colors.white,
                                           onPressed: () async {
                                             HapticFeedback.lightImpact();
+                                            await FacebookAppEvents().logEvent(
+                                              name: 'timer_start',
+                                              parameters: {
+                                                'mode': 'normal',
+                                                'target': null,
+                                                'activity': timerProvider.currentActivityName,
+                                                'isWeeklyTargetExceeded': timerProvider.isWeeklyTargetExceeded,
+                                              },
+                                              valueToSum: 5,
+                                            );
 
                                             try {
                                               await timerProvider.startTimer(

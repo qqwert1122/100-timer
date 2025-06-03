@@ -1,3 +1,4 @@
+import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/services.dart';
@@ -92,6 +93,14 @@ class _TotalSecondsCardsState extends State<TotalSecondsCards> {
         backgroundColor: Colors.blueAccent,
         textColor: Colors.white,
         fontSize: 14.0,
+      );
+
+      await FacebookAppEvents().logEvent(
+        name: 'change_total_seconds',
+        parameters: {
+          'target': _cards[index].title,
+        },
+        valueToSum: 10,
       );
 
       Navigator.pop(context);
