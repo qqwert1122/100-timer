@@ -260,6 +260,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 '뒤로',
                 style: AppTextStyles.getBody(context).copyWith(
                   fontWeight: FontWeight.w900,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -301,20 +302,20 @@ class _AddActivityPageState extends State<AddActivityPage> {
           key: _formKey,
           child: TextFormField(
             controller: _activityNameController,
-            style: AppTextStyles.getBody(context),
+            style: AppTextStyles.getBody(context).copyWith(color: AppColors.textSecondary(context)),
             maxLength: 15,
             decoration: InputDecoration(
               border: const UnderlineInputBorder(),
               enabledBorder: UnderlineInputBorder(
                 borderSide: BorderSide(
-                  color: isDarkMode ? Colors.white : Colors.black,
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               focusedBorder: const UnderlineInputBorder(
                 borderSide: BorderSide(color: Colors.blueAccent),
               ),
               hintText: '예시. 영단어 암기',
-              hintStyle: AppTextStyles.getBody(context).copyWith(color: Colors.grey.shade400),
+              hintStyle: AppTextStyles.getBody(context).copyWith(color: AppColors.textSecondary(context)),
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
