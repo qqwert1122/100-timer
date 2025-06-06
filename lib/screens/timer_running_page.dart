@@ -299,7 +299,7 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
       musicPlayer.stopMusic();
 
       // 푸쉬알림 종료
-      await NotificationService().cancelCompletionNotification();
+      await NotificationService().cancelActivityCompletionNotification();
 
       // 세션 종료
       await timerProvider.stopTimer(isSessionTargetExceeded: isSessionTargetExceeded, sessionId: timer['current_session_id']);
@@ -460,16 +460,16 @@ class _TimerRunningPageState extends State<TimerRunningPage> with TickerProvider
         // ✔ 알림 켜짐 → 잔여 시간으로 재예약
         final remaining = timerProvider.currentSessionTargetDuration! - timerProvider.currentSessionDuration;
         if (remaining > 0) {
-          await NotificationService().scheduleActivityCompletionNotification(
-            scheduledTime: DateTime.now().add(Duration(seconds: remaining)),
+          await NotificationService().scheduleCompletionNotification(
+            scheduledSec: remaining,
             title: '100 timer',
-            body: '${timerProvider.currentActivityName} 활동을 '
-                '${timerProvider.formatDuration(timerProvider.currentSessionTargetDuration!)} 집중했어요!',
+            body: '${timerProvider.currentActivityName}를 '
+                '${timerProvider.formatDuration(timerProvider.currentSessionTargetDuration!)} 완료했어요!',
           );
         }
       } else {
         // ✘ 알림 꺼짐 → 현재 예약된 알림 취소
-        await NotificationService().cancelCompletionNotification();
+        await NotificationService().cancelActivityCompletionNotification();
       }
     }
     Fluttertoast.showToast(

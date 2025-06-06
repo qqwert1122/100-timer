@@ -634,9 +634,11 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       });
 
       if (mode == 'PMDR' && targetDuration != null) {
-        logger.d('push test : _currentSessionMode ${_currentSessionMode}');
-        logger.d('push test : _currentSessionTargetDuration ${_currentSessionTargetDuration}');
-        await _schedulePmdrCompletion(scheduledSec: targetDuration, targetSec: targetDuration);
+        await NotificationService().scheduleCompletionNotification(
+          scheduledSec: targetDuration,
+          title: '100 timer',
+          body: '$_currentActivityName를 ${formatDuration(targetDuration)} 완료했어요!',
+        );
       }
     } catch (e) {
       // 오류 발생 시 로그 기록 후 상위 호출자에게 예외 전파
@@ -679,7 +681,11 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       });
       if (_currentSessionMode == 'PMDR' && _currentSessionTargetDuration != null) {
         final remaining = (_currentSessionTargetDuration ?? 0) - _currentSessionDuration;
-        await _schedulePmdrCompletion(scheduledSec: remaining, targetSec: _currentSessionTargetDuration!);
+        await NotificationService().scheduleCompletionNotification(
+          scheduledSec: remaining,
+          title: '100 timer',
+          body: '$_currentActivityName를 ${formatDuration(_currentSessionTargetDuration!)} 완료했어요!',
+        );
       }
     } catch (e) {
       // error log
@@ -748,7 +754,11 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
       if (_currentSessionMode == 'PMDR' && _currentSessionTargetDuration != null) {
         final remaining = (_currentSessionTargetDuration ?? 0) - _currentSessionDuration;
-        await _schedulePmdrCompletion(scheduledSec: remaining, targetSec: _currentSessionTargetDuration!);
+        await NotificationService().scheduleCompletionNotification(
+          scheduledSec: remaining,
+          title: '100 timer',
+          body: '$_currentActivityName를 ${formatDuration(_currentSessionTargetDuration!)} 완료했어요!',
+        );
       }
     } catch (e) {
       logger.e('Error in resumeTimer: $e');
@@ -790,7 +800,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 
       // 집중모드일 경우 알림 취소
       if (_currentSessionMode == 'PMDR') {
-        await _cancelPmdrCompletion();
+        await NotificationService().cancelActivityCompletionNotification();
       }
     } catch (e) {
       logger.e('Error in pauseTimer: $e');
@@ -857,7 +867,7 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
       } else {
         endTime = DateTime.now().toUtc();
         if (_currentSessionMode == 'PMDR') {
-          await _cancelPmdrCompletion(); // 알림 취소
+          await NotificationService().cancelActivityCompletionNotification();
         }
       }
 
@@ -978,22 +988,5 @@ class TimerProvider with ChangeNotifier, WidgetsBindingObserver {
 // 알림 서비스 helper methods
   Future<bool> _alarmEnabled() async {
     return PrefsService().alarmFlag; // 설정 스위치
-  }
-
-  Future<void> _schedulePmdrCompletion({required int scheduledSec, required int targetSec}) async {
-    if (scheduledSec <= 0) return;
-    if (!await _alarmEnabled()) return;
-    if (!await NotificationService().requestPermissions()) return;
-
-    await NotificationService().scheduleActivityCompletionNotification(
-      scheduledTime: DateTime.now().add(Duration(seconds: scheduledSec)),
-      title: '100 timer',
-      body: '$_currentActivityName 활동을 ${formatDuration(targetSec)} 집중했어요!',
-    );
-  }
-
-  Future<void> _cancelPmdrCompletion() async {
-    if (!await _alarmEnabled()) return;
-    await NotificationService().cancelCompletionNotification();
   }
 }

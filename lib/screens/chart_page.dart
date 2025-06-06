@@ -354,11 +354,11 @@ class _ChartPageState extends State<ChartPage> {
                         ? null
                         : () async {
                             HapticFeedback.lightImpact();
-
                             await FacebookAppEvents().logEvent(
                               name: 'chart_change_date',
                               valueToSum: 1,
                             );
+
                             // 현재 스크롤 위치 저장
                             double currentScrollPosition = 0;
                             if (_scrollController?.hasClients == true) {

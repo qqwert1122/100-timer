@@ -2,9 +2,11 @@ import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:project1/screens/alarm_page.dart';
+import 'package:project1/notifications/screens/alarm_page.dart';
 import 'package:project1/screens/subscription_bottom_sheet.dart';
+import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
+import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/widgets/total_seconds_cards.dart';
@@ -46,7 +48,7 @@ class _TimerPageHeaderState extends State<TimerPageHeader> {
         final totalSeconds = timerProvider.timerData != null ? (timerProvider.timerData!['total_seconds'] / 3600).toInt() : 100; // 기본값
 
         return Padding(
-          padding: context.paddingHorizSM,
+          padding: EdgeInsets.symmetric(vertical: context.xs, horizontal: context.sm),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -67,9 +69,10 @@ class _TimerPageHeaderState extends State<TimerPageHeader> {
                   children: [
                     Text(
                       '목표 시간',
-                      style: AppTextStyles.getCaption(context).copyWith(
+                      style: AppTextStyles.getBody(context).copyWith(
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.3,
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     SizedBox(width: context.wp(2)),
@@ -90,6 +93,56 @@ class _TimerPageHeaderState extends State<TimerPageHeader> {
               ),
               Row(
                 children: [
+                  // Stack(
+                  //   alignment: Alignment.center,
+                  //   clipBehavior: Clip.none,
+                  //   children: [
+                  //     GestureDetector(
+                  //       onTap: () {
+                  //         HapticFeedback.lightImpact();
+                  //         Navigator.push(
+                  //           context,
+                  //           MaterialPageRoute(
+                  //             builder: (context) => const AlarmPage(),
+                  //           ),
+                  //         );
+                  //       },
+                  //       child: Image.asset(
+                  //         getIconImage('bell'),
+                  //         width: context.xl,
+                  //         height: context.xl,
+                  //         errorBuilder: (context, error, stackTrace) {
+                  //           // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                  //           return Container(
+                  //             width: context.xl,
+                  //             height: context.xl,
+                  //             color: Colors.grey.withValues(alpha: 0.2),
+                  //             child: Icon(
+                  //               Icons.broken_image,
+                  //               size: context.xl,
+                  //               color: Colors.grey,
+                  //             ),
+                  //           );
+                  //         },
+                  //       ),
+                  //     ),
+                  //     Positioned(
+                  //       bottom: 0,
+                  //       right: -5,
+                  //       child: GestureDetector(
+                  //         onTap: () {
+                  //           HapticFeedback.lightImpact();
+                  //         },
+                  //         child: Icon(
+                  //           Icons.settings_rounded,
+                  //           size: context.md,
+                  //           color: Colors.grey,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
+
                   // GestureDetector(
                   //   onTap: () {
                   //     HapticFeedback.lightImpact();
@@ -101,21 +154,6 @@ class _TimerPageHeaderState extends State<TimerPageHeader> {
                   //   ),
                   // ),
                   // SizedBox(width: context.wp(6)),
-                  // GestureDetector(
-                  //   onTap: () {
-                  //     HapticFeedback.lightImpact();
-                  //     Navigator.push(
-                  //       context,
-                  //       MaterialPageRoute(
-                  //         builder: (context) => const AlarmPage(),
-                  //       ),
-                  //     );
-                  //   },
-                  //   child: Icon(
-                  //     LucideIcons.bell,
-                  //     size: context.xl,
-                  //   ),
-                  // ),
                 ],
               ),
             ],

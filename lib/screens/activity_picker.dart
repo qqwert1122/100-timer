@@ -854,7 +854,7 @@ class _ActivityPickerState extends State<ActivityPicker> with SingleTickerProvid
                     ElevatedButton(
                       onPressed: () async {
                         await FacebookAppEvents().logEvent(
-                          name: 'change_order_activities',
+                          name: 'order_activities',
                           valueToSum: 1,
                         );
                         setState(() {
