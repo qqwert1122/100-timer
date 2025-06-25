@@ -1,8 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:project1/notifications/widgets/activity_completion_widget.dart';
-import 'package:project1/notifications/widgets/activity_reminder_widget.dart';
+import 'package:project1/notifications/widgets/activity_notification_widget.dart';
 import 'package:project1/notifications/widgets/break_completion_widget.dart';
+import 'package:project1/notifications/widgets/daily_remainder_widget.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/responsive_size.dart';
@@ -34,11 +37,9 @@ class _AlarmPageState extends State<AlarmPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            ActivityReminderWidget(),
-            SizedBox(height: context.hp(2)),
-            ActivityCompletionWidget(),
-            SizedBox(height: context.hp(2)),
-            BreakCompletionWidget(),
+            ActivityNotificationWidget(),
+            SizedBox(height: context.hp(1)),
+            DailyRemainderWidget(),
           ],
         ),
       ),

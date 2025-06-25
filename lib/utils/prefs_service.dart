@@ -23,6 +23,7 @@ class PrefsService {
     await _prefs.setBool('alarmFlag', _prefs.getBool('alarmFlag') ?? false);
     await _prefs.setBool('hasRequestedNotificationPermission', _prefs.getBool('hasRequestedNotificationPermission') ?? false);
     await _prefs.setString('installDate', _prefs.getString('installDate') ?? installDateStr);
+    await _prefs.setInt('customDuration', _prefs.getInt('customDuration') ?? 3600);
 
     const pages = ['timer', 'activityPicker', 'timerRunning', 'focusMode', 'history'];
     for (final p in pages) {
@@ -50,4 +51,7 @@ class PrefsService {
 
   String get installDate => _prefs.getString('installDate')!;
   set installDate(String date) => _prefs.setString('installDate', date);
+
+  int get customDuration => _prefs.getInt('customDuration')!;
+  set customDuration(int v) => _prefs.setInt('customDuration', v);
 }
