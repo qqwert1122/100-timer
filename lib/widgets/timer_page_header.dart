@@ -11,6 +11,7 @@ import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:project1/widgets/total_seconds_cards.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 class TimerPageHeader extends StatefulWidget {
   const TimerPageHeader({super.key});
@@ -93,67 +94,35 @@ class _TimerPageHeaderState extends State<TimerPageHeader> {
               ),
               Row(
                 children: [
-                  // Stack(
-                  //   alignment: Alignment.center,
-                  //   clipBehavior: Clip.none,
-                  //   children: [
-                  //     GestureDetector(
-                  //       onTap: () {
-                  //         HapticFeedback.lightImpact();
-                  //         Navigator.push(
-                  //           context,
-                  //           MaterialPageRoute(
-                  //             builder: (context) => const AlarmPage(),
-                  //           ),
-                  //         );
-                  //       },
-                  //       child: Image.asset(
-                  //         getIconImage('bell'),
-                  //         width: context.xl,
-                  //         height: context.xl,
-                  //         errorBuilder: (context, error, stackTrace) {
-                  //           // 이미지를 로드하는 데 실패한 경우의 대체 표시
-                  //           return Container(
-                  //             width: context.xl,
-                  //             height: context.xl,
-                  //             color: Colors.grey.withValues(alpha: 0.2),
-                  //             child: Icon(
-                  //               Icons.broken_image,
-                  //               size: context.xl,
-                  //               color: Colors.grey,
-                  //             ),
-                  //           );
-                  //         },
-                  //       ),
-                  //     ),
-                  //     Positioned(
-                  //       bottom: 0,
-                  //       right: -5,
-                  //       child: GestureDetector(
-                  //         onTap: () {
-                  //           HapticFeedback.lightImpact();
-                  //         },
-                  //         child: Icon(
-                  //           Icons.settings_rounded,
-                  //           size: context.md,
-                  //           color: Colors.grey,
-                  //         ),
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
-
-                  // GestureDetector(
-                  //   onTap: () {
-                  //     HapticFeedback.lightImpact();
-                  //     _showSubscriptionPage();
-                  //   },
-                  //   child: Icon(
-                  //     LucideIcons.crown,
-                  //     size: context.xl,
-                  //   ),
-                  // ),
-                  // SizedBox(width: context.wp(6)),
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AlarmPage(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: context.paddingXS,
+                      decoration: BoxDecoration(
+                        color: AppColors.background(context),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.textPrimary(context).withValues(alpha: 0.08), // 그림자 색상
+                            blurRadius: 10, // 그림자 흐림 정도
+                            offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        LucideIcons.bell,
+                        size: context.lg,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],

@@ -1,13 +1,16 @@
 import 'package:facebook_app_events/facebook_app_events.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project1/screens/activity_picker.dart';
 import 'package:project1/screens/timer_running_page.dart';
+import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/notification_service.dart';
 import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/stats_provider.dart';
+import 'package:project1/utils/time_formatter.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:project1/utils/responsive_size.dart';
@@ -27,6 +30,8 @@ class FocusMode extends StatefulWidget {
 class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
   late final StatsProvider _statsProvider;
 
+  int _customDuration = 3600;
+
   List<Map<String, dynamic>> pomodoroItems = [
     {
       'title': '30',
@@ -34,6 +39,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
       'maxCount': 5,
       'currentCount': 0,
       'gradientColors': [Colors.greenAccent, Colors.yellow],
+      'isCustom': false,
     },
     {
       'title': '1',
@@ -41,6 +47,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
       'maxCount': 5,
       'currentCount': 0,
       'gradientColors': [Colors.yellowAccent, Colors.pink],
+      'isCustom': false,
     },
     {
       'title': '2',
@@ -48,13 +55,15 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
       'maxCount': 5,
       'currentCount': 0,
       'gradientColors': [Colors.blueAccent, Colors.lime],
+      'isCustom': false,
     },
     {
-      'title': '4',
-      'value': 14400,
-      'maxCount': 5,
+      'title': '커스텀 모드',
+      'value': 0,
+      'maxCount': 0,
       'currentCount': 0,
       'gradientColors': [Colors.amber, Colors.red],
+      'isCustom': true,
     },
   ];
 
@@ -69,6 +78,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _statsProvider = Provider.of<StatsProvider>(context, listen: false);
+    _customDuration = PrefsService().customDuration;
     _initPomodoroCounts();
 
     _needShowOnboarding = !PrefsService().getOnboarding('focusMode');
@@ -102,6 +112,167 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
         pomodoroItems = updatedItems;
       });
     }
+  }
+
+  void _showCustomTimeModal() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => _buildTimePickerModal(),
+    );
+  }
+
+  Widget _buildTimePickerModal() {
+    int selectedHour = (_customDuration / 3600).floor();
+    int selectedMinute = ((_customDuration % 3600) / 60).floor();
+
+    return StatefulBuilder(
+      builder: (context, setModalState) => Container(
+        height: 350,
+        padding: context.paddingSM,
+        child: Column(
+          children: [
+            Text('시간 선택', style: AppTextStyles.getTitle(context)),
+            SizedBox(height: context.hp(2)),
+            Expanded(
+              child: Row(
+                children: [
+                  // 시간 피커
+                  Expanded(
+                    child: CupertinoPicker(
+                      itemExtent: 40,
+                      onSelectedItemChanged: (int index) {
+                        setModalState(() {
+                          selectedHour = index;
+                          _customDuration = (selectedHour * 3600) + (selectedMinute * 60);
+                        });
+                      },
+                      children: List.generate(24, (index) {
+                        bool isSelected = selectedHour == index;
+                        return Center(
+                          child: Text(
+                            '${index}시간',
+                            style: AppTextStyles.getBody(context).copyWith(
+                              color: isSelected ? AppColors.textPrimary(context) : AppColors.textSecondary(context),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                  // 분 피커
+                  Expanded(
+                    child: CupertinoPicker(
+                      itemExtent: 40,
+                      onSelectedItemChanged: (int index) {
+                        setModalState(() {
+                          selectedMinute = index;
+                          _customDuration = (selectedHour * 3600) + (selectedMinute * 60);
+                        });
+                      },
+                      children: List.generate(60, (index) {
+                        bool isSelected = selectedMinute == index;
+                        return Center(
+                          child: Text(
+                            '${index}분',
+                            style: AppTextStyles.getBody(context).copyWith(
+                              color: isSelected ? AppColors.textPrimary(context) : AppColors.textSecondary(context),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: context.hp(2)),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _startCustomTimer(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: context.paddingXS,
+                    ),
+                    child: Padding(
+                      padding: context.paddingXS,
+                      child: Text(
+                        '시작',
+                        style: AppTextStyles.getBody(context).copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _startCustomTimer() async {
+    if (_customDuration <= 0) {
+      Fluttertoast.showToast(
+        msg: "시간을 선택해주세요",
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.redAccent.shade200,
+        textColor: Colors.white,
+        fontSize: context.md,
+      );
+      return;
+    }
+
+    Navigator.pop(context);
+
+    // 커스텀 시간 저장
+    PrefsService().customDuration = _customDuration;
+
+    final timerProvider = Provider.of<TimerProvider>(context, listen: false);
+
+    HapticFeedback.lightImpact();
+    await FacebookAppEvents().logEvent(
+      name: 'timer_start',
+      parameters: {
+        'mode': 'focus',
+        'target': _customDuration,
+        'activity': timerProvider.currentActivityName,
+        'isWeeklyTargetExceeded': timerProvider.isWeeklyTargetExceeded,
+      },
+      valueToSum: 5,
+    );
+
+    try {
+      await timerProvider.startTimer(
+        activityId: timerProvider.currentActivityId!,
+        mode: 'PMDR',
+        targetDuration: _customDuration,
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "타이머 시작 중 오류가 발생했습니다",
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.redAccent.shade200,
+        textColor: Colors.white,
+        fontSize: context.md,
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const TimerRunningPage(isNewSession: true),
+      ),
+    );
   }
 
   @override
@@ -182,23 +353,46 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Text(
-                              item['title'],
-                              style: AppTextStyles.getTimeDisplay(context).copyWith(
-                                color: Colors.white,
-                                fontFamily: 'chab',
-                              ),
-                            ),
+                            index == 3
+                                ? Text(
+                                    '커스텀',
+                                    style: AppTextStyles.getBody(context).copyWith(
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    item['title'],
+                                    style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                      color: Colors.white,
+                                      fontFamily: 'chab',
+                                    ),
+                                  ),
                             SizedBox(width: context.wp(1)),
-                            Text(
-                              index == 0 ? '분' : '시간',
-                              style: AppTextStyles.getBody(context).copyWith(
-                                fontWeight: FontWeight.w200,
-                                color: Colors.white,
-                              ),
-                            ),
+                            index == 3
+                                ? Container()
+                                : Text(
+                                    index == 0 ? '분' : '시간',
+                                    style: AppTextStyles.getBody(context).copyWith(
+                                      fontWeight: FontWeight.w200,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                           ],
                         ),
+                        index == 3
+                            ? Column(
+                                children: [
+                                  SizedBox(height: context.hp(1)),
+                                  Text(
+                                    formatTime(_customDuration),
+                                    style: AppTextStyles.getTitle(context).copyWith(
+                                      color: Colors.white,
+                                      fontFamily: 'Neo',
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Container(),
                         index == 0
                             ? Showcase(
                                 key: _countKey,
@@ -237,6 +431,11 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
 
             return GestureDetector(
               onTap: () async {
+                if (item['isCustom']) {
+                  _showCustomTimeModal();
+                  return;
+                }
+
                 HapticFeedback.lightImpact();
                 await FacebookAppEvents().logEvent(
                   name: 'timer_start',
