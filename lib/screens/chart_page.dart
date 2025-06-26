@@ -9,6 +9,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/logger_config.dart';
+import 'package:project1/utils/purchase_manager.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
@@ -238,13 +239,21 @@ class _ChartPageState extends State<ChartPage> {
 
             // 첫 번째 광고 배너
             SliverToBoxAdapter(
-              child: _isAdLoaded1
-                  ? Container(
-                      width: _bannerAd1!.size.width.toDouble(),
-                      height: _bannerAd1!.size.height.toDouble(),
-                      child: AdWidget(ad: _bannerAd1!),
-                    )
-                  : const SizedBox.shrink(),
+              child: FutureBuilder<bool>(
+                future: PurchaseManager().isAdRemoved(),
+                builder: (context, snapshot) {
+                  if (snapshot.data == true) {
+                    return const SizedBox.shrink();
+                  }
+                  return _isAdLoaded1
+                      ? SizedBox(
+                          width: _bannerAd1!.size.width.toDouble(),
+                          height: _bannerAd1!.size.height.toDouble(),
+                          child: AdWidget(ad: _bannerAd1!),
+                        )
+                      : const SizedBox.shrink();
+                },
+              ),
             ),
 
             SliverToBoxAdapter(
@@ -271,13 +280,21 @@ class _ChartPageState extends State<ChartPage> {
 
             // 두 번째 광고 배너
             SliverToBoxAdapter(
-              child: _isAdLoaded2
-                  ? Container(
-                      width: _bannerAd2!.size.width.toDouble(),
-                      height: _bannerAd2!.size.height.toDouble(),
-                      child: AdWidget(ad: _bannerAd2!),
-                    )
-                  : SizedBox.shrink(),
+              child: FutureBuilder<bool>(
+                future: PurchaseManager().isAdRemoved(),
+                builder: (context, snapshot) {
+                  if (snapshot.data == true) {
+                    return const SizedBox.shrink();
+                  }
+                  return _isAdLoaded2
+                      ? SizedBox(
+                          width: _bannerAd2!.size.width.toDouble(),
+                          height: _bannerAd2!.size.height.toDouble(),
+                          child: AdWidget(ad: _bannerAd2!),
+                        )
+                      : const SizedBox.shrink();
+                },
+              ),
             ),
 
             SliverToBoxAdapter(
