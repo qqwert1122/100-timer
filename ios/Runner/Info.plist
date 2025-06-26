@@ -75,6 +75,13 @@
 		<key>CFBundleURLSchemes</key>
         <array>
             <string>fb725203649963444</string>
-        </array>	
+        </array>
+		<key>SKAdNetworkItems</key>
+		<array>
+			<dict>
+				<key>SKAdNetworkIdentifier</key>
+				<string>cstr6suwn9.skadnetwork</string>
+			</dict>
+		</array>
 	</dict>
 </plist>

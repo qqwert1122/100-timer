@@ -15,6 +15,7 @@ import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/notification_service.dart';
 import 'package:project1/utils/prefs_service.dart';
+import 'package:project1/utils/purchase_manager.dart';
 import 'package:project1/utils/responsive_size.dart';
 import 'package:project1/utils/review_service.dart';
 import 'package:project1/utils/stats_provider.dart';
@@ -296,6 +297,19 @@ class _SettingPageState extends State<SettingPage> {
 
     final List<Map<String, dynamic>> informationItems = [
       {
+        'title': '평생 광고 제거',
+        'image': 'crown',
+        'description': '커피 한 잔 가격으로 평생 광고를 제거해요',
+        'onTap': () async {
+          await FacebookAppEvents().logEvent(
+            name: 'click_remove_ads',
+            valueToSum: 30,
+          );
+          await PurchaseManager().buyRemoveAds();
+        },
+        'trailing': null,
+      },
+      {
         'title': '별점 5점 남기러 가기',
         'image': 'star',
         'description': '어플이 마음에 든다면 리뷰를 남겨주세요',
@@ -364,7 +378,7 @@ class _SettingPageState extends State<SettingPage> {
       {
         'title': '버전',
         'image': 'info',
-        'description': '현재 버전 1.0.3 | 업데이트 날짜 2025-05-22',
+        'description': '현재 버전 1.0.6 | 업데이트 날짜 2025-06-25',
         'onTap': () {},
         'trailing': null,
       },
@@ -458,13 +472,21 @@ class _SettingPageState extends State<SettingPage> {
         color: AppColors.backgroundSecondary(context),
         child: ListView(
           children: [
-            _isAdLoaded1
-                ? SizedBox(
-                    width: _bannerAd1!.size.width.toDouble(),
-                    height: _bannerAd1!.size.height.toDouble(),
-                    child: AdWidget(ad: _bannerAd1!),
-                  )
-                : const SizedBox.shrink(),
+            FutureBuilder<bool>(
+              future: PurchaseManager().isAdRemoved(),
+              builder: (context, snapshot) {
+                if (snapshot.data == true) {
+                  return const SizedBox.shrink();
+                }
+                return _isAdLoaded1
+                    ? SizedBox(
+                        width: _bannerAd1!.size.width.toDouble(),
+                        height: _bannerAd1!.size.height.toDouble(),
+                        child: AdWidget(ad: _bannerAd1!),
+                      )
+                    : const SizedBox.shrink();
+              },
+            ),
             SizedBox(height: context.hp(4)),
             buildCategory('타이머 설정', timerItems),
             SizedBox(height: context.hp(1)),

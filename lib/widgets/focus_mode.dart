@@ -139,6 +139,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                   // 시간 피커
                   Expanded(
                     child: CupertinoPicker(
+                      scrollController: FixedExtentScrollController(initialItem: selectedHour),
                       itemExtent: 40,
                       onSelectedItemChanged: (int index) {
                         setModalState(() {
@@ -162,6 +163,7 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                   // 분 피커
                   Expanded(
                     child: CupertinoPicker(
+                      scrollController: FixedExtentScrollController(initialItem: selectedMinute),
                       itemExtent: 40,
                       onSelectedItemChanged: (int index) {
                         setModalState(() {

@@ -12,6 +12,7 @@ import 'package:project1/utils/database_service.dart';
 import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/notification_service.dart';
 import 'package:project1/utils/prefs_service.dart';
+import 'package:project1/utils/purchase_manager.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/test_data_generator.dart';
 import 'package:project1/utils/timer_provider.dart';
@@ -147,6 +148,7 @@ class _MyAppState extends State<MyApp> {
       context.read<TimerProvider>().ready,
     ]);
 
+    PurchaseManager().initialize();
     // 기본 활동(기존 목록) 추가: 이미 활동이 있으면 건너뜁니다.
     List<Map<String, dynamic>> activities = await _dbService.getActivities();
     if (activities.isEmpty) {

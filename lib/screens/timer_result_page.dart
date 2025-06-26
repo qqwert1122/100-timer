@@ -16,6 +16,7 @@ import 'package:project1/utils/icon_utils.dart';
 import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/music_player.dart';
 import 'package:project1/utils/notification_service.dart';
+import 'package:project1/utils/purchase_manager.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:project1/utils/timer_provider.dart';
 import 'package:provider/provider.dart';
@@ -194,13 +195,21 @@ class _TimerResultPageState extends State<TimerResultPage> with TickerProviderSt
             child: Column(
               children: [
                 SizedBox(height: context.hp(5)),
-                _isAdLoaded1
-                    ? Container(
-                        width: _bannerAd1!.size.width.toDouble(),
-                        height: _bannerAd1!.size.height.toDouble(),
-                        child: AdWidget(ad: _bannerAd1!),
-                      )
-                    : SizedBox.shrink(),
+                FutureBuilder<bool>(
+                  future: PurchaseManager().isAdRemoved(),
+                  builder: (context, snapshot) {
+                    if (snapshot.data == true) {
+                      return const SizedBox.shrink();
+                    }
+                    return _isAdLoaded1
+                        ? SizedBox(
+                            width: _bannerAd1!.size.width.toDouble(),
+                            height: _bannerAd1!.size.height.toDouble(),
+                            child: AdWidget(ad: _bannerAd1!),
+                          )
+                        : const SizedBox.shrink();
+                  },
+                ),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,

@@ -102,6 +102,7 @@ android {
         implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
         implementation "com.google.android.gms:play-services-ads:24.1.0"
         implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+        implementation 'com.android.billingclient:billing:5.0.0'
 
         constraints {
             implementation("androidx.core:core:1.13.1")
