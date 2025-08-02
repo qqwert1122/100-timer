@@ -504,39 +504,40 @@ class _SettingPageState extends State<SettingPage> {
             // SizedBox(height: context.hp(1)),
             // buildCategory('유틸리티', utilityItems),
             SizedBox(height: context.hp(1)),
-            Container(
-              height: 300, // 높이 제한
-              width: double.infinity,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: StreamBuilder<String>(
-                stream: PurchaseManager().debugStream,
-                builder: (context, snapshot) {
-                  return SingleChildScrollView(
-                    reverse: true, // 최신 로그가 아래쪽에 보이도록
-                    padding: EdgeInsets.all(8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: PurchaseManager()
-                          .debugMessages
-                          .map((msg) => Padding(
-                                padding: EdgeInsets.symmetric(vertical: 1),
-                                child: Text(
-                                  msg,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontFamily: 'monospace', // 가독성을 위해 고정폭 폰트
-                                  ),
-                                ),
-                              ))
-                          .toList(),
-                    ),
-                  );
-                },
-              ),
-            ),
+            // 개발자 모드 디버그용
+            // Container(
+            //   height: 300, // 높이 제한
+            //   width: double.infinity,
+            //   decoration: BoxDecoration(
+            //     border: Border.all(color: Colors.grey),
+            //     borderRadius: BorderRadius.circular(8),
+            //   ),
+            //   child: StreamBuilder<String>(
+            //     stream: PurchaseManager().debugStream,
+            //     builder: (context, snapshot) {
+            //       return SingleChildScrollView(
+            //         reverse: true, // 최신 로그가 아래쪽에 보이도록
+            //         padding: EdgeInsets.all(8),
+            //         child: Column(
+            //           crossAxisAlignment: CrossAxisAlignment.start,
+            //           children: PurchaseManager()
+            //               .debugMessages
+            //               .map((msg) => Padding(
+            //                     padding: EdgeInsets.symmetric(vertical: 1),
+            //                     child: Text(
+            //                       msg,
+            //                       style: TextStyle(
+            //                         fontSize: 12,
+            //                         fontFamily: 'monospace', // 가독성을 위해 고정폭 폰트
+            //                       ),
+            //                     ),
+            //                   ))
+            //               .toList(),
+            //         ),
+            //       );
+            //     },
+            //   ),
+            // ),
             buildCategory('정보', informationItems),
             const Footer(),
           ],
