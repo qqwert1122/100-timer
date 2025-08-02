@@ -40,6 +40,7 @@ class PurchaseManager {
         _inAppPurchase.purchaseStream;
     _subscription = purchaseUpdated.listen(_handlePurchaseUpdate);
     _addDebugMessage('PurchaseManager 초기화 완료');
+    await restorePurchases();
   }
 
   Future<void> restorePurchases() async {
