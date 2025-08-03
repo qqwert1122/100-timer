@@ -66,30 +66,35 @@ class _SettingPageState extends State<SettingPage> {
     dbService = Provider.of<DatabaseService>(context, listen: false);
     timerProvider = Provider.of<TimerProvider>(context, listen: false);
     _initPrefs();
-
-    // admob 광고 초기화
-    _bannerAd1 = BannerAd(
-      adUnitId: getBannerAdUnitId(),
-      size: AdSize.fullBanner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (Ad ad) {
-          setState(() {
-            _isAdLoaded1 = true;
-          });
-        },
-        onAdFailedToLoad: (Ad ad, LoadAdError error) {
-          ad.dispose();
-        },
-      ),
-    );
-    _bannerAd1!.load();
+    _initializeAd();
   }
 
   Future<void> _initPrefs() async {
     _loadTotalSeconds(); // 초기화 후 데이터 로드
     _loadWakelockState(); // 화면 유지 상태도 로드
     _loadAlarmFlag();
+  }
+
+  Future<void> _initializeAd() async {
+    final isAdRemoved = await PurchaseManager().isAdRemoved();
+    if (!isAdRemoved) {
+      _bannerAd1 = BannerAd(
+        adUnitId: getBannerAdUnitId(),
+        size: AdSize.fullBanner,
+        request: const AdRequest(),
+        listener: BannerAdListener(
+          onAdLoaded: (Ad ad) {
+            setState(() {
+              _isAdLoaded1 = true;
+            });
+          },
+          onAdFailedToLoad: (Ad ad, LoadAdError error) {
+            ad.dispose();
+          },
+        ),
+      );
+      _bannerAd1!.load();
+    }
   }
 
   // 목표시간 불러오기/저장
