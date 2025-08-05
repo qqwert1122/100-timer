@@ -316,7 +316,7 @@ class _SettingPageState extends State<SettingPage> {
             name: 'click_remove_ads',
             valueToSum: 30,
           );
-          await PurchaseManager().buyRemoveAds();
+          await PurchaseManager().buyRemoveAdsWithUI(context);
         },
         'trailing': null,
       },
