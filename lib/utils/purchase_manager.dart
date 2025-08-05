@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:project1/theme/app_color.dart';
+import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/logger_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -75,7 +77,7 @@ class PurchaseManager {
     }
   }
 
-  Future<bool> buyRemoveAds() async {
+  Future<bool> buyRemoveAdsWithUI(BuildContext context) async {
     _addDebugMessage('광고 제거 구매 시작');
 
     final ProductDetailsResponse response =
@@ -90,10 +92,16 @@ class PurchaseManager {
       final result =
           await _inAppPurchase.buyNonConsumable(purchaseParam: purchaseParam);
       _addDebugMessage('구매 요청 결과: $result');
+
+      if (result) {
+        _showDialog(context, '구매 성공', '광고 제거가 완료되었습니다.');
+      } else {
+        _showDialog(context, '구매 실패', '구매 처리 중 오류가 발생했습니다.');
+      }
       return result;
     }
     _addDebugMessage('구매 실패: 상품을 찾을 수 없음');
-
+    _showDialog(context, '구매 실패', '상품을 찾을 수 없습니다.');
     return false;
   }
 
@@ -115,5 +123,55 @@ class PurchaseManager {
   void dispose() {
     _subscription.cancel();
     _debugController.close();
+  }
+
+  Future<void> restorePurchasesWithUI(BuildContext context) async {
+    _addDebugMessage('사용자 구매 복원 시작');
+
+    try {
+      await _inAppPurchase.restorePurchases();
+
+      // 복원 후 잠시 대기하여 상태 확인
+      await Future.delayed(Duration(seconds: 2));
+
+      final bool adRemoved = await isAdRemoved();
+
+      if (adRemoved) {
+        _addDebugMessage('구매 복원 성공');
+        _showDialog(context, '복원 성공', '구매 내역이 성공적으로 복원되었습니다.');
+      } else {
+        _addDebugMessage('복원할 구매 내역 없음');
+        _showDialog(context, '복원 완료', '복원할 구매 내역이 없습니다.');
+      }
+    } catch (e) {
+      _addDebugMessage('구매 복원 오류: $e');
+      _showDialog(context, '복원 실패', '구매 복원 중 오류가 발생했습니다.');
+    }
+  }
+
+  void _showDialog(BuildContext context, String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.background(context),
+        title: Text(
+          title,
+          style: AppTextStyles.getTitle(context),
+        ),
+        content: Text(
+          message,
+          style: AppTextStyles.getBody(context),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              '확인',
+              style: AppTextStyles.getBody(context),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
