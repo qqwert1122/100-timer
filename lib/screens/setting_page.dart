@@ -321,6 +321,19 @@ class _SettingPageState extends State<SettingPage> {
         'trailing': null,
       },
       {
+        'title': '구매 복원하기',
+        'image': 'shopping',
+        'description': '구매 내역을 복원해요',
+        'onTap': () async {
+          await FacebookAppEvents().logEvent(
+            name: 'click_remove_ads',
+            valueToSum: 30,
+          );
+          await PurchaseManager().restorePurchasesWithUI(context);
+        },
+        'trailing': null,
+      },
+      {
         'title': '별점 5점 남기러 가기',
         'image': 'star',
         'description': '어플이 마음에 든다면 리뷰를 남겨주세요',
