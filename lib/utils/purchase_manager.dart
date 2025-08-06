@@ -87,7 +87,14 @@ class PurchaseManager {
   Future<bool> _verifyReceipt(PurchaseDetails purchaseDetails) async {
     try {
       final receiptData =
-          purchaseDetails.verificationData.serverVerificationData;
+          purchaseDetails.verificationData.localVerificationData;
+
+      _addDebugMessage('로컬 영수증 원본: ${receiptData.substring(0, 50)}...');
+
+      _addDebugMessage('영수증 데이터 길이: ${receiptData.length}');
+      _addDebugMessage('Shared Secret 길이: ${StoreSecrets.sharedSecret.length}');
+      _addDebugMessage('첫 8자: ${StoreSecrets.sharedSecret}');
+
       _addDebugMessage('영수증 검증 시작');
 
       // 프로덕션 환경 먼저 시도
@@ -146,6 +153,13 @@ class PurchaseManager {
 
   Future<bool> buyRemoveAdsWithUI(BuildContext context) async {
     _addDebugMessage('광고 제거 구매 시작');
+
+    final bool available = await _inAppPurchase.isAvailable();
+    if (!available) {
+      _addDebugMessage('InAppPurchase 사용 불가능');
+      _showDialog(context, '구매 불가', 'In-App Purchase를 사용할 수 없습니다.');
+      return false;
+    }
 
     final ProductDetailsResponse response =
         await _inAppPurchase.queryProductDetails({removeAdsId});
