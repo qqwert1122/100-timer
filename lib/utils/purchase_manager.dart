@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:project1/config/store_secret.dart';
 import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/logger_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class PurchaseManager {
   static final PurchaseManager _instance = PurchaseManager._internal();
@@ -61,9 +64,14 @@ class PurchaseManager {
       if (purchaseDetails.productID == removeAdsId) {
         if (purchaseDetails.status == PurchaseStatus.purchased ||
             purchaseDetails.status == PurchaseStatus.restored) {
-          _addDebugMessage('광고 제거 구매 성공');
-
-          await _saveAdRemovalStatus(true);
+          // 영수증 검증 추가
+          bool isValid = await _verifyReceipt(purchaseDetails);
+          if (isValid) {
+            _addDebugMessage('광고 제거 구매 성공');
+            await _saveAdRemovalStatus(true);
+          } else {
+            _addDebugMessage('영수증 검증 실패');
+          }
         } else if (purchaseDetails.status == PurchaseStatus.error) {
           _addDebugMessage('구매 오류: ${purchaseDetails.error}');
         }
@@ -71,9 +79,68 @@ class PurchaseManager {
 
       if (purchaseDetails.pendingCompletePurchase) {
         _addDebugMessage('구매 완료 처리 중');
-
         await _inAppPurchase.completePurchase(purchaseDetails);
       }
+    }
+  }
+
+  Future<bool> _verifyReceipt(PurchaseDetails purchaseDetails) async {
+    try {
+      final receiptData =
+          purchaseDetails.verificationData.serverVerificationData;
+      _addDebugMessage('영수증 검증 시작');
+
+      // 프로덕션 환경 먼저 시도
+      bool isValid = await _verifyWithApple(receiptData, false);
+
+      if (!isValid) {
+        // 샌드박스 환경 재시도
+        _addDebugMessage('샌드박스 환경으로 재시도');
+        isValid = await _verifyWithApple(receiptData, true);
+      }
+
+      return isValid;
+    } catch (e) {
+      _addDebugMessage('영수증 검증 오류: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _verifyWithApple(String receiptData, bool sandbox) async {
+    try {
+      final String url = sandbox
+          ? 'https://sandbox.itunes.apple.com/verifyReceipt'
+          : 'https://buy.itunes.apple.com/verifyReceipt';
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'receipt-data': receiptData,
+          'password': StoreSecrets.sharedSecret,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        final status = responseData['status'];
+
+        _addDebugMessage('애플 서버 응답: status=$status');
+
+        if (status == 0) {
+          return true;
+        } else if (status == 21007 && !sandbox) {
+          // 샌드박스 영수증이 프로덕션으로 전송된 경우
+          _addDebugMessage('샌드박스 영수증 감지, 재시도 필요');
+          return false;
+        }
+      }
+
+      _addDebugMessage('검증 실패: ${response.statusCode}');
+      return false;
+    } catch (e) {
+      _addDebugMessage('HTTP 오류: $e');
+      return false;
     }
   }
 
