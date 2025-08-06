@@ -211,6 +211,24 @@ const List<Map<String, dynamic>> creditList = [
     'link': 'https://pub.dev/packages/timeline_tile',
   },
   {
+    'category': '오픈 소스 라이브러리',
+    'title': 'facebook_app_events',
+    'description': '이 어플리케이션은 facebook_app_events 라이브러리를 사용했어요.',
+    'link': 'https://pub.dev/packages/facebook_app_events',
+  },
+  {
+    'category': '오픈 소스 라이브러리',
+    'title': 'in_app_purchase',
+    'description': '이 어플리케이션은 in_app_purchase 라이브러리를 사용했어요.',
+    'link': 'https://pub.dev/packages/in_app_purchase',
+  },
+  {
+    'category': '오픈 소스 라이브러리',
+    'title': 'http',
+    'description': '이 어플리케이션은 http 라이브러리를 사용했어요.',
+    'link': 'https://pub.dev/packages/http',
+  },
+  {
     'category': '폰트',
     'title': '나눔휴먼,나눔스퀘어네오',
     'description': '이 어플리케이션은 나눔휴먼체, 나눔스퀘어네오체를 사용했어요',
@@ -219,7 +237,8 @@ const List<Map<String, dynamic>> creditList = [
   {
     'category': '폰트',
     'title': 'chobddag',
-    'description': '이 어플리케이션의 타이머 숫자는 롯데리아의 찹땡겨체를 사용했어요. 롯데리아 찹땡겨체의 지적 재산권을 포함한 모든 권리는 롯데GRS에 있어요',
+    'description':
+        '이 어플리케이션의 타이머 숫자는 롯데리아의 찹땡겨체를 사용했어요. 롯데리아 찹땡겨체의 지적 재산권을 포함한 모든 권리는 롯데GRS에 있어요',
     'link': 'https://lotteriafont.com/chobddag',
   },
   {
