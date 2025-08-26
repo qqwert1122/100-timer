@@ -110,6 +110,8 @@ String getIconImage(String? iconName) {
       return 'assets/images/emoji/sd_basketball.png';
 
     // 3. 일상생활 관련 아이콘
+    case 'camping':
+      return 'assets/images/emoji/dl_camping.png';
     case 'baby':
       return 'assets/images/emoji/dl_baby.png';
     case 'baby_bottle':
@@ -372,6 +374,14 @@ String getIconImage(String? iconName) {
       return 'assets/images/emoji/sh_bookmark.png';
     case 'yellow_heart':
       return 'assets/images/emoji/sh_yellow_heart.png';
+
+    // 기타 아이콘
+    case 'grinning_squinting_face':
+      return 'assets/images/emoji/grinning_squinting_face.png';
+    case 'smiling_face':
+      return 'assets/images/emoji/smiling_face.png';
+    case 'heart_nobg':
+      return 'assets/images/emoji/heart_nobg.png';
 
     // 기본 아이콘
     default:
