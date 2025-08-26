@@ -64,14 +64,8 @@ class PurchaseManager {
       if (purchaseDetails.productID == removeAdsId) {
         if (purchaseDetails.status == PurchaseStatus.purchased ||
             purchaseDetails.status == PurchaseStatus.restored) {
-          // 영수증 검증 추가
-          bool isValid = await _verifyReceipt(purchaseDetails);
-          if (isValid) {
-            _addDebugMessage('광고 제거 구매 성공');
-            await _saveAdRemovalStatus(true);
-          } else {
-            _addDebugMessage('영수증 검증 실패');
-          }
+          _addDebugMessage('광고 제거 구매 성공');
+          await _saveAdRemovalStatus(true);
         } else if (purchaseDetails.status == PurchaseStatus.error) {
           _addDebugMessage('구매 오류: ${purchaseDetails.error}');
         }

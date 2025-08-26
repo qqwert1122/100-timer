@@ -37,8 +37,8 @@ class _AlarmPageState extends State<AlarmPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            ActivityNotificationWidget(),
-            SizedBox(height: context.hp(1)),
+            // ActivityNotificationWidget(),
+            // SizedBox(height: context.hp(1)),
             DailyRemainderWidget(),
           ],
         ),

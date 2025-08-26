@@ -74,7 +74,8 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
 
   Future<void> _loadBreaks() async {
     try {
-      final breaks = await _dbService.getBreaks(sessionId: widget.log['session_id']);
+      final breaks =
+          await _dbService.getBreaks(sessionId: widget.log['session_id']);
       setState(() {
         _breaks = breaks.map((b) => Map<String, dynamic>.from(b)).toList();
         _isLoading = false;
@@ -136,26 +137,34 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
             ]) {
               setState(() {
                 _hasTimeChanges = true;
-                final index = _breaks.indexWhere((b) => b['break_id'] == item['break_id']);
+                final index = _breaks
+                    .indexWhere((b) => b['break_id'] == item['break_id']);
                 if (index >= 0) {
-                  _breaks[index]['start_time'] = startDateTime!.toUtc().toIso8601String();
-                  _breaks[index]['end_time'] = endDateTime.toUtc().toIso8601String();
+                  _breaks[index]['start_time'] =
+                      startDateTime!.toUtc().toIso8601String();
+                  _breaks[index]['end_time'] =
+                      endDateTime.toUtc().toIso8601String();
                 }
                 if (_sessionData['end_time'] != null) {
-                  final sessionStart = DateTime.parse(_sessionData['start_time']);
+                  final sessionStart =
+                      DateTime.parse(_sessionData['start_time']);
                   final sessionEnd = DateTime.parse(_sessionData['end_time']);
-                  int totalSessionSeconds = sessionEnd.difference(sessionStart).inSeconds;
+                  int totalSessionSeconds =
+                      sessionEnd.difference(sessionStart).inSeconds;
 
                   int totalBreakSeconds = 0;
                   for (var breakItem in _breaks) {
                     if (breakItem['end_time'] != null) {
-                      final breakStart = DateTime.parse(breakItem['start_time']);
+                      final breakStart =
+                          DateTime.parse(breakItem['start_time']);
                       final breakEnd = DateTime.parse(breakItem['end_time']);
-                      totalBreakSeconds += breakEnd.difference(breakStart).inSeconds;
+                      totalBreakSeconds +=
+                          breakEnd.difference(breakStart).inSeconds;
                     }
                   }
 
-                  _sessionData['duration'] = totalSessionSeconds - totalBreakSeconds;
+                  _sessionData['duration'] =
+                      totalSessionSeconds - totalBreakSeconds;
                 }
               });
             },
@@ -182,28 +191,34 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
               setState(() {
                 _hasTimeChanges = true;
 
-                _sessionData['end_time'] = endDateTime.toUtc().toIso8601String();
+                _sessionData['end_time'] =
+                    endDateTime.toUtc().toIso8601String();
 
                 if (_breaks.isNotEmpty && _breaks.last['end_time'] == null) {
-                  final lastBreakStart = DateTime.parse(_breaks.last['start_time']);
+                  final lastBreakStart =
+                      DateTime.parse(_breaks.last['start_time']);
                   if (endDateTime.isAfter(lastBreakStart)) {
-                    _breaks.last['end_time'] = endDateTime.toUtc().toIso8601String();
+                    _breaks.last['end_time'] =
+                        endDateTime.toUtc().toIso8601String();
                   }
                 }
 
                 final sessionStart = DateTime.parse(_sessionData['start_time']);
-                int totalSessionSeconds = endDateTime.difference(sessionStart).inSeconds;
+                int totalSessionSeconds =
+                    endDateTime.difference(sessionStart).inSeconds;
 
                 int totalBreakSeconds = 0;
                 for (var breakItem in _breaks) {
                   if (breakItem['end_time'] != null) {
                     final breakStart = DateTime.parse(breakItem['start_time']);
                     final breakEnd = DateTime.parse(breakItem['end_time']);
-                    totalBreakSeconds += breakEnd.difference(breakStart).inSeconds;
+                    totalBreakSeconds +=
+                        breakEnd.difference(breakStart).inSeconds;
                   }
                 }
 
-                _sessionData['duration'] = totalSessionSeconds - totalBreakSeconds;
+                _sessionData['duration'] =
+                    totalSessionSeconds - totalBreakSeconds;
               });
             },
           );
@@ -238,7 +253,8 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
       // 세션 업데이트
       await _dbService.modifySession(
         sessionId: widget.log['session_id'],
-        newDuration: _sessionData['duration'], // calculatedDuration -> _sessionData['duration']
+        newDuration: _sessionData[
+            'duration'], // calculatedDuration -> _sessionData['duration']
         activityId: activityId,
         activityName: activityName,
         activityIcon: activityIcon,
@@ -267,7 +283,11 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
     Navigator.of(context).pop(updatedLog); // _sessionData -> updatedLog
   }
 
-  Widget _buildTitleRow({required String label, required String color, required String icon, int? duration}) {
+  Widget _buildTitleRow(
+      {required String label,
+      required String color,
+      required String icon,
+      int? duration}) {
     return Row(
       children: [
         Container(
@@ -333,7 +353,8 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
   }
 
   String _getTimelineDate(Map<String, dynamic> item) {
-    final timeString = item['type'] == 'break' ? item['start_time'] : item['time'];
+    final timeString =
+        item['type'] == 'break' ? item['start_time'] : item['time'];
     return timeString != null ? formatDateOnly(timeString) : '';
   }
 
@@ -394,10 +415,12 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
       itemBuilder: (context, index) {
         final beforeItem = index > 0 ? timelineItems[index - 1] : null;
         final item = timelineItems[index];
-        final afterItem = index < timelineItems.length - 1 ? timelineItems[index + 1] : null;
+        final afterItem =
+            index < timelineItems.length - 1 ? timelineItems[index + 1] : null;
 
         final currentDate = _getTimelineDate(item);
-        final previousDate = index > 0 ? _getTimelineDate(timelineItems[index - 1]) : '';
+        final previousDate =
+            index > 0 ? _getTimelineDate(timelineItems[index - 1]) : '';
 
         return TimelineTile(
           alignment: TimelineAlign.manual,
@@ -437,7 +460,8 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              margin: EdgeInsets.only(bottom: index == timelineItems.length - 1 ? 8 : 0),
+              margin: EdgeInsets.only(
+                  bottom: index == timelineItems.length - 1 ? 8 : 0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -447,12 +471,14 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
                       children: [
                         Row(
                           children: [
-                            Text(item['title'], style: AppTextStyles.getBody(context)),
+                            Text(item['title'],
+                                style: AppTextStyles.getBody(context)),
                             SizedBox(width: context.wp(2)),
                             if (item['type'] == 'break')
                               Text(
                                 _getBreakDuration(item),
-                                style: AppTextStyles.getCaption(context).copyWith(
+                                style:
+                                    AppTextStyles.getCaption(context).copyWith(
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),

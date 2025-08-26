@@ -71,7 +71,8 @@ class NotificationService {
     final isAllowed = await AwesomeNotifications().isNotificationAllowed();
     if (isAllowed) return true;
 
-    final bool granted = await AwesomeNotifications().requestPermissionToSendNotifications(
+    final bool granted =
+        await AwesomeNotifications().requestPermissionToSendNotifications(
       permissions: [
         NotificationPermission.Alert,
         NotificationPermission.Sound,
@@ -155,6 +156,49 @@ class NotificationService {
     }
   }
 
+  Future<void> scheduleReminderWithId({
+    required int id,
+    required DateTime reminderTime,
+    required String title,
+    required String body,
+  }) async {
+    try {
+      await ready;
+      if (!await checkPermission()) return;
+
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: id,
+          channelKey: activityChannelKey,
+          title: title,
+          body: body,
+          notificationLayout: NotificationLayout.Default,
+        ),
+        schedule: NotificationCalendar.fromDate(
+          date: reminderTime,
+          preciseAlarm: true,
+          allowWhileIdle: true,
+          repeats: false,
+        ),
+      );
+    } on PlatformException catch (e) {
+      logger.e('AwesomeNotif error: ${e.code} ${e.message}');
+    }
+  }
+
+// 특정 리마인더의 모든 알림 취소
+  Future<void> cancelReminderNotifications(int reminderId) async {
+    try {
+      await ready;
+      final baseId = (reminderId % 1000000) * 1000;
+      for (int i = 0; i <= 60; i++) {
+        await AwesomeNotifications().cancel(baseId + i);
+      }
+    } on PlatformException catch (e) {
+      logger.e('AwesomeNotif error: ${e.code} ${e.message}');
+    }
+  }
+
   // 활동 완료 알림만 취소
   Future<void> cancelActivityCompletionNotification() async {
     try {
@@ -186,7 +230,8 @@ class NotificationService {
   }
 
   // 알림 액션 수신 핸들러
-  static Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
+  static Future<void> onActionReceivedMethod(
+      ReceivedAction receivedAction) async {
     // 사용자가 알림을 탭했을 때 뱃지 초기화
     await FacebookAppEvents().logEvent(
       name: 'reset_badge',
@@ -196,17 +241,20 @@ class NotificationService {
   }
 
   // 알림 생성 핸들러
-  static Future<void> onNotificationCreatedMethod(ReceivedNotification receivedNotification) async {
+  static Future<void> onNotificationCreatedMethod(
+      ReceivedNotification receivedNotification) async {
     // 알림 생성 시 특별한 동작 없음
   }
 
   // 알림 표시 핸들러
-  static Future<void> onNotificationDisplayedMethod(ReceivedNotification receivedNotification) async {
+  static Future<void> onNotificationDisplayedMethod(
+      ReceivedNotification receivedNotification) async {
     // 알림이 표시되었을 때 특별한 동작 없음
   }
 
   // 알림 해제 핸들러
-  static Future<void> onDismissActionReceivedMethod(ReceivedAction receivedAction) async {
+  static Future<void> onDismissActionReceivedMethod(
+      ReceivedAction receivedAction) async {
     // 알림이 해제되었을 때 특별한 동작 없음
   }
 }

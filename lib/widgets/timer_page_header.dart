@@ -46,10 +46,13 @@ class _TimerPageHeaderState extends State<TimerPageHeader> {
   Widget build(BuildContext context) {
     return Consumer<TimerProvider>(
       builder: (context, timerProvider, child) {
-        final totalSeconds = timerProvider.timerData != null ? (timerProvider.timerData!['total_seconds'] / 3600).toInt() : 100; // 기본값
+        final totalSeconds = timerProvider.timerData != null
+            ? (timerProvider.timerData!['total_seconds'] / 3600).toInt()
+            : 100; // 기본값
 
         return Padding(
-          padding: EdgeInsets.symmetric(vertical: context.xs, horizontal: context.sm),
+          padding: EdgeInsets.symmetric(
+              vertical: context.xs, horizontal: context.sm),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -92,39 +95,40 @@ class _TimerPageHeaderState extends State<TimerPageHeader> {
                   ],
                 ),
               ),
-              // Row(
-              //   children: [
-              //     GestureDetector(
-              //       onTap: () {
-              //         HapticFeedback.lightImpact();
-              //         Navigator.push(
-              //           context,
-              //           MaterialPageRoute(
-              //             builder: (context) => const AlarmPage(),
-              //           ),
-              //         );
-              //       },
-              //       child: Container(
-              //         padding: context.paddingXS,
-              //         decoration: BoxDecoration(
-              //           color: AppColors.background(context),
-              //           borderRadius: BorderRadius.circular(12),
-              //           boxShadow: [
-              //             BoxShadow(
-              //               color: AppColors.textPrimary(context).withValues(alpha: 0.08), // 그림자 색상
-              //               blurRadius: 10, // 그림자 흐림 정도
-              //               offset: const Offset(-2, 8), // 그림자 위치 (가로, 세로)
-              //             ),
-              //           ],
-              //         ),
-              //         child: Icon(
-              //           LucideIcons.bell,
-              //           size: context.lg,
-              //         ),
-              //       ),
-              //     ),
-              //   ],
-              // ),
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AlarmPage(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: context.paddingXS,
+                      decoration: BoxDecoration(
+                        color: AppColors.background(context),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.textPrimary(context)
+                                .withValues(alpha: 0.08), // 그림자 색상
+                            blurRadius: 2, // 그림자 흐림 정도
+                            offset: const Offset(0, 2), // 그림자 위치 (가로, 세로)
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.alarm_add_rounded,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         );

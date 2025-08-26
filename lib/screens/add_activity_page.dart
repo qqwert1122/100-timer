@@ -83,7 +83,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
     super.dispose();
   }
 
-  bool get isActivityNameValid => _activityNameController.text.trim().isNotEmpty && !isDuplicate;
+  bool get isActivityNameValid =>
+      _activityNameController.text.trim().isNotEmpty && !isDuplicate;
 
   bool get isIconSelected => _selectedIconName != null;
 
@@ -203,7 +204,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
           textColor: Colors.white,
           fontSize: 14.0,
         );
-        Navigator.pop(context, {'name': activityName, 'icon': iconName, 'color': colorValue});
+        Navigator.pop(context,
+            {'name': activityName, 'icon': iconName, 'color': colorValue});
       }
     } catch (e) {
       Fluttertoast.showToast(
@@ -247,10 +249,13 @@ class _AddActivityPageState extends State<AddActivityPage> {
           // 'Back' button
           Expanded(
             child: ElevatedButton(
-              onPressed: _currentStep > 0 ? _prevStep : HapticFeedback.lightImpact,
+              onPressed:
+                  _currentStep > 0 ? _prevStep : HapticFeedback.lightImpact,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: _currentStep > 0 ? Colors.red : AppColors.backgroundSecondary(context),
+                backgroundColor: _currentStep > 0
+                    ? Colors.red
+                    : AppColors.backgroundSecondary(context),
                 foregroundColor: AppColors.background(context),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -269,11 +274,17 @@ class _AddActivityPageState extends State<AddActivityPage> {
           // 'Next' or 'Save' button
           Expanded(
             child: ElevatedButton(
-              onPressed: isNextButtonEnabled ? (_currentStep < 2 ? _nextStep : _submit) : HapticFeedback.lightImpact,
+              onPressed: isNextButtonEnabled
+                  ? (_currentStep < 2 ? _nextStep : _submit)
+                  : HapticFeedback.lightImpact,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: isNextButtonEnabled ? Colors.blueAccent : AppColors.backgroundSecondary(context),
-                foregroundColor: isNextButtonEnabled ? Colors.white : AppColors.background(context),
+                backgroundColor: isNextButtonEnabled
+                    ? Colors.blueAccent
+                    : AppColors.backgroundSecondary(context),
+                foregroundColor: isNextButtonEnabled
+                    ? Colors.white
+                    : AppColors.background(context),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -302,7 +313,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
           key: _formKey,
           child: TextFormField(
             controller: _activityNameController,
-            style: AppTextStyles.getBody(context).copyWith(color: AppColors.textSecondary(context)),
+            style: AppTextStyles.getBody(context)
+                .copyWith(color: AppColors.textSecondary(context)),
             maxLength: 15,
             decoration: InputDecoration(
               border: const UnderlineInputBorder(),
@@ -315,7 +327,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 borderSide: BorderSide(color: Colors.blueAccent),
               ),
               hintText: '예시. 영단어 암기',
-              hintStyle: AppTextStyles.getBody(context).copyWith(color: AppColors.textSecondary(context)),
+              hintStyle: AppTextStyles.getBody(context)
+                  .copyWith(color: AppColors.textSecondary(context)),
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -327,7 +340,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
             },
             onChanged: (value) async {
               // 입력된 이름 변경 시 중복 확인
-              bool duplicate = await Provider.of<DatabaseService>(context, listen: false).isActivityNameDuplicate(value);
+              bool duplicate =
+                  await Provider.of<DatabaseService>(context, listen: false)
+                      .isActivityNameDuplicate(value);
               setState(() {
                 isDuplicate = duplicate;
               });
@@ -378,7 +393,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
           {'icon': getIconImage('hammer'), 'name': 'hammer'},
           {'icon': getIconImage('dollar'), 'name': 'dollar'},
           {'icon': getIconImage('bank'), 'name': 'bank'},
-          {'icon': getIconImage('classical_building'), 'name': 'classical_building'},
+          {
+            'icon': getIconImage('classical_building'),
+            'name': 'classical_building'
+          },
         ],
         '자기계발': [
           {'icon': getIconImage('writing'), 'name': 'writing'}, // 추천
@@ -409,7 +427,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
           {'icon': getIconImage('trophy'), 'name': 'trophy'},
         ],
         '일상': [
-          {'icon': getIconImage('house'), 'name': 'house'}, //추천
+          {'icon': getIconImage('camping'), 'name': 'camping'},
+          {'icon': getIconImage('house'), 'name': 'house'},
           {'icon': getIconImage('plate'), 'name': 'plate'},
           {'icon': getIconImage('tea'), 'name': 'tea'},
           {'icon': getIconImage('bread'), 'name': 'bread'},
@@ -462,10 +481,16 @@ class _AddActivityPageState extends State<AddActivityPage> {
           {'icon': getIconImage('clapping'), 'name': 'clapping'},
           {'icon': getIconImage('thumbs_up'), 'name': 'thumbs_up'},
           {'icon': getIconImage('thumbs_down'), 'name': 'thumbs_down'},
-          {'icon': getIconImage('sign_of_the_horns_light'), 'name': 'sign_of_the_horns_light'},
+          {
+            'icon': getIconImage('sign_of_the_horns_light'),
+            'name': 'sign_of_the_horns_light'
+          },
           {'icon': getIconImage('victory'), 'name': 'victory'},
           {'icon': getIconImage('cityscape'), 'name': 'cityscape'},
-          {'icon': getIconImage('cityscape_at_dusk'), 'name': 'cityscape_at_dusk'},
+          {
+            'icon': getIconImage('cityscape_at_dusk'),
+            'name': 'cityscape_at_dusk'
+          },
           {'icon': getIconImage('city_night'), 'name': 'city_night'},
           {'icon': getIconImage('sun'), 'name': 'sun'},
           {'icon': getIconImage('sunrise'), 'name': 'sunrise'},
@@ -495,9 +520,15 @@ class _AddActivityPageState extends State<AddActivityPage> {
           {'icon': getIconImage('money_wing'), 'name': 'money_wing'},
           {'icon': getIconImage('gear'), 'name': 'gear'},
           {'icon': getIconImage('hourglass_done'), 'name': 'hourglass_done'},
-          {'icon': getIconImage('hourglass_not_done'), 'name': 'hourglass_not_done'},
+          {
+            'icon': getIconImage('hourglass_not_done'),
+            'name': 'hourglass_not_done'
+          },
           {'icon': getIconImage('label'), 'name': 'label'},
-          {'icon': getIconImage('police_car_light'), 'name': 'police_car_light'},
+          {
+            'icon': getIconImage('police_car_light'),
+            'name': 'police_car_light'
+          },
           {'icon': getIconImage('shopping'), 'name': 'shopping'},
           {'icon': getIconImage('ticket'), 'name': 'ticket'},
           {'icon': getIconImage('unlocked'), 'name': 'unlocked'},
@@ -518,7 +549,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
         ],
         '도형': [
           {'icon': getIconImage('growing_heart'), 'name': 'growing_heart'},
-          {'icon': getIconImage('heart_exclamation'), 'name': 'heart_exclamation'},
+          {
+            'icon': getIconImage('heart_exclamation'),
+            'name': 'heart_exclamation'
+          },
           {'icon': getIconImage('two_heart'), 'name': 'two_heart'},
           {'icon': getIconImage('green_heart'), 'name': 'green_heart'},
           {'icon': getIconImage('yellow_heart'), 'name': 'yellow_heart'},
@@ -532,7 +566,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
           {'icon': getIconImage('up_button'), 'name': 'up_button'},
           {'icon': getIconImage('shuffle'), 'name': 'shuffle'},
           {'icon': getIconImage('hundred'), 'name': 'hundred'},
-          {'icon': getIconImage('exclamation_question_mark'), 'name': 'exclamation_question_mark'},
+          {
+            'icon': getIconImage('exclamation_question_mark'),
+            'name': 'exclamation_question_mark'
+          },
           {'icon': getIconImage('green_circle'), 'name': 'green_circle'},
           {'icon': getIconImage('green_square'), 'name': 'green_square'},
         ],
@@ -552,7 +589,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
               children: [
                 Text(
                   categoryName,
-                  style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.bold),
+                  style: AppTextStyles.getBody(context)
+                      .copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 GridView.builder(
@@ -576,7 +614,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: _selectedIconName == iconName ? Colors.blue.withValues(alpha: 0.3) : Colors.transparent,
+                          color: _selectedIconName == iconName
+                              ? Colors.blue.withValues(alpha: 0.3)
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Image.asset(
@@ -632,7 +672,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
             children: [
               Text(
                 "선택된 색깔",
-                style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.w900),
+                style: AppTextStyles.getBody(context)
+                    .copyWith(fontWeight: FontWeight.w900),
               ),
               const SizedBox(
                 width: 10,
@@ -675,7 +716,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                     ),
                     child: Column(
                       children: opacities.map((opacity) {
-                        Color colorWithOpacity = ColorService.hexToColor(baseColor).withValues(alpha: opacity);
+                        Color colorWithOpacity =
+                            ColorService.hexToColor(baseColor)
+                                .withValues(alpha: opacity);
 
                         return Container(
                           width: 30,
@@ -732,7 +775,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
                   child: Stepper(
                     physics: const ClampingScrollPhysics(),
                     currentStep: _currentStep,
-                    controlsBuilder: (BuildContext context, ControlsDetails details) {
+                    controlsBuilder:
+                        (BuildContext context, ControlsDetails details) {
                       return const SizedBox();
                     },
                     steps: [
@@ -745,7 +789,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
                                   children: [
                                     Text(
                                       '활동 이름을\n입력해주세요',
-                                      style: AppTextStyles.getTitle(context).copyWith(
+                                      style: AppTextStyles.getTitle(context)
+                                          .copyWith(
                                         fontWeight: FontWeight.w900,
                                         color: Colors.blueAccent,
                                       ),
@@ -758,7 +803,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                                 ),
                               )
                             : Container(),
-                        content: _currentStep == 0 ? buildActivityName() : Container(),
+                        content: _currentStep == 0
+                            ? buildActivityName()
+                            : Container(),
                         isActive: _currentStep == 0,
                       ),
                       Step(
@@ -770,7 +817,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
                                   children: [
                                     Text(
                                       '아이콘을\n선택해주세요',
-                                      style: AppTextStyles.getTitle(context).copyWith(
+                                      style: AppTextStyles.getTitle(context)
+                                          .copyWith(
                                         fontWeight: FontWeight.w900,
                                         color: Colors.blueAccent,
                                       ),
@@ -779,7 +827,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                                 ),
                               )
                             : Container(),
-                        content: _currentStep == 1 ? buildIconSelection() : Container(),
+                        content: _currentStep == 1
+                            ? buildIconSelection()
+                            : Container(),
                         isActive: _currentStep == 1,
                       ),
                       Step(
@@ -791,7 +841,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
                                   children: [
                                     Text(
                                       '색깔을\n선택해주세요',
-                                      style: AppTextStyles.getTitle(context).copyWith(
+                                      style: AppTextStyles.getTitle(context)
+                                          .copyWith(
                                         fontWeight: FontWeight.w900,
                                         color: Colors.blueAccent,
                                       ),
@@ -800,7 +851,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                                 ),
                               )
                             : Container(),
-                        content: _currentStep == 2 ? buildColorSelection() : Container(),
+                        content: _currentStep == 2
+                            ? buildColorSelection()
+                            : Container(),
                         isActive: _currentStep == 2,
                       ),
                     ],

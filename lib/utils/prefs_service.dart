@@ -7,6 +7,7 @@ class PrefsService {
   PrefsService._internal();
 
   late final SharedPreferences _prefs;
+  SharedPreferences get prefs => _prefs;
 
   Future<void> init() async {
     logger.d('[prefsService] SharedPreference init');
@@ -18,14 +19,25 @@ class PrefsService {
     final now = DateTime.now().toUtc();
     final installDateStr = now.toIso8601String();
 
-    await _prefs.setInt('totalSeconds', _prefs.getInt('totalSeconds') ?? 360000); // 100 h = 360 000 sec
-    await _prefs.setBool('keepScreenOn', _prefs.getBool('keepScreenOn') ?? false);
+    await _prefs.setInt('totalSeconds',
+        _prefs.getInt('totalSeconds') ?? 360000); // 100 h = 360 000 sec
+    await _prefs.setBool(
+        'keepScreenOn', _prefs.getBool('keepScreenOn') ?? false);
     await _prefs.setBool('alarmFlag', _prefs.getBool('alarmFlag') ?? false);
-    await _prefs.setBool('hasRequestedNotificationPermission', _prefs.getBool('hasRequestedNotificationPermission') ?? false);
-    await _prefs.setString('installDate', _prefs.getString('installDate') ?? installDateStr);
-    await _prefs.setInt('customDuration', _prefs.getInt('customDuration') ?? 3600);
+    await _prefs.setBool('hasRequestedNotificationPermission',
+        _prefs.getBool('hasRequestedNotificationPermission') ?? false);
+    await _prefs.setString(
+        'installDate', _prefs.getString('installDate') ?? installDateStr);
+    await _prefs.setInt(
+        'customDuration', _prefs.getInt('customDuration') ?? 3600);
 
-    const pages = ['timer', 'activityPicker', 'timerRunning', 'focusMode', 'history'];
+    const pages = [
+      'timer',
+      'activityPicker',
+      'timerRunning',
+      'focusMode',
+      'history'
+    ];
     for (final p in pages) {
       final k = '${p}Onboarding';
       await _prefs.setBool(k, _prefs.getBool(k) ?? false);
@@ -44,10 +56,13 @@ class PrefsService {
   set alarmFlag(bool v) => _prefs.setBool('alarmFlag', v);
 
   bool getOnboarding(String page) => _prefs.getBool('${page}Onboarding')!;
-  Future<void> setOnboarding(String page, bool value) => _prefs.setBool('${page}Onboarding', value);
+  Future<void> setOnboarding(String page, bool value) =>
+      _prefs.setBool('${page}Onboarding', value);
 
-  bool get hasRequestedNotificationPermission => _prefs.getBool('hasRequestedNotificationPermission')!;
-  set hasRequestedNotificationPermission(bool v) => _prefs.setBool('hasRequestedNotificationPermission', v);
+  bool get hasRequestedNotificationPermission =>
+      _prefs.getBool('hasRequestedNotificationPermission')!;
+  set hasRequestedNotificationPermission(bool v) =>
+      _prefs.setBool('hasRequestedNotificationPermission', v);
 
   String get installDate => _prefs.getString('installDate')!;
   set installDate(String date) => _prefs.setString('installDate', date);
