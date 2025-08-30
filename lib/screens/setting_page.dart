@@ -405,7 +405,7 @@ class _SettingPageState extends State<SettingPage> {
       {
         'title': '버전',
         'image': 'info',
-        'description': '현재 버전 1.0.6 | 업데이트 날짜 2025-08-01',
+        'description': '현재 버전 1.0.6 | 업데이트 날짜 2025-08-26',
         'onTap': () {},
         'trailing': null,
       },

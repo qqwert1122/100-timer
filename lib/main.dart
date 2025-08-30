@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -110,11 +112,14 @@ void main() async {
     // ④ 알림
     await NotificationService().initialize();
 
+    // 알림 디버깅
+    await NotificationService().logScheduledNotifications();
+
     // meta 광고 최적화
     final facebookAppEvents = FacebookAppEvents();
     facebookAppEvents.setAutoLogAppEventsEnabled(true);
 
-    // 데이터베이스 초기
+    // 테스트용 데이터 주입
     // final dbService = DatabaseService();
     // await insertTestData(dbService);
   });
@@ -151,11 +156,14 @@ class _MyAppState extends State<MyApp> {
     ]);
 
     PurchaseManager().initialize();
+
     // 기본 활동(기존 목록) 추가: 이미 활동이 있으면 건너뜁니다.
     List<Map<String, dynamic>> activities = await _dbService.getActivities();
     if (activities.isEmpty) {
       await _insertDefaultActivities();
     }
+
+    await _rescheduleRemindersIfNeeded();
 
     // 기본 타이머 초기화
     Map<String, dynamic> timerData = await _initializeApp();
@@ -231,6 +239,85 @@ class _MyAppState extends State<MyApp> {
     }
 
     await _timerProvider.setDefaultActivity();
+  }
+
+  Future<void> _rescheduleRemindersIfNeeded() async {
+    try {
+      final saved = PrefsService().prefs.getString('daily_reminders');
+      if (saved == null) return;
+
+      final reminders = List<Map<String, dynamic>>.from(
+          jsonDecode(saved).map((e) => Map<String, dynamic>.from(e)));
+
+      if (reminders.isEmpty) return;
+
+      // 마지막 리스케줄링 시간 확인
+      final lastRescheduled =
+          PrefsService().prefs.getInt('last_reminder_reschedule') ?? 0;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final daysSinceLastReschedule =
+          (now - lastRescheduled) / (1000 * 60 * 60 * 24);
+
+      // 30일마다 리스케줄링 (60일 제한의 절반)
+      if (daysSinceLastReschedule > 30) {
+        logger.d('[Main] 알림 리스케줄링 시작 (${daysSinceLastReschedule.toInt()}일 경과)');
+
+        // 모든 기존 알림 취소
+        for (var reminder in reminders) {
+          await NotificationService()
+              .cancelReminderNotifications(reminder['id']);
+        }
+
+        // 새로 예약
+        for (var reminder in reminders) {
+          await _scheduleNotificationsForReminder(reminder);
+        }
+
+        // 리스케줄링 시간 저장
+        await PrefsService().prefs.setInt('last_reminder_reschedule', now);
+        logger.d('[Main] 알림 리스케줄링 완료');
+      }
+    } catch (e) {
+      logger.e('[Main] 알림 리스케줄링 실패: $e');
+    }
+  }
+
+  Future<void> _scheduleNotificationsForReminder(
+      Map<String, dynamic> reminder) async {
+    final now = DateTime.now();
+    final List<int> days = List<int>.from(reminder['days'] ?? []);
+    final hour = reminder['hour'] as int;
+    final minute = reminder['minute'] as int;
+    final activity = reminder['activity'] as String;
+    final reminderId = reminder['id'] as int;
+
+    final baseId = (reminderId % 1000000) * 1000;
+    int notificationIndex = 0;
+
+    for (int dayOffset = 0; dayOffset <= 60; dayOffset++) {
+      final targetDate = now.add(Duration(days: dayOffset));
+      if (days.contains(targetDate.weekday - 1)) {
+        final scheduledDate = DateTime(
+          targetDate.year,
+          targetDate.month,
+          targetDate.day,
+          hour,
+          minute,
+        );
+
+        if (scheduledDate.isAfter(now)) {
+          final notificationId = baseId + notificationIndex;
+          notificationIndex++;
+
+          await NotificationService().scheduleReminderWithId(
+            id: notificationId,
+            reminderTime: scheduledDate,
+            title: '$activity 시작할 시간이에요!',
+            body: '지금 바로 시작해보세요.',
+          );
+        }
+      }
+    }
   }
 
   Future<Map<String, dynamic>> _initializeApp() async {
