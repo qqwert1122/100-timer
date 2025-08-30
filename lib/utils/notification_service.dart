@@ -166,6 +166,9 @@ class NotificationService {
       await ready;
       if (!await checkPermission()) return;
 
+      // 동일 id의 알림을 취소
+      await AwesomeNotifications().cancel(id);
+
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: id,
@@ -173,6 +176,7 @@ class NotificationService {
           title: title,
           body: body,
           notificationLayout: NotificationLayout.Default,
+          badge: 1,
         ),
         schedule: NotificationCalendar.fromDate(
           date: reminderTime,
@@ -256,5 +260,53 @@ class NotificationService {
   static Future<void> onDismissActionReceivedMethod(
       ReceivedAction receivedAction) async {
     // 알림이 해제되었을 때 특별한 동작 없음
+  }
+
+  // 디버깅 용
+  Future<void> logScheduledNotifications() async {
+    try {
+      await ready;
+      final notifications =
+          await AwesomeNotifications().listScheduledNotifications();
+
+      logger.d('[NotificationService] 예약된 알림 개수: ${notifications.length}');
+
+      for (var notification in notifications) {
+        logger.d('[NotificationService] ID: ${notification.content?.id}, '
+            '제목: ${notification.content?.title}, '
+            '예약시간: ${notification.schedule?.toMap()}');
+      }
+    } catch (e) {
+      logger.e('[NotificationService] 예약된 알림 조회 실패: $e');
+    }
+  }
+
+  // NotificationService 클래스에 추가
+  Future<void> debugNotification({
+    required int id,
+    required DateTime scheduledTime,
+    required String title,
+  }) async {
+    final now = DateTime.now();
+    final timeDiff = scheduledTime.difference(now);
+
+    logger.d('[NotificationDebug] ===== 알림 예약 =====');
+    logger.d('[NotificationDebug] ID: $id');
+    logger.d('[NotificationDebug] 제목: $title');
+    logger.d('[NotificationDebug] 현재시간: ${now.toIso8601String()}');
+    logger.d('[NotificationDebug] 예약시간: ${scheduledTime.toIso8601String()}');
+    logger.d('[NotificationDebug] 시간차이: ${timeDiff.inMinutes}분');
+    logger.d('[NotificationDebug] 타임존: ${DateTime.now().timeZoneName}');
+
+    // 예약 후 실제 등록 확인
+    final scheduled = await AwesomeNotifications().listScheduledNotifications();
+    final found = scheduled.where((n) => n.content?.id == id).firstOrNull;
+
+    if (found != null) {
+      logger.d('[NotificationDebug] ✅ 알림 등록 확인됨');
+      logger.d('[NotificationDebug] 등록된 시간: ${found.schedule?.toMap()}');
+    } else {
+      logger.e('[NotificationDebug] ❌ 알림 등록 실패!');
+    }
   }
 }

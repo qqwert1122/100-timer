@@ -23,7 +23,10 @@ class PrefsService {
         _prefs.getInt('totalSeconds') ?? 360000); // 100 h = 360 000 sec
     await _prefs.setBool(
         'keepScreenOn', _prefs.getBool('keepScreenOn') ?? false);
-    await _prefs.setBool('alarmFlag', _prefs.getBool('alarmFlag') ?? false);
+    await _prefs.setBool(
+        'alarmFlag', _prefs.getBool('alarmFlag') ?? false); // 타이머 활동완료 알림
+    await _prefs.setBool('reminderAlarmFlag',
+        _prefs.getBool('reminderAlarmFlag') ?? true); // 데일리 리마인더 알림
     await _prefs.setBool('hasRequestedNotificationPermission',
         _prefs.getBool('hasRequestedNotificationPermission') ?? false);
     await _prefs.setString(
@@ -54,6 +57,9 @@ class PrefsService {
 
   bool get alarmFlag => _prefs.getBool('alarmFlag')!;
   set alarmFlag(bool v) => _prefs.setBool('alarmFlag', v);
+
+  bool get reminderAlarmFlag => _prefs.getBool('reminderAlarmFlag')!;
+  set reminderAlarmFlag(bool v) => _prefs.setBool('reminderAlarmFlag', v);
 
   bool getOnboarding(String page) => _prefs.getBool('${page}Onboarding')!;
   Future<void> setOnboarding(String page, bool value) =>

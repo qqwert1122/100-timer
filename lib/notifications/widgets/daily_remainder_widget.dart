@@ -8,6 +8,7 @@ import 'package:project1/theme/app_color.dart';
 import 'package:project1/theme/app_text_style.dart';
 import 'package:project1/utils/color_service.dart';
 import 'package:project1/utils/icon_utils.dart';
+import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/notification_service.dart';
 import 'package:project1/utils/prefs_service.dart';
 import 'package:project1/utils/responsive_size.dart';
@@ -44,13 +45,15 @@ class _DailyRemainderWidgetState extends State<DailyRemainderWidget> {
     _rescheduleAllNotifications();
   }
 
-  void _loadReminders() {
+  void _loadReminders() async {
     final saved = PrefsService().prefs.getString(_prefsKey);
     if (saved != null) {
       _savedReminders = List<Map<String, dynamic>>.from(
           (jsonDecode(saved) as List).map((e) => Map<String, dynamic>.from(e)));
       setState(() {});
     }
+
+    // await NotificationService().logScheduledNotifications();
   }
 
   void _saveReminders() {
@@ -58,6 +61,12 @@ class _DailyRemainderWidgetState extends State<DailyRemainderWidget> {
   }
 
   Future<void> _rescheduleAllNotifications() async {
+    // 모든 기존 알림 취소
+    for (var reminder in _savedReminders) {
+      await _notificationService.cancelReminderNotifications(reminder['id']);
+    }
+
+    // 새로 예약
     for (var reminder in _savedReminders) {
       await _scheduleNotificationsForReminder(reminder);
     }
@@ -65,6 +74,18 @@ class _DailyRemainderWidgetState extends State<DailyRemainderWidget> {
 
   Future<void> _scheduleNotificationsForReminder(
       Map<String, dynamic> reminder) async {
+    if (!PrefsService().reminderAlarmFlag) return;
+    if (!await _notificationService.checkPermission()) return;
+
+    bool hasPermission = await _notificationService.checkPermission();
+    if (!hasPermission) {
+      hasPermission = await _notificationService.requestPermissions();
+      if (!hasPermission) {
+        logger.d('[ReminderDebug] 알림 권한 거부됨 - 스케줄링 중단');
+        return;
+      }
+    }
+
     final now = DateTime.now();
     final List<int> days = List<int>.from(reminder['days'] ?? []);
     final hour = reminder['hour'] as int;
@@ -72,8 +93,15 @@ class _DailyRemainderWidgetState extends State<DailyRemainderWidget> {
     final activity = reminder['activity'] as String;
     final reminderId = reminder['id'] as int;
 
-    // 각 리마인더는 1000개 ID 범위 사용 (reminderId % 1000000)
-    final baseId = (reminderId % 1000000) * 1000;
+    logger.d('[ReminderDebug] ===== 리마인더 스케줄링 시작 =====');
+    logger.d('[ReminderDebug] 활동: $activity');
+    logger.d('[ReminderDebug] 선택된 요일: $days (0=월, 6=일)');
+    logger.d('[ReminderDebug] 알림 시간: $hour:$minute');
+
+    final baseId = (reminderId % 1000000) *
+        1000; // 각 리마인더는 1000개 ID 범위 사용 (reminderId % 1000000)
+    int notificationIndex = 0; // dayOffset 대신 순차 index 사용
+    int scheduledCount = 0;
 
     for (int dayOffset = 0; dayOffset <= 60; dayOffset++) {
       final targetDate = now.add(Duration(days: dayOffset));
@@ -87,8 +115,14 @@ class _DailyRemainderWidgetState extends State<DailyRemainderWidget> {
         );
 
         if (scheduledDate.isAfter(now)) {
-          // dayOffset를 ID로 사용 (0~60)
-          final notificationId = baseId + dayOffset;
+          final notificationId = baseId + notificationIndex;
+          notificationIndex++;
+          scheduledCount++;
+
+          logger.d('[ReminderDebug] 알림 #$scheduledCount - '
+              'ID: $notificationId, '
+              '날짜: ${scheduledDate.toString()}, '
+              '요일: ${targetDate.weekday}');
 
           await _notificationService.scheduleReminderWithId(
             id: notificationId,
@@ -96,9 +130,16 @@ class _DailyRemainderWidgetState extends State<DailyRemainderWidget> {
             title: '$activity 시작할 시간이에요!',
             body: '지금 바로 시작해보세요.',
           );
+
+          await _notificationService.debugNotification(
+            id: notificationId,
+            scheduledTime: scheduledDate,
+            title: '$activity 시작할 시간이에요!',
+          );
         }
       }
     }
+    logger.d('[ReminderDebug] 총 ${scheduledCount}개 알림 예약 완료');
   }
 
   void _editReminder(Map<String, dynamic> reminder) {
@@ -119,7 +160,6 @@ class _DailyRemainderWidgetState extends State<DailyRemainderWidget> {
     });
     _saveReminders();
     await _notificationService.cancelReminderNotifications(id);
-    await _rescheduleAllNotifications();
   }
 
   void _showNotificationBottomSheet() {
@@ -485,126 +525,197 @@ class _DailyRemainderWidgetState extends State<DailyRemainderWidget> {
                 '데일리 리마인더',
                 style: AppTextStyles.getTitle(context),
               ),
-              Container(
-                padding: context.paddingXS,
-                decoration: BoxDecoration(
-                    color: AppColors.backgroundSecondary(context),
-                    shape: BoxShape.circle),
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    _showNotificationBottomSheet();
-                  },
-                  child: Icon(
-                    LucideIcons.plus,
-                    size: context.lg,
-                  ),
-                ),
+              FutureBuilder<bool>(
+                future: _notificationService.checkPermission(),
+                builder: (context, snapshot) {
+                  final hasPermission = snapshot.data ?? false;
+                  if (!hasPermission) return SizedBox.shrink();
+
+                  return Container(
+                    padding: context.paddingXS,
+                    decoration: BoxDecoration(
+                        color: AppColors.backgroundSecondary(context),
+                        shape: BoxShape.circle),
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        _showNotificationBottomSheet();
+                      },
+                      child: Icon(
+                        LucideIcons.plus,
+                        size: context.lg,
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
           SizedBox(height: context.hp(2)),
-          if (_savedReminders.isEmpty)
-            Text(
-              '알림이 비어있어요',
-              style: AppTextStyles.getBody(context).copyWith(
-                color: AppColors.textSecondary(context),
-              ),
-            ),
-          ..._savedReminders.map((reminder) {
-            final days = ['월', '화', '수', '목', '금', '토', '일'];
-            final daysList = List<int>.from(reminder['days'] ?? []);
-            final selectedDayNames = daysList.map((i) => days[i]).join(', ');
+          FutureBuilder<bool>(
+            future: _notificationService.checkPermission(),
+            builder: (context, snapshot) {
+              final hasPermission = snapshot.data ?? false;
 
-            return Container(
-              margin: EdgeInsets.only(bottom: context.hp(2)),
-              child: Row(
-                children: [
-                  Image.asset(
-                    getIconImage(reminder['activityIcon'] ?? ''),
-                    width: context.xl,
-                    height: context.xl,
+              print('hasPermission : $hasPermission');
+
+              if (!hasPermission) {
+                // 권한이 없을 경우
+                return Container(
+                  margin: EdgeInsets.only(bottom: context.hp(2)),
+                  child: InkWell(
+                    onTap: () async {
+                      HapticFeedback.lightImpact();
+                      final granted =
+                          await _notificationService.requestPermissions();
+                      if (granted) {
+                        PrefsService().reminderAlarmFlag = true;
+                        await _rescheduleAllNotifications();
+                        setState(() {});
+                      }
+                    },
+                    child: Container(
+                      padding: context.paddingSM,
+                      decoration: BoxDecoration(
+                        color: Colors.blueAccent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.notifications_none,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            '알림 권한 허용하기',
+                            style: AppTextStyles.getBody(context).copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  SizedBox(width: context.wp(4)),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          spacing: 10,
-                          children: [
-                            Text(
-                              selectedDayNames,
-                              style: AppTextStyles.getBody(context).copyWith(
-                                color: Colors.blueAccent,
-                              ),
-                            ),
-                            Text(
-                              '${reminder['hour'].toString().padLeft(2, '0')}:${reminder['minute'].toString().padLeft(2, '0')}',
-                              style: AppTextStyles.getBody(context),
-                            ),
-                          ],
+                );
+              } else {
+                // 권한이 있을 경우
+                return Column(
+                  children: [
+                    if (_savedReminders.isEmpty)
+                      Text(
+                        '알림이 비어있어요',
+                        style: AppTextStyles.getBody(context).copyWith(
+                          color: AppColors.textSecondary(context),
                         ),
-                        SizedBox(height: context.hp(0.5)),
-                        Row(
-                          spacing: 10,
+                      ),
+                    ..._savedReminders.map((reminder) {
+                      final days = ['월', '화', '수', '목', '금', '토', '일'];
+                      final daysList = List<int>.from(reminder['days'] ?? []);
+                      final selectedDayNames =
+                          daysList.map((i) => days[i]).join(', ');
+
+                      return Container(
+                        margin: EdgeInsets.only(bottom: context.hp(2)),
+                        child: Row(
                           children: [
-                            Text(
-                              reminder['activity'],
-                              style: AppTextStyles.getBody(context).copyWith(
-                                color: AppColors.textPrimary(context),
-                                fontWeight: FontWeight.bold,
+                            Image.asset(
+                              getIconImage(reminder['activityIcon'] ?? ''),
+                              width: context.xl,
+                              height: context.xl,
+                            ),
+                            SizedBox(width: context.wp(4)),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    spacing: 10,
+                                    children: [
+                                      Text(
+                                        selectedDayNames,
+                                        style: AppTextStyles.getBody(context)
+                                            .copyWith(
+                                          color: Colors.blueAccent,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${reminder['hour'].toString().padLeft(2, '0')}:${reminder['minute'].toString().padLeft(2, '0')}',
+                                        style: AppTextStyles.getBody(context),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: context.hp(0.5)),
+                                  Row(
+                                    spacing: 10,
+                                    children: [
+                                      Text(
+                                        reminder['activity'],
+                                        style: AppTextStyles.getBody(context)
+                                            .copyWith(
+                                          color: AppColors.textPrimary(context),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Container(
+                                        width: 12,
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          color: ColorService.hexToColor(
+                                              reminder['activityColor'] ??
+                                                  '#000000'),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                             Container(
-                              width: 12,
-                              height: 12,
                               decoration: BoxDecoration(
-                                color: ColorService.hexToColor(
-                                    reminder['activityColor'] ?? '#000000'),
-                                borderRadius: BorderRadius.circular(4),
+                                  color: AppColors.textPrimary(context),
+                                  shape: BoxShape.circle),
+                              child: IconButton(
+                                icon: Icon(
+                                  LucideIcons.edit,
+                                  size: 16,
+                                  color: AppColors.background(context),
+                                ),
+                                onPressed: () {
+                                  _editReminder(reminder);
+                                },
+                              ),
+                            ),
+                            SizedBox(width: context.wp(2)),
+                            Container(
+                              decoration: BoxDecoration(
+                                  color: AppColors.textPrimary(context),
+                                  shape: BoxShape.circle),
+                              child: IconButton(
+                                icon: Icon(
+                                  LucideIcons.trash2,
+                                  size: 16,
+                                  color: AppColors.background(context),
+                                ),
+                                onPressed: () {
+                                  _deleteReminder(reminder['id']);
+                                },
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                        color: AppColors.textPrimary(context),
-                        shape: BoxShape.circle),
-                    child: IconButton(
-                      icon: Icon(
-                        LucideIcons.edit,
-                        size: 16,
-                        color: AppColors.background(context),
-                      ),
-                      onPressed: () {
-                        _editReminder(reminder);
-                      },
-                    ),
-                  ),
-                  SizedBox(width: context.wp(2)),
-                  Container(
-                    decoration: BoxDecoration(
-                        color: AppColors.textPrimary(context),
-                        shape: BoxShape.circle),
-                    child: IconButton(
-                      icon: Icon(
-                        LucideIcons.trash2,
-                        size: 16,
-                        color: AppColors.background(context),
-                      ),
-                      onPressed: () {
-                        _deleteReminder(reminder['id']);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
+                      );
+                    }).toList(),
+                  ],
+                );
+              }
+            },
+          ),
         ],
       ),
     );
