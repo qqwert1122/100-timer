@@ -31,23 +31,28 @@ class SevenDayStreakWidget extends StatelessWidget {
           children: List.generate(7, (index) {
             final date = selectedDate.subtract(Duration(days: 6 - index));
             final weekday = weekdays[date.weekday - 1];
-            final hasActivity = dailyTimes.isNotEmpty && index < dailyTimes.length && dailyTimes[index] > 0;
+            final hasActivity = dailyTimes.isNotEmpty &&
+                index < dailyTimes.length &&
+                dailyTimes[index] > 0;
             return Column(
               children: [
                 Text(
                   weekday,
                   style: AppTextStyles.getCaption(context),
                 ),
-                SizedBox(height: context.hp(1)),
                 Container(
-                  width: ratio == '4:5' ? 30 : 25,
-                  height: ratio == '4:5' ? 30 : 25,
+                  width: ratio == '4:5' ? 30 : 20,
+                  height: ratio == '4:5' ? 30 : 20,
                   decoration: BoxDecoration(
-                    color: hasActivity ? Colors.blueAccent : AppColors.backgroundSecondary(context),
+                    color: hasActivity
+                        ? Colors.blueAccent
+                        : AppColors.backgroundSecondary(context),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
-                    child: hasActivity ? Icon(LucideIcons.check, color: Colors.white, size: 16) : null,
+                    child: hasActivity
+                        ? Icon(LucideIcons.check, color: Colors.white, size: 16)
+                        : null,
                   ),
                 ),
               ],
@@ -65,12 +70,13 @@ class SevenDayStreakWidget extends StatelessWidget {
                 '$currentStreak일 연속 활동중',
                 style: AppTextStyles.getTitle(context).copyWith(
                   color: Colors.blueAccent,
-                  fontSize: ratio == '4:5' ? context.lg : context.md,
+                  fontSize: 16,
                 ),
               ),
               SizedBox(width: context.wp(2)),
               JustTheTooltip(
-                backgroundColor: AppColors.textPrimary(context).withValues(alpha: 0.9),
+                backgroundColor:
+                    AppColors.textPrimary(context).withValues(alpha: 0.9),
                 preferredDirection: AxisDirection.up,
                 tailLength: 10.0,
                 tailBaseWidth: 20.0,

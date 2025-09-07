@@ -84,8 +84,10 @@ class _RatioCard11State extends State<RatioCard11> {
                           children: [
                             Text(
                               _formatTime(widget.totalSeconds),
-                              style: AppTextStyles.getHeadline(context).copyWith(
+                              style:
+                                  AppTextStyles.getHeadline(context).copyWith(
                                 fontFamily: 'Neo',
+                                fontSize: 24,
                                 letterSpacing: -0.3,
                               ),
                             ),
@@ -93,7 +95,11 @@ class _RatioCard11State extends State<RatioCard11> {
                             Text(
                               widget.comparisonData['displayText'] ?? '',
                               style: AppTextStyles.getCaption(context).copyWith(
-                                color: (widget.comparisonData['isIncrease'] ?? false) ? Colors.redAccent : Colors.blueAccent,
+                                fontSize: 12,
+                                color: (widget.comparisonData['isIncrease'] ??
+                                        false)
+                                    ? Colors.redAccent
+                                    : Colors.blueAccent,
                                 letterSpacing: -0.3,
                                 height: 1.0,
                               ),
@@ -115,12 +121,12 @@ class _RatioCard11State extends State<RatioCard11> {
                               Text(
                                 '${widget.currentSteak}일 연속 활동중',
                                 style: AppTextStyles.getTitle(context).copyWith(
-                                  color: Colors.blueAccent,
-                                ),
+                                    color: Colors.blueAccent, fontSize: 16),
                               ),
                               SizedBox(width: context.wp(2)),
                               JustTheTooltip(
-                                backgroundColor: AppColors.textPrimary(context).withValues(alpha: 0.9),
+                                backgroundColor: AppColors.textPrimary(context)
+                                    .withValues(alpha: 0.9),
                                 preferredDirection: AxisDirection.up,
                                 tailLength: 10.0,
                                 tailBaseWidth: 20.0,
@@ -143,18 +149,6 @@ class _RatioCard11State extends State<RatioCard11> {
                                 ),
                               ),
                             ],
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            '타이머100',
-                            style: AppTextStyles.getCaption(context).copyWith(
-                              color: AppColors.textSecondary(context).withValues(alpha: 0.2),
-                              letterSpacing: -0.3,
-                              height: 1.0,
-                              fontFamily: 'Neo',
-                            ),
                           ),
                         ),
                       ],

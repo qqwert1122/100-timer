@@ -66,7 +66,9 @@ class _DashboardSectionState extends State<DashboardSection> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Column(
                 children: [
-                  Center(child: Text("활동 완료 시간", style: AppTextStyles.getTitle(context))),
+                  Center(
+                      child: Text("활동 완료 시간",
+                          style: AppTextStyles.getTitle(context))),
                   SizedBox(height: context.hp(3)),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -76,8 +78,10 @@ class _DashboardSectionState extends State<DashboardSection> {
                         children: [
                           SizedBox(height: context.hp(1)),
                           Shimmer.fromColors(
-                            baseColor: Colors.grey.shade300.withValues(alpha: 0.2),
-                            highlightColor: Colors.grey.shade100.withValues(alpha: 0.2),
+                            baseColor:
+                                Colors.grey.shade300.withValues(alpha: 0.2),
+                            highlightColor:
+                                Colors.grey.shade100.withValues(alpha: 0.2),
                             child: Container(
                               width: context.wp(50),
                               height: context.hp(7),
