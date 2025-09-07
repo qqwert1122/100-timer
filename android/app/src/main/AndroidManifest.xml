@@ -18,7 +18,7 @@
     <application
         android:label="100 timer"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon"
+        android:icon="@mipmap/ic_launcher"
         android:resizeableActivity="false"
         android:requestLegacyExternalStorage="true">
         <property

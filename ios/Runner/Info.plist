@@ -70,12 +70,12 @@
 		</array>
 		<key>UIDeviceFamily</key>
 		<array>
-   			<integer>1</integer>
+			<integer>1</integer>
 		</array>
 		<key>CFBundleURLSchemes</key>
-        <array>
-            <string>fb725203649963444</string>
-        </array>
+		<array>
+			<string>fb725203649963444</string>
+		</array>
 		<key>SKAdNetworkItems</key>
 		<array>
 			<dict>
