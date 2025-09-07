@@ -90,7 +90,8 @@ class _TimePickerModalState extends State<TimePickerModal> {
 
     if (isBreakType) {
       final _startDate = DateTime.parse(widget.item['start_time']).toLocal();
-      selectedStartDate = DateTime(_startDate.year, _startDate.month, _startDate.day);
+      selectedStartDate =
+          DateTime(_startDate.year, _startDate.month, _startDate.day);
       startHours = _startDate.hour;
       startMinutes = _startDate.minute;
       startSeconds = _startDate.second;
@@ -103,11 +104,18 @@ class _TimePickerModalState extends State<TimePickerModal> {
       } else {
         // 진행중인 휴식: 시작시간 + 1시간을 기본값으로
         final defaultEnd = _startDate.add(Duration(hours: 1));
-        selectedEndDate = DateTime(defaultEnd.year, defaultEnd.month, defaultEnd.day);
+        selectedEndDate =
+            DateTime(defaultEnd.year, defaultEnd.month, defaultEnd.day);
         endHours = defaultEnd.hour;
         endMinutes = defaultEnd.minute;
         endSeconds = 0;
       }
+    } else if (type == 'activity_start') {
+      final startDate = DateTime.parse(widget.item['time']).toLocal();
+      selectedEndDate =
+          DateTime(startDate.year, startDate.month, startDate.day);
+      endHours = startDate.hour;
+      endMinutes = startDate.minute;
     } else {
       if (widget.item['time'] != null) {
         final timeDate = DateTime.parse(widget.item['time']).toLocal();
@@ -115,7 +123,6 @@ class _TimePickerModalState extends State<TimePickerModal> {
         endHours = timeDate.hour;
         endMinutes = timeDate.minute;
       } else {
-        // 진행중인 세션: 현재 시간을 기본값으로
         final now = DateTime.now();
         selectedEndDate = DateTime(now.year, now.month, now.day);
         endHours = now.hour;
@@ -126,12 +133,25 @@ class _TimePickerModalState extends State<TimePickerModal> {
 
   Future<void> _initializeAsync() async {
     DateTime? cachedMaxDateTime;
+    DateTime? cachedMinDateTime;
+
     if (!isBreakType) {
       String? sessionId = widget.item['session_id'];
       if (sessionId != null) {
-        final nextSession = await _dbService.getNextSession(sessionId);
-        cachedMaxDateTime =
-            nextSession != null ? DateTime.parse(nextSession['start_time']).toLocal() : DateTime.now().add(const Duration(days: 2));
+        if (widget.item['type'] == 'activity_end') {
+          final nextSession = await _dbService.getNextSession(sessionId);
+          cachedMaxDateTime = nextSession != null
+              ? DateTime.parse(nextSession['start_time']).toLocal()
+              : DateTime.now().add(const Duration(days: 2));
+        }
+        // activity_start인 경우 추가
+        else if (widget.item['type'] == 'activity_start') {
+          final previousSession =
+              await _dbService.getPreviousSession(sessionId);
+          cachedMinDateTime = previousSession != null
+              ? DateTime.parse(previousSession['end_time']).toLocal()
+              : null;
+        }
       }
     }
 
@@ -139,7 +159,8 @@ class _TimePickerModalState extends State<TimePickerModal> {
       item: widget.item,
       beforeItem: widget.beforeItem,
       afterItem: widget.afterItem,
-      cachedMaxDateTime: cachedMaxDateTime, // 미리 계산된 값 전달
+      cachedMaxDateTime: cachedMaxDateTime,
+      cachedMinDateTime: cachedMinDateTime,
     );
 
     // 이제 빠르게 초기화
@@ -154,9 +175,12 @@ class _TimePickerModalState extends State<TimePickerModal> {
       List<int> validStartHours = await _getValidHours(false);
       List<int> validStartMinutes = await _getValidMinutes(false);
 
-      _startDateController = FixedExtentScrollController(initialItem: _getSafeDateIndex(validStartDates, selectedStartDate));
-      _startHoursController = FixedExtentScrollController(initialItem: _getSafeIndex(validStartHours, startHours ?? 0));
-      _startMinutesController = FixedExtentScrollController(initialItem: _getSafeIndex(validStartMinutes, startMinutes ?? 0));
+      _startDateController = FixedExtentScrollController(
+          initialItem: _getSafeDateIndex(validStartDates, selectedStartDate));
+      _startHoursController = FixedExtentScrollController(
+          initialItem: _getSafeIndex(validStartHours, startHours ?? 0));
+      _startMinutesController = FixedExtentScrollController(
+          initialItem: _getSafeIndex(validStartMinutes, startMinutes ?? 0));
     }
 
     // 종료 시간 컨트롤러들 (모든 타입)
@@ -165,26 +189,37 @@ class _TimePickerModalState extends State<TimePickerModal> {
     List<int> validEndHours = await _getValidHours(true);
     List<int> validEndMinutes = await _getValidMinutes(true);
 
-    _endDateController = FixedExtentScrollController(initialItem: _getSafeDateIndex(validEndDates, selectedEndDate));
-    _endHoursController = FixedExtentScrollController(initialItem: _getSafeIndex(validEndHours, endHours));
-    _endMinutesController = FixedExtentScrollController(initialItem: _getSafeIndex(validEndMinutes, endMinutes));
+    _endDateController = FixedExtentScrollController(
+        initialItem: _getSafeDateIndex(validEndDates, selectedEndDate));
+    _endHoursController = FixedExtentScrollController(
+        initialItem: _getSafeIndex(validEndHours, endHours));
+    _endMinutesController = FixedExtentScrollController(
+        initialItem: _getSafeIndex(validEndMinutes, endMinutes));
   }
 
   int _getSafeDateIndex(List<DateTime> validDates, DateTime targetDate) {
     if (validDates.isEmpty) return 0;
 
     for (int i = 0; i < validDates.length; i++) {
-      if (validDates[i].year == targetDate.year && validDates[i].month == targetDate.month && validDates[i].day == targetDate.day) {
+      if (validDates[i].year == targetDate.year &&
+          validDates[i].month == targetDate.month &&
+          validDates[i].day == targetDate.day) {
         return i;
       }
     }
 
     // 찾지 못하면 가장 가까운 날짜 반환
     DateTime closest = validDates.reduce((prev, curr) {
-      return (curr.difference(targetDate).inDays.abs() < prev.difference(targetDate).inDays.abs()) ? curr : prev;
+      return (curr.difference(targetDate).inDays.abs() <
+              prev.difference(targetDate).inDays.abs())
+          ? curr
+          : prev;
     });
 
-    return validDates.indexWhere((date) => date.year == closest.year && date.month == closest.month && date.day == closest.day);
+    return validDates.indexWhere((date) =>
+        date.year == closest.year &&
+        date.month == closest.month &&
+        date.day == closest.day);
   }
 
   int _getSafeIndex(List<int> validList, int targetValue) {
@@ -195,7 +230,9 @@ class _TimePickerModalState extends State<TimePickerModal> {
     if (index == -1) {
       // 가장 가까운 값 찾기
       int closestValue = validList.reduce((prev, curr) {
-        return (curr - targetValue).abs() < (prev - targetValue).abs() ? curr : prev;
+        return (curr - targetValue).abs() < (prev - targetValue).abs()
+            ? curr
+            : prev;
       });
       return validList.indexOf(closestValue);
     }
@@ -219,18 +256,22 @@ class _TimePickerModalState extends State<TimePickerModal> {
       // 시간 Controller 업데이트
       int hourIndex = newValidHours.indexOf(newHour);
       if (isEndTime) {
-        _endHoursController.animateToItem(hourIndex, duration: Duration(milliseconds: 300), curve: Curves.easeOut);
+        _endHoursController.animateToItem(hourIndex,
+            duration: Duration(milliseconds: 300), curve: Curves.easeOut);
       } else {
-        _startHoursController.animateToItem(hourIndex, duration: Duration(milliseconds: 300), curve: Curves.easeOut);
+        _startHoursController.animateToItem(hourIndex,
+            duration: Duration(milliseconds: 300), curve: Curves.easeOut);
       }
     }
 
     // 업데이트된 시간으로 분 재계산
-    List<int> newValidMinutes = await _getValidMinutesForCurrentDateTime(isEndTime);
+    List<int> newValidMinutes =
+        await _getValidMinutesForCurrentDateTime(isEndTime);
 
     int currentMinute = isEndTime ? endMinutes : (startMinutes ?? 0);
 
-    if (newValidMinutes.isNotEmpty && !newValidMinutes.contains(currentMinute)) {
+    if (newValidMinutes.isNotEmpty &&
+        !newValidMinutes.contains(currentMinute)) {
       int newMinute = isEndTime ? newValidMinutes.last : newValidMinutes.first;
 
       if (isEndTime) {
@@ -242,19 +283,23 @@ class _TimePickerModalState extends State<TimePickerModal> {
       // 분 Controller 업데이트
       int minuteIndex = newValidMinutes.indexOf(newMinute);
       if (isEndTime) {
-        _endMinutesController.animateToItem(minuteIndex, duration: Duration(milliseconds: 300), curve: Curves.easeOut);
+        _endMinutesController.animateToItem(minuteIndex,
+            duration: Duration(milliseconds: 300), curve: Curves.easeOut);
       } else {
-        _startMinutesController.animateToItem(minuteIndex, duration: Duration(milliseconds: 300), curve: Curves.easeOut);
+        _startMinutesController.animateToItem(minuteIndex,
+            duration: Duration(milliseconds: 300), curve: Curves.easeOut);
       }
     }
   }
 
 // 시간 변경 후 분 업데이트
   Future<void> _updateValidMinutesAfterHourChange(bool isEndTime) async {
-    List<int> newValidMinutes = await _getValidMinutesForCurrentDateTime(isEndTime);
+    List<int> newValidMinutes =
+        await _getValidMinutesForCurrentDateTime(isEndTime);
     int currentMinute = isEndTime ? endMinutes : (startMinutes ?? 0);
 
-    if (newValidMinutes.isNotEmpty && !newValidMinutes.contains(currentMinute)) {
+    if (newValidMinutes.isNotEmpty &&
+        !newValidMinutes.contains(currentMinute)) {
       int newMinute;
       if (isEndTime) {
         newMinute = newValidMinutes.last; // 가능한 늦은 분
@@ -298,34 +343,41 @@ class _TimePickerModalState extends State<TimePickerModal> {
   // 현재 선택된 DateTime 반환 (초는 항상 0)
   DateTime _getCurrentDateTime(bool isEndTime) {
     if (isEndTime) {
-      return DateTime(selectedEndDate.year, selectedEndDate.month, selectedEndDate.day, endHours, endMinutes, 0 // 초는 항상 0
+      return DateTime(selectedEndDate.year, selectedEndDate.month,
+          selectedEndDate.day, endHours, endMinutes, 0 // 초는 항상 0
           );
     } else {
-      return DateTime(selectedStartDate.year, selectedStartDate.month, selectedStartDate.day, startHours!, startMinutes!, 0 // 초는 항상 0
+      return DateTime(selectedStartDate.year, selectedStartDate.month,
+          selectedStartDate.day, startHours!, startMinutes!, 0 // 초는 항상 0
           );
     }
   }
 
   Future<bool> _isCurrentTimeValid(bool isEndTime) async {
     final currentTime = _getCurrentDateTime(isEndTime);
-    return await _validator.isValidDateTime(currentTime, isEndTime, _getCurrentDateTime);
+    return await _validator.isValidDateTime(
+        currentTime, isEndTime, _getCurrentDateTime);
   }
 
   Future<List<int>> _getValidHoursForCurrentDate(bool isEndTime) async {
     DateTime currentDate = isEndTime ? selectedEndDate : selectedStartDate;
-    return await _validator.getValidHoursIncludingCurrent(currentDate, isEndTime, _getCurrentDateTime);
+    return await _validator.getValidHoursIncludingCurrent(
+        currentDate, isEndTime, _getCurrentDateTime);
   }
 
   Future<List<int>> _getValidMinutesForCurrentDateTime(bool isEndTime) async {
     DateTime currentDate = isEndTime ? selectedEndDate : selectedStartDate;
     int currentHour = isEndTime ? endHours : (startHours ?? 0);
-    return await _validator.getValidMinutesIncludingCurrent(currentDate, currentHour, isEndTime, _getCurrentDateTime);
+    return await _validator.getValidMinutesIncludingCurrent(
+        currentDate, currentHour, isEndTime, _getCurrentDateTime);
   }
 
   Future<bool> _isValidHour(int hour, bool isEndTime) async {
     DateTime currentDate = isEndTime ? selectedEndDate : selectedStartDate;
-    DateTime testTime = DateTime(currentDate.year, currentDate.month, currentDate.day, hour, 0, 0);
-    return await _validator.isValidDateTime(testTime, isEndTime, _getCurrentDateTime);
+    DateTime testTime = DateTime(
+        currentDate.year, currentDate.month, currentDate.day, hour, 0, 0);
+    return await _validator.isValidDateTime(
+        testTime, isEndTime, _getCurrentDateTime);
   }
 
   int? _getDuration() {
@@ -361,10 +413,12 @@ class _TimePickerModalState extends State<TimePickerModal> {
                 children: [
                   Expanded(
                     child: CupertinoPicker(
-                      scrollController: isEndTime ? _endDateController : _startDateController,
+                      scrollController:
+                          isEndTime ? _endDateController : _startDateController,
                       itemExtent: 40,
                       onSelectedItemChanged: (int index) {
-                        if (validDates.isNotEmpty && index < validDates.length) {
+                        if (validDates.isNotEmpty &&
+                            index < validDates.length) {
                           DateTime selectedDate = validDates[index];
                           if (mounted) {
                             setState(() {
@@ -381,7 +435,9 @@ class _TimePickerModalState extends State<TimePickerModal> {
                       },
                       children: validDates.map((date) {
                         bool isSelected = isEndTime
-                            ? (selectedEndDate.year == date.year && selectedEndDate.month == date.month && selectedEndDate.day == date.day)
+                            ? (selectedEndDate.year == date.year &&
+                                selectedEndDate.month == date.month &&
+                                selectedEndDate.day == date.day)
                             : (selectedStartDate.year == date.year &&
                                 selectedStartDate.month == date.month &&
                                 selectedStartDate.day == date.day);
@@ -390,7 +446,9 @@ class _TimePickerModalState extends State<TimePickerModal> {
                           child: Text(
                             '${date.month}/${date.day}',
                             style: AppTextStyles.getBody(context).copyWith(
-                              color: isSelected ? AppColors.textPrimary(context) : AppColors.textSecondary(context),
+                              color: isSelected
+                                  ? AppColors.textPrimary(context)
+                                  : AppColors.textSecondary(context),
                             ),
                           ),
                         );
@@ -405,10 +463,15 @@ class _TimePickerModalState extends State<TimePickerModal> {
                 children: [
                   Expanded(
                     child: CupertinoPicker(
-                      scrollController: isEndTime ? _endHoursController : (isBreakType ? _startHoursController : _endHoursController),
+                      scrollController: isEndTime
+                          ? _endHoursController
+                          : (isBreakType
+                              ? _startHoursController
+                              : _endHoursController),
                       itemExtent: 40,
                       onSelectedItemChanged: (int index) {
-                        if (validHours.isNotEmpty && index < validHours.length) {
+                        if (validHours.isNotEmpty &&
+                            index < validHours.length) {
                           int selectedHour = validHours[index];
                           if (mounted) {
                             setState(() {
@@ -424,7 +487,8 @@ class _TimePickerModalState extends State<TimePickerModal> {
                         }
                       },
                       children: validHours.map((hour) {
-                        bool isSelected = (isEndTime ? endHours : (startHours ?? 0)) == hour;
+                        bool isSelected =
+                            (isEndTime ? endHours : (startHours ?? 0)) == hour;
 
                         return FutureBuilder<bool>(
                           future: _isValidHour(hour, isEndTime),
@@ -438,7 +502,9 @@ class _TimePickerModalState extends State<TimePickerModal> {
                                       ? AppColors.textPrimary(context)
                                       : isValid
                                           ? AppColors.textSecondary(context)
-                                          : AppColors.textSecondary(context).withValues(alpha: 0.5), // 무효하면 흐리게
+                                          : AppColors.textSecondary(context)
+                                              .withValues(
+                                                  alpha: 0.5), // 무효하면 흐리게
                                 ),
                               ),
                             );
@@ -455,10 +521,13 @@ class _TimePickerModalState extends State<TimePickerModal> {
                 children: [
                   Expanded(
                     child: CupertinoPicker(
-                      scrollController: isEndTime ? _endMinutesController : (isBreakType ? _startMinutesController : null),
+                      scrollController: isEndTime
+                          ? _endMinutesController
+                          : (isBreakType ? _startMinutesController : null),
                       itemExtent: 40,
                       onSelectedItemChanged: (int index) {
-                        if (validMinutes.isNotEmpty && index < validMinutes.length) {
+                        if (validMinutes.isNotEmpty &&
+                            index < validMinutes.length) {
                           int selectedMinute = validMinutes[index];
                           if (mounted) {
                             setState(() {
@@ -472,13 +541,17 @@ class _TimePickerModalState extends State<TimePickerModal> {
                         }
                       },
                       children: validMinutes.map((minute) {
-                        bool isSelected = (isEndTime ? endMinutes : (startMinutes ?? 0)) == minute;
+                        bool isSelected =
+                            (isEndTime ? endMinutes : (startMinutes ?? 0)) ==
+                                minute;
 
                         return Center(
                           child: Text(
                             '${minute}분',
                             style: AppTextStyles.getBody(context).copyWith(
-                              color: isSelected ? AppColors.textPrimary(context) : AppColors.textSecondary(context),
+                              color: isSelected
+                                  ? AppColors.textPrimary(context)
+                                  : AppColors.textSecondary(context),
                             ),
                           ),
                         );
@@ -506,7 +579,8 @@ class _TimePickerModalState extends State<TimePickerModal> {
               top: Radius.circular(16.0),
             ),
           ),
-          child: const Center(child: CircularProgressIndicator(color: Colors.grey)));
+          child: const Center(
+              child: CircularProgressIndicator(color: Colors.grey)));
     }
 
     return Container(
@@ -550,13 +624,17 @@ class _TimePickerModalState extends State<TimePickerModal> {
             child: isBreakType
                 ? Column(
                     children: [
-                      Text('시작 시간', style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.bold)),
+                      Text('시작 시간',
+                          style: AppTextStyles.getBody(context)
+                              .copyWith(fontWeight: FontWeight.bold)),
                       SizedBox(height: context.hp(1)),
                       Text(formatDate(_getCurrentDateTime(false).toString())),
                       SizedBox(height: context.hp(1)),
                       Expanded(child: _buildTimePicker(isEndTime: false)),
                       SizedBox(height: context.hp(2)),
-                      Text('종료 시간', style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.bold)),
+                      Text('종료 시간',
+                          style: AppTextStyles.getBody(context)
+                              .copyWith(fontWeight: FontWeight.bold)),
                       SizedBox(height: context.hp(1)),
                       Text(formatDate(_getCurrentDateTime(true).toString())),
                       SizedBox(height: context.hp(1)),
@@ -565,7 +643,9 @@ class _TimePickerModalState extends State<TimePickerModal> {
                   )
                 : Column(
                     children: [
-                      Text('종료 시간', style: AppTextStyles.getBody(context).copyWith(fontWeight: FontWeight.bold)),
+                      Text('종료 시간',
+                          style: AppTextStyles.getBody(context)
+                              .copyWith(fontWeight: FontWeight.bold)),
                       SizedBox(height: context.hp(1)),
                       Text(formatDate(_getCurrentDateTime(true).toString())),
                       SizedBox(height: context.hp(1)),
@@ -612,7 +692,9 @@ class _TimePickerModalState extends State<TimePickerModal> {
                                   _getCurrentDateTime(true),
                                   endHours,
                                   endMinutes,
-                                  isBreakType ? _getCurrentDateTime(false) : null,
+                                  isBreakType
+                                      ? _getCurrentDateTime(false)
+                                      : null,
                                   isBreakType ? startHours : null,
                                   isBreakType ? startMinutes : null,
                                 );
@@ -625,7 +707,8 @@ class _TimePickerModalState extends State<TimePickerModal> {
                           : null,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: canConfirm ? Colors.blueAccent : Colors.black,
+                        backgroundColor:
+                            canConfirm ? Colors.blueAccent : Colors.black,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
