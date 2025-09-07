@@ -277,7 +277,7 @@ class _SettingPageState extends State<SettingPage> {
 
     final List<Map<String, dynamic>> appSettingsItems = [
       {
-        'title': '텍스트 크기',
+        'title': '글씨 크기',
         'image': 'font',
         'icon': LucideIcons.caseSensitive,
         'description': null,
@@ -288,7 +288,7 @@ class _SettingPageState extends State<SettingPage> {
             value: PrefsService().textSizeLevel.toDouble(),
             min: 0,
             max: 4,
-            divisions: 4, // 5단계 (0,1,2,3,4)
+            divisions: 4,
             activeColor: Colors.redAccent,
             onChanged: (double value) {
               setState(() {
@@ -476,7 +476,11 @@ class _SettingPageState extends State<SettingPage> {
                         }
                       },
                       child: ListTile(
-                        leading: Icon(items[i]['icon'], size: 20),
+                        leading: Icon(
+                          items[i]['icon'],
+                          size: 16,
+                          color: AppColors.textSecondary(context),
+                        ),
                         // Image.asset(
                         //   getIconImage(items[i]['image']),
                         //   width: context.xl,

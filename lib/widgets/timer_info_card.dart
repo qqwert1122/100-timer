@@ -37,7 +37,8 @@ class TimerInfoCard extends StatefulWidget {
   State<TimerInfoCard> createState() => _TimerInfoCardState();
 }
 
-class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateMixin {
+class _TimerInfoCardState extends State<TimerInfoCard>
+    with TickerProviderStateMixin {
   StatsProvider? statsProvider;
   TimerProvider? timerProvider;
 
@@ -74,12 +75,14 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final timerProvider = context.watch<TimerProvider>();
-    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     // 주간 날짜 관련 변수
     final now = DateTime.now();
     final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    final weekDays = List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
+    final weekDays =
+        List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
     const weekdayNames = ["월", "화", "수", "목", "금", "토", "일"];
 
     return Consumer<StatsProvider>(
@@ -105,7 +108,8 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.textSecondary(context).withValues(alpha: isDarkMode ? 0 : 0.2),
+                      color: AppColors.textSecondary(context)
+                          .withValues(alpha: isDarkMode ? 0 : 0.2),
                       spreadRadius: 2,
                       blurRadius: 2,
                       offset: const Offset(0, 2),
@@ -124,8 +128,11 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                timerProvider.isWeeklyTargetExceeded ? '이번 주 달성 시간' : '이번 주 남은 시간',
-                                style: AppTextStyles.getCaption(context).copyWith(
+                                timerProvider.isWeeklyTargetExceeded
+                                    ? '이번 주 달성 시간'
+                                    : '이번 주 남은 시간',
+                                style:
+                                    AppTextStyles.getCaption(context).copyWith(
                                   color: AppColors.textSecondary(context),
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -145,7 +152,9 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
 
                                     final textWidget = AutoSizeText(
                                       text,
-                                      style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                      style:
+                                          AppTextStyles.getTimeDisplay(context)
+                                              .copyWith(
                                         color: AppColors.primary(context),
                                         fontFamily: 'chab',
                                       ),
@@ -155,8 +164,11 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                                     );
                                     return timerProvider.isWeeklyTargetExceeded
                                         ? Shimmer.fromColors(
-                                            baseColor: AppColors.primary(context),
-                                            highlightColor: AppColors.primary(context).withValues(alpha: 0.5),
+                                            baseColor:
+                                                AppColors.primary(context),
+                                            highlightColor:
+                                                AppColors.primary(context)
+                                                    .withValues(alpha: 0.5),
                                             child: textWidget)
                                         : textWidget;
                                   },
@@ -165,11 +177,14 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                               timerProvider.isWeeklyTargetExceeded
                                   ? Shimmer.fromColors(
                                       baseColor: AppColors.primary(context),
-                                      highlightColor: AppColors.background(context),
+                                      highlightColor:
+                                          AppColors.background(context),
                                       child: Text(
                                         '이번주 ${timerProvider.formattedExceededTime}시간 만큼 초과 달성했어요',
-                                        style: AppTextStyles.getBody(context).copyWith(
-                                          color: AppColors.primary(context).withValues(alpha: 0.5),
+                                        style: AppTextStyles.getBody(context)
+                                            .copyWith(
+                                          color: AppColors.primary(context)
+                                              .withValues(alpha: 0.5),
                                           fontSize: context.sm,
                                         ),
                                       ),
@@ -183,8 +198,10 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                               timerProvider.isWeeklyTargetExceeded
                                   ? Shimmer.fromColors(
                                       baseColor: AppColors.primary(context),
-                                      highlightColor: AppColors.primary(context).withValues(alpha: 0.5),
-                                      enabled: timerProvider.isWeeklyTargetExceeded,
+                                      highlightColor: AppColors.primary(context)
+                                          .withValues(alpha: 0.5),
+                                      enabled:
+                                          timerProvider.isWeeklyTargetExceeded,
                                       child: CircularPercentIndicator(
                                         radius: context.wp(10),
                                         lineWidth: context.wp(5),
@@ -192,11 +209,17 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                                         percent: percent.clamp(0.0, 1.0),
                                         center: Text(
                                           '$percentText %',
-                                          style: AppTextStyles.getCaption(context).copyWith(),
+                                          style:
+                                              AppTextStyles.getCaption(context)
+                                                  .copyWith(),
                                         ),
-                                        circularStrokeCap: CircularStrokeCap.round,
-                                        progressColor: AppColors.primary(context),
-                                        backgroundColor: AppColors.backgroundSecondary(context),
+                                        circularStrokeCap:
+                                            CircularStrokeCap.round,
+                                        progressColor:
+                                            AppColors.primary(context),
+                                        backgroundColor:
+                                            AppColors.backgroundSecondary(
+                                                context),
                                       ),
                                     )
                                   : CircularPercentIndicator(
@@ -206,11 +229,15 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                                       percent: percent.clamp(0.0, 1.0),
                                       center: Text(
                                         '$percentText %',
-                                        style: AppTextStyles.getCaption(context).copyWith(),
+                                        style: AppTextStyles.getCaption(context)
+                                            .copyWith(),
                                       ),
-                                      circularStrokeCap: CircularStrokeCap.round,
+                                      circularStrokeCap:
+                                          CircularStrokeCap.round,
                                       progressColor: AppColors.primary(context),
-                                      backgroundColor: AppColors.backgroundSecondary(context),
+                                      backgroundColor:
+                                          AppColors.backgroundSecondary(
+                                              context),
                                     ),
                               if (timerProvider.isWeeklyTargetExceeded)
                                 Positioned.fill(
@@ -222,7 +249,9 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                                       repeat: true,
                                       controller: _congratulationsController,
                                       fit: BoxFit.contain,
-                                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              const SizedBox(),
                                     ),
                                   ),
                                 ),
@@ -247,8 +276,11 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                             7,
                             (i) {
                               final date = weekDays[i];
-                              final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
-                              final formattedDate = weekdayNames[date.weekday - 1];
+                              final isToday = date.year == now.year &&
+                                  date.month == now.month &&
+                                  date.day == now.day;
+                              final formattedDate =
+                                  weekdayNames[date.weekday - 1];
                               final pct = dailyPercents[i].clamp(0.0, 1.0);
 
                               return Column(
@@ -256,8 +288,11 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                                   // 요일 표시
                                   Text(
                                     formattedDate,
-                                    style: AppTextStyles.getCaption(context).copyWith(
-                                      color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
+                                    style: AppTextStyles.getCaption(context)
+                                        .copyWith(
+                                      color: isToday
+                                          ? AppColors.primary(context)
+                                          : AppColors.textSecondary(context),
                                     ),
                                   ),
                                   SizedBox(height: context.hp(0.5)),
@@ -269,14 +304,20 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                                     percent: pct,
                                     center: Text(
                                       '${date.day}',
-                                      style: AppTextStyles.getCaption(context).copyWith(
+                                      style: AppTextStyles.getCaption(context)
+                                          .copyWith(
                                         fontWeight: FontWeight.w900,
-                                        color: isToday ? AppColors.primary(context) : AppColors.textSecondary(context),
+                                        color: isToday
+                                            ? AppColors.primary(context)
+                                            : AppColors.textSecondary(context),
                                       ),
                                     ),
-                                    progressColor:
-                                        isToday ? AppColors.primary(context) : AppColors.textSecondary(context).withValues(alpha: 0.4),
-                                    backgroundColor: AppColors.backgroundSecondary(context),
+                                    progressColor: isToday
+                                        ? AppColors.primary(context)
+                                        : AppColors.textSecondary(context)
+                                            .withValues(alpha: 0.4),
+                                    backgroundColor:
+                                        AppColors.backgroundSecondary(context),
                                     circularStrokeCap: CircularStrokeCap.round,
                                   ),
                                 ],
@@ -312,13 +353,15 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                   },
                   child: Container(
                     width: double.infinity,
-                    padding: EdgeInsets.symmetric(horizontal: context.xs, vertical: context.md),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: context.xs, vertical: context.md),
                     decoration: BoxDecoration(
                       color: AppColors.background(context),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.textSecondary(context).withValues(alpha: isDarkMode ? 0.0 : 0.2),
+                          color: AppColors.textSecondary(context)
+                              .withValues(alpha: isDarkMode ? 0.0 : 0.2),
                           spreadRadius: 2,
                           blurRadius: 2,
                           offset: const Offset(0, 2),
@@ -331,7 +374,8 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                         Expanded(
                           flex: 3,
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: context.sm),
+                            padding:
+                                EdgeInsets.symmetric(horizontal: context.sm),
                             child: Text(
                               '활동 선택',
                               style: AppTextStyles.getBody(context).copyWith(
@@ -343,9 +387,13 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                         ),
                         Consumer<TimerProvider>(
                           builder: (context, timerProvider, child) {
-                            final activityIcon = timerProvider.currentActivityIcon;
-                            final activityName = timerProvider.currentActivityName;
-                            final displayText = activityName.length > 15 ? '${activityName.substring(0, 15)}...' : activityName;
+                            final activityIcon =
+                                timerProvider.currentActivityIcon;
+                            final activityName =
+                                timerProvider.currentActivityName;
+                            final displayText = activityName.length > 15
+                                ? '${activityName.substring(0, 15)}...'
+                                : activityName;
 
                             return Expanded(
                               flex: 6,
@@ -361,7 +409,8 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                                       return Container(
                                         width: context.xl,
                                         height: context.xl,
-                                        color: Colors.grey.withValues(alpha: 0.2),
+                                        color:
+                                            Colors.grey.withValues(alpha: 0.2),
                                         child: Icon(
                                           Icons.broken_image,
                                           size: context.xl,
@@ -374,7 +423,8 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                                   Flexible(
                                     child: Text(
                                       displayText,
-                                      style: AppTextStyles.getBody(context).copyWith(
+                                      style: AppTextStyles.getBody(context)
+                                          .copyWith(
                                         fontWeight: FontWeight.w900,
                                       ),
                                       overflow: TextOverflow.ellipsis,
@@ -394,7 +444,8 @@ class _TimerInfoCardState extends State<TimerInfoCard> with TickerProviderStateM
                                 // 중심을 기준으로 좌우 대칭(수평 반전)하기
                                 alignment: Alignment.center,
                                 transform: Matrix4.identity()..scale(-1.0, 1.0),
-                                child: Icon(Icons.arrow_back_ios_new_rounded, size: context.lg)),
+                                child: Icon(Icons.arrow_back_ios_new_rounded,
+                                    size: context.lg)),
                           ),
                         ),
                       ],

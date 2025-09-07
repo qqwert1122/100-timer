@@ -27,31 +27,36 @@ class DailyReportCardTitle extends StatelessWidget {
     final TextStyle dayNameStyles = ratio == '4:5'
         ? AppTextStyles.getHeadline(context).copyWith(
             fontFamily: 'Neo',
-            fontSize: context.xxl,
+            fontSize: 28,
             color: AppColors.textSecondary(context),
           )
         : ratio == '1:1'
             ? AppTextStyles.getTitle(context).copyWith(
                 fontFamily: 'Neo',
+                fontSize: 24,
                 color: AppColors.textSecondary(context),
               )
             : AppTextStyles.getTitle(context).copyWith(
                 fontFamily: 'Neo',
+                fontSize: 24,
                 color: AppColors.textSecondary(context),
               );
 
     final TextStyle dateStyles = ratio == '4:5'
         ? AppTextStyles.getTitle(context).copyWith(
             fontWeight: FontWeight.w600,
+            fontSize: 16,
             color: AppColors.textSecondary(context),
           )
         : ratio == '1:1'
             ? AppTextStyles.getBody(context).copyWith(
                 fontWeight: FontWeight.w600,
+                fontSize: 16,
                 color: AppColors.textSecondary(context),
               )
             : AppTextStyles.getCaption(context).copyWith(
                 fontWeight: FontWeight.w600,
+                fontSize: 16,
                 color: AppColors.textSecondary(context),
               );
 
@@ -72,10 +77,12 @@ class DailyReportCardTitle extends StatelessWidget {
               style: ratio == '9:16'
                   ? AppTextStyles.getCaption(context).copyWith(
                       fontWeight: FontWeight.w600,
+                      fontSize: 16,
                       color: AppColors.textSecondary(context),
                     )
                   : AppTextStyles.getBody(context).copyWith(
                       fontWeight: FontWeight.w600,
+                      fontSize: 16,
                       color: AppColors.textSecondary(context),
                     ),
             ),

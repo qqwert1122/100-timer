@@ -129,6 +129,10 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
       builder: (context, setModalState) => Container(
         height: 350,
         padding: context.paddingSM,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: AppColors.background(context),
+        ),
         child: Column(
           children: [
             Text('시간 선택', style: AppTextStyles.getTitle(context)),
@@ -139,12 +143,14 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                   // 시간 피커
                   Expanded(
                     child: CupertinoPicker(
-                      scrollController: FixedExtentScrollController(initialItem: selectedHour),
+                      scrollController: FixedExtentScrollController(
+                          initialItem: selectedHour),
                       itemExtent: 40,
                       onSelectedItemChanged: (int index) {
                         setModalState(() {
                           selectedHour = index;
-                          _customDuration = (selectedHour * 3600) + (selectedMinute * 60);
+                          _customDuration =
+                              (selectedHour * 3600) + (selectedMinute * 60);
                         });
                       },
                       children: List.generate(24, (index) {
@@ -153,7 +159,9 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                           child: Text(
                             '${index}시간',
                             style: AppTextStyles.getBody(context).copyWith(
-                              color: isSelected ? AppColors.textPrimary(context) : AppColors.textSecondary(context),
+                              color: isSelected
+                                  ? AppColors.textPrimary(context)
+                                  : AppColors.textSecondary(context),
                             ),
                           ),
                         );
@@ -163,12 +171,14 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                   // 분 피커
                   Expanded(
                     child: CupertinoPicker(
-                      scrollController: FixedExtentScrollController(initialItem: selectedMinute),
+                      scrollController: FixedExtentScrollController(
+                          initialItem: selectedMinute),
                       itemExtent: 40,
                       onSelectedItemChanged: (int index) {
                         setModalState(() {
                           selectedMinute = index;
-                          _customDuration = (selectedHour * 3600) + (selectedMinute * 60);
+                          _customDuration =
+                              (selectedHour * 3600) + (selectedMinute * 60);
                         });
                       },
                       children: List.generate(60, (index) {
@@ -177,7 +187,9 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                           child: Text(
                             '${index}분',
                             style: AppTextStyles.getBody(context).copyWith(
-                              color: isSelected ? AppColors.textPrimary(context) : AppColors.textSecondary(context),
+                              color: isSelected
+                                  ? AppColors.textPrimary(context)
+                                  : AppColors.textSecondary(context),
                             ),
                           ),
                         );
@@ -301,7 +313,9 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
               height: context.wp(2),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: index < currentCount ? Colors.white : Colors.white.withValues(alpha: 0.3),
+                color: index < currentCount
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.3),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.5),
                   width: 1,
@@ -358,13 +372,15 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                             index == 3
                                 ? Text(
                                     '커스텀',
-                                    style: AppTextStyles.getBody(context).copyWith(
+                                    style:
+                                        AppTextStyles.getBody(context).copyWith(
                                       color: Colors.white,
                                     ),
                                   )
                                 : Text(
                                     item['title'],
-                                    style: AppTextStyles.getTimeDisplay(context).copyWith(
+                                    style: AppTextStyles.getTimeDisplay(context)
+                                        .copyWith(
                                       color: Colors.white,
                                       fontFamily: 'chab',
                                     ),
@@ -374,7 +390,8 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                                 ? Container()
                                 : Text(
                                     index == 0 ? '분' : '시간',
-                                    style: AppTextStyles.getBody(context).copyWith(
+                                    style:
+                                        AppTextStyles.getBody(context).copyWith(
                                       fontWeight: FontWeight.w200,
                                       color: Colors.white,
                                     ),
@@ -387,7 +404,8 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                                   SizedBox(height: context.hp(1)),
                                   Text(
                                     formatTime(_customDuration),
-                                    style: AppTextStyles.getTitle(context).copyWith(
+                                    style: AppTextStyles.getTitle(context)
+                                        .copyWith(
                                       color: Colors.white,
                                       fontFamily: 'Neo',
                                     ),
@@ -445,7 +463,8 @@ class _FocusModeState extends State<FocusMode> with TickerProviderStateMixin {
                     'mode': 'focus',
                     'target': item['value'] as int,
                     'activity': timerProvider.currentActivityName,
-                    'isWeeklyTargetExceeded': timerProvider.isWeeklyTargetExceeded,
+                    'isWeeklyTargetExceeded':
+                        timerProvider.isWeeklyTargetExceeded,
                   },
                   valueToSum: 5,
                 );

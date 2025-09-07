@@ -107,14 +107,17 @@ class _RatioCard916State extends State<RatioCard916> {
                             Text(
                               '오늘 달성한 시간',
                               style: AppTextStyles.getCaption(context).copyWith(
+                                fontSize: 12,
                                 letterSpacing: -0.3,
                                 color: AppColors.textSecondary(context),
                               ),
                             ),
                             Text(
                               _formatTime(widget.totalSeconds),
-                              style: AppTextStyles.getHeadline(context).copyWith(
+                              style:
+                                  AppTextStyles.getHeadline(context).copyWith(
                                 fontFamily: 'Neo',
+                                fontSize: 24,
                                 letterSpacing: -0.3,
                                 color: AppColors.textPrimary(context),
                               ),
@@ -122,7 +125,11 @@ class _RatioCard916State extends State<RatioCard916> {
                             Text(
                               widget.comparisonData['oneLineText'] ?? '',
                               style: AppTextStyles.getCaption(context).copyWith(
-                                color: (widget.comparisonData['isIncrease'] ?? false) ? Colors.redAccent : Colors.blueAccent,
+                                fontSize: 12,
+                                color: (widget.comparisonData['isIncrease'] ??
+                                        false)
+                                    ? Colors.redAccent
+                                    : Colors.blueAccent,
                                 letterSpacing: -0.3,
                                 height: 1.0,
                               ),
@@ -143,18 +150,6 @@ class _RatioCard916State extends State<RatioCard916> {
                             selectedDate: widget.selectedDate,
                             currentStreak: widget.currentSteak,
                             ratio: '9:16',
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            '타이머100',
-                            style: AppTextStyles.getCaption(context).copyWith(
-                              color: AppColors.textSecondary(context).withValues(alpha: 0.2),
-                              letterSpacing: -0.3,
-                              height: 1.0,
-                              fontFamily: 'Neo',
-                            ),
                           ),
                         ),
                       ],
