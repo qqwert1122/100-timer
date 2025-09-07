@@ -171,6 +171,54 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
           );
         },
       );
+    } else if (item['type'] == 'activity_start') {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (BuildContext context) {
+          return TimePickerModal(
+            item: item,
+            beforeItem: beforeItem ?? {},
+            afterItem: afterItem ?? {},
+            onTimeSelected: (
+              DateTime endDateTime,
+              int endHours,
+              int endMinutes, [
+              DateTime? startDateTime,
+              int? startHours,
+              int? startMinutes,
+            ]) {
+              setState(() {
+                _hasTimeChanges = true;
+                _sessionData['start_time'] =
+                    endDateTime.toUtc().toIso8601String();
+
+                // duration 재계산
+                if (_sessionData['end_time'] != null) {
+                  final sessionEnd = DateTime.parse(_sessionData['end_time']);
+                  int totalSessionSeconds =
+                      sessionEnd.difference(endDateTime).inSeconds;
+
+                  // 휴식 시간 빼기
+                  int totalBreakSeconds = 0;
+                  for (var breakItem in _breaks) {
+                    if (breakItem['end_time'] != null) {
+                      final breakStart =
+                          DateTime.parse(breakItem['start_time']);
+                      final breakEnd = DateTime.parse(breakItem['end_time']);
+                      totalBreakSeconds +=
+                          breakEnd.difference(breakStart).inSeconds;
+                    }
+                  }
+
+                  _sessionData['duration'] =
+                      totalSessionSeconds - totalBreakSeconds;
+                }
+              });
+            },
+          );
+        },
+      );
     } else {
       showModalBottomSheet(
         context: context,
@@ -238,6 +286,9 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
 
     if (_hasTimeChanges) {
       // 이미 계산된 값 사용 (중복 계산 제거)
+      if (_sessionData['start_time'] != widget.log['start_time']) {
+        updatedLog['start_time'] = _sessionData['start_time'];
+      }
       updatedLog['duration'] = _sessionData['duration'];
       updatedLog['end_time'] = _sessionData['end_time'];
 
@@ -259,6 +310,7 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
         activityName: activityName,
         activityIcon: activityIcon,
         activityColor: activityColor,
+        startTime: _sessionData['start_time'],
         endTime: _sessionData['end_time'],
       );
     } else {
@@ -390,6 +442,7 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
         'type': 'activity_start',
         'time': _sessionData['start_time'],
         'title': '활동 시작',
+        'session_id': _sessionData['session_id'],
       },
     );
 
@@ -446,17 +499,15 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
               : null,
           endChild: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: editMode && item['type'] != 'activity_start'
-                ? () {
-                    HapticFeedback.lightImpact();
-                    _showTimePicker(
-                      context: context,
-                      item: item,
-                      beforeItem: beforeItem,
-                      afterItem: afterItem,
-                    );
-                  }
-                : null,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              _showTimePicker(
+                context: context,
+                item: item,
+                beforeItem: beforeItem,
+                afterItem: afterItem,
+              );
+            },
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -493,7 +544,7 @@ class _LogDetailBottonSheetState extends State<LogDetailBottonSheet> {
                       ],
                     ),
                   ),
-                  if (editMode && item['type'] != 'activity_start')
+                  if (editMode)
                     Icon(
                       LucideIcons.edit,
                       size: context.lg,

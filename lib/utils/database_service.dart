@@ -210,7 +210,8 @@ class DatabaseService {
         limit: 1,
       );
 
-      if (existingTimers.isNotEmpty) return; // 이미 해당 주차 타이머가 있다면 return. 중복 생성 방지
+      if (existingTimers.isNotEmpty)
+        return; // 이미 해당 주차 타이머가 있다면 return. 중복 생성 방지
 
       await db.insert(
         'timers',
@@ -287,7 +288,8 @@ class DatabaseService {
   }
 
   // 타이머 업데이트
-  Future<void> updateTimer(String timerId, Map<String, dynamic> updatedData) async {
+  Future<void> updateTimer(
+      String timerId, Map<String, dynamic> updatedData) async {
     final db = await database;
     String now = DateTime.now().toUtc().toIso8601String();
 
@@ -364,7 +366,8 @@ class DatabaseService {
     final activityId = const Uuid().v4();
     String now = DateTime.now().toUtc().toIso8601String();
 
-    final result = await db.rawQuery("SELECT MAX(sort_order) as maxSortOrder FROM activities WHERE is_deleted = 0");
+    final result = await db.rawQuery(
+        "SELECT MAX(sort_order) as maxSortOrder FROM activities WHERE is_deleted = 0");
     int sortOrder = 1;
     if (result.isNotEmpty && result.first["maxSortOrder"] != null) {
       // 조회된 최대값에 1을 더해 다음 순서를 지정합니다.
@@ -451,11 +454,12 @@ class DatabaseService {
       else if (newIsFavorite == 1) {
         // 현재 최대 favorite_order 값을 조회하여 +1 부여
         try {
-          final maxOrderResult =
-              await db.rawQuery('SELECT MAX(favorite_order) as max_order FROM activities WHERE is_favorite = 1 AND is_deleted = 0');
+          final maxOrderResult = await db.rawQuery(
+              'SELECT MAX(favorite_order) as max_order FROM activities WHERE is_favorite = 1 AND is_deleted = 0');
 
           int maxOrder = 0;
-          if (maxOrderResult.isNotEmpty && maxOrderResult[0]['max_order'] != null) {
+          if (maxOrderResult.isNotEmpty &&
+              maxOrderResult[0]['max_order'] != null) {
             maxOrder = maxOrderResult[0]['max_order'] as int;
           }
 
@@ -662,7 +666,11 @@ class DatabaseService {
 
     await db.update(
       'todos',
-      {'is_deleted': 1, 'deleted_at': DateTime.now().toIso8601String(), 'last_updated_at': DateTime.now().toIso8601String()},
+      {
+        'is_deleted': 1,
+        'deleted_at': DateTime.now().toIso8601String(),
+        'last_updated_at': DateTime.now().toIso8601String()
+      },
       where: 'todo_id = ?',
       whereArgs: [todoId],
     );
@@ -674,7 +682,10 @@ class DatabaseService {
 
     await db.update(
       'todos',
-      {'is_completed': isCompleted ? 1 : 0, 'last_updated_at': DateTime.now().toIso8601String()},
+      {
+        'is_completed': isCompleted ? 1 : 0,
+        'last_updated_at': DateTime.now().toIso8601String()
+      },
       where: 'todo_id = ?',
       whereArgs: [todoId],
     );
@@ -940,7 +951,8 @@ class DatabaseService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getSessionsByActivityId(String activityId) async {
+  Future<List<Map<String, dynamic>>> getSessionsByActivityId(
+      String activityId) async {
     try {
       final db = await database;
 
@@ -962,23 +974,55 @@ class DatabaseService {
   Future<Map<String, dynamic>?> getNextSession(String currentSessionId) async {
     final db = await database;
 
-    // 현재 세션 정보 가져오기
-    final currentSession = await getSession(currentSessionId);
-    if (currentSession == null) return null;
+    try {
+      // 현재 세션 정보 가져오기
+      final currentSession = await getSession(currentSessionId);
+      if (currentSession == null) return null;
 
-    final currentEndTime = currentSession['end_time'];
-    if (currentEndTime == null) return null;
+      final currentEndTime = currentSession['end_time'];
+      if (currentEndTime == null) return null;
 
-    // 현재 세션 종료 이후 가장 빠른 세션 찾기
-    final result = await db.query(
-      'sessions',
-      where: 'start_time > ? AND is_deleted = 0',
-      whereArgs: [currentEndTime],
-      orderBy: 'start_time ASC',
-      limit: 1,
-    );
+      // 현재 세션 종료 이후 가장 빠른 세션 찾기
+      final result = await db.query(
+        'sessions',
+        where: 'start_time > ? AND is_deleted = 0',
+        whereArgs: [currentEndTime],
+        orderBy: 'start_time ASC',
+        limit: 1,
+      );
 
-    return result.isNotEmpty ? result.first : null;
+      return result.isNotEmpty ? result.first : null;
+    } catch (e) {
+      logger.e('Error in getNextSession: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getPreviousSession(
+      String currentSessionId) async {
+    final db = await database;
+
+    try {
+      // 현재 세션 정보 가져오기
+      final currentSession = await getSession(currentSessionId);
+      if (currentSession == null) return null;
+
+      final currentStartTime = currentSession['start_time'];
+
+      // 현재 세션 시작 시간 이전에 종료된 세션 중 가장 늦은 것 찾기
+      final result = await db.query(
+        'sessions',
+        where: 'end_time < ? AND is_deleted = 0 AND end_time IS NOT NULL',
+        whereArgs: [currentStartTime],
+        orderBy: 'end_time DESC',
+        limit: 1,
+      );
+
+      return result.isNotEmpty ? result.first : null;
+    } catch (e) {
+      logger.e('Error in getPreviousSession: $e');
+      return null;
+    }
   }
 
   Future<void> endSession({
@@ -986,7 +1030,8 @@ class DatabaseService {
     required String endTime,
     required int duration,
   }) async {
-    logger.d('### dbService ### : endSession({$sessionId, $endTime, $duration})');
+    logger
+        .d('### dbService ### : endSession({$sessionId, $endTime, $duration})');
     final db = await database;
     final now = DateTime.now().toUtc();
 
@@ -1048,6 +1093,7 @@ class DatabaseService {
     required String activityName,
     required String activityColor,
     required String activityIcon,
+    String? startTime,
     String? endTime,
   }) async {
     final db = await database;
@@ -1063,11 +1109,8 @@ class DatabaseService {
     await db.transaction((txn) async {
       try {
         final now = DateTime.now().toUtc().toIso8601String();
-
-        // 기존 데이터 가져오기
         final existingDuration = (session.first['duration'] ?? 0) as int;
 
-        // 세션 업데이트
         final updateData = {
           'duration': newDuration,
           'original_duration': existingDuration,
@@ -1078,6 +1121,10 @@ class DatabaseService {
           'activity_color': activityColor,
           'activity_icon': activityIcon,
         };
+
+        if (startTime != null) {
+          updateData['start_time'] = startTime;
+        }
 
         if (endTime != null) {
           updateData['end_time'] = endTime;
@@ -1090,7 +1137,7 @@ class DatabaseService {
           whereArgs: [sessionId],
         );
       } catch (e) {
-        // error log
+        logger.e('Error in modifySession: $e');
       }
     });
   }
@@ -1193,7 +1240,8 @@ class DatabaseService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getBreaks({required String sessionId}) async {
+  Future<List<Map<String, dynamic>>> getBreaks(
+      {required String sessionId}) async {
     final db = await database;
 
     try {
@@ -1211,7 +1259,8 @@ class DatabaseService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getFinishedBreaks({required String sessionId}) async {
+  Future<List<Map<String, dynamic>>> getFinishedBreaks(
+      {required String sessionId}) async {
     final db = await database;
 
     try {
@@ -1229,7 +1278,8 @@ class DatabaseService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getLiveBreaks({required String sessionId}) async {
+  Future<List<Map<String, dynamic>>> getLiveBreaks(
+      {required String sessionId}) async {
     final db = await database;
 
     try {
