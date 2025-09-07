@@ -61,13 +61,15 @@ class _DailyRemainderWidgetState extends State<DailyRemainderWidget> {
   }
 
   Future<void> _rescheduleAllNotifications() async {
+    final remindersCopy = List<Map<String, dynamic>>.from(_savedReminders);
+
     // 모든 기존 알림 취소
-    for (var reminder in _savedReminders) {
+    for (var reminder in remindersCopy) {
       await _notificationService.cancelReminderNotifications(reminder['id']);
     }
 
     // 새로 예약
-    for (var reminder in _savedReminders) {
+    for (var reminder in remindersCopy) {
       await _scheduleNotificationsForReminder(reminder);
     }
   }

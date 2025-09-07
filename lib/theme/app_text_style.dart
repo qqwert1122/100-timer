@@ -1,71 +1,47 @@
 import 'package:flutter/material.dart';
-import '../utils/responsive_size.dart';
-import 'dart:io';
+import 'package:project1/utils/prefs_service.dart';
 
 class AppTextStyles {
-  // 시뮬레이터 감지 함수
-  static bool isSimulator() {
-    bool result = false;
-    if (Platform.isIOS) {
-      try {
-        // 시뮬레이터에만 존재하는 파일 확인
-        File file = File('/Applications/Xcode.app');
-        result = file.existsSync();
-      } catch (e) {
-        result = false;
-      }
-    }
-    return result;
-  }
+  // 기본 폰트 크기 (고정값)
+  static const double _timeDisplayBase = 40.0;
+  static const double _headlineBase = 24.0;
+  static const double _titleBase = 18.0;
+  static const double _bodyBase = 16.0;
+  static const double _captionBase = 14.0;
 
-  // 각 플랫폼별 폰트 크기 스케일 반환 함수
-  static double getFontSizeScaleFactor() {
-    if (Platform.isIOS) {
-      if (isSimulator()) {
-        return 0.8; // 아이폰 시뮬레이터
-      } else {
-        return 0.7; // 실제 아이폰
-      }
-    } else {
-      return 1.0; // 안드로이드
-    }
-  }
+  // PrefsService 인스턴스 가져오기
+  static double get _scaleFactor => PrefsService().textScaleFactor;
 
   static TextStyle getTimeDisplay(BuildContext context) {
-    final fontScale = Platform.isIOS ? 0.8 : 1.0;
     return TextStyle(
-      fontSize: context.wp(10) * fontScale,
+      fontSize: _timeDisplayBase * _scaleFactor,
       fontWeight: FontWeight.w500,
     );
   }
 
   static TextStyle getHeadline(BuildContext context) {
-    final fontScale = Platform.isIOS ? 0.8 : 1.0;
     return TextStyle(
-      fontSize: context.xl * fontScale,
+      fontSize: _headlineBase * _scaleFactor,
       fontWeight: FontWeight.bold,
     );
   }
 
   static TextStyle getTitle(BuildContext context) {
-    final fontScale = Platform.isIOS ? 0.8 : 1.0;
     return TextStyle(
-      fontSize: context.lg * fontScale,
+      fontSize: _titleBase * _scaleFactor,
       fontWeight: FontWeight.w600,
     );
   }
 
   static TextStyle getBody(BuildContext context) {
-    final fontScale = Platform.isIOS ? 0.8 : 1.0;
     return TextStyle(
-      fontSize: context.md * fontScale,
+      fontSize: _bodyBase * _scaleFactor,
     );
   }
 
   static TextStyle getCaption(BuildContext context) {
-    final fontScale = Platform.isIOS ? 0.8 : 1.0;
     return TextStyle(
-      fontSize: context.sm * fontScale,
+      fontSize: _captionBase * _scaleFactor,
       color: Colors.grey,
     );
   }

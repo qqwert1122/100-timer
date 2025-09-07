@@ -162,6 +162,7 @@ class _SettingPageState extends State<SettingPage> {
       {
         'title': '목표 시간을 변경해요',
         'image': 'bullseye',
+        'icon': LucideIcons.crosshair,
         'description': '나에게 맞게 목표 시간을 변경해서 도전하세요',
         'onTap': () async {
           HapticFeedback.lightImpact();
@@ -179,6 +180,7 @@ class _SettingPageState extends State<SettingPage> {
       {
         'title': '타이머를 초기화해요',
         'image': 'magic_wand',
+        'icon': LucideIcons.undo,
         'description': '이번 주차의 타이머를 초기화해요',
         'onTap': () async {
           await FacebookAppEvents().logEvent(
@@ -275,8 +277,32 @@ class _SettingPageState extends State<SettingPage> {
 
     final List<Map<String, dynamic>> appSettingsItems = [
       {
+        'title': '텍스트 크기',
+        'image': 'font',
+        'icon': LucideIcons.caseSensitive,
+        'description': null,
+        'onTap': null,
+        'trailing': SizedBox(
+          width: 150,
+          child: CupertinoSlider(
+            value: PrefsService().textSizeLevel.toDouble(),
+            min: 0,
+            max: 4,
+            divisions: 4, // 5단계 (0,1,2,3,4)
+            activeColor: Colors.redAccent,
+            onChanged: (double value) {
+              setState(() {
+                PrefsService().textSizeLevel = value.round();
+              });
+              HapticFeedback.lightImpact();
+            },
+          ),
+        ),
+      },
+      {
         'title': '화면을 켜둔 채 유지해요',
         'image': 'bulb',
+        'icon': LucideIcons.lightbulb,
         'description': '어플을 켜놓는 동안 화면을 켜두어요',
         'onTap': () {},
         'trailing': CupertinoSwitch(
@@ -289,6 +315,7 @@ class _SettingPageState extends State<SettingPage> {
       {
         'title': '알림을 켜요',
         'image': 'bell',
+        'icon': LucideIcons.alarmClock,
         'description': '활동에 관련된 푸시 알림을 받아요',
         'onTap': () {},
         'trailing': CupertinoSwitch(
@@ -310,6 +337,7 @@ class _SettingPageState extends State<SettingPage> {
       {
         'title': '평생 광고 제거',
         'image': 'crown',
+        'icon': LucideIcons.crown,
         'description': '커피 한 잔 가격으로 평생 광고를 제거해요',
         'onTap': () async {
           await FacebookAppEvents().logEvent(
@@ -323,6 +351,7 @@ class _SettingPageState extends State<SettingPage> {
       {
         'title': '구매 복원하기',
         'image': 'shopping',
+        'icon': LucideIcons.shoppingCart,
         'description': '구매 내역을 복원해요',
         'onTap': () async {
           await FacebookAppEvents().logEvent(
@@ -336,6 +365,7 @@ class _SettingPageState extends State<SettingPage> {
       {
         'title': '별점 5점 남기러 가기',
         'image': 'star',
+        'icon': LucideIcons.star,
         'description': '어플이 마음에 든다면 리뷰를 남겨주세요',
         'onTap': () async {
           await FacebookAppEvents().logEvent(
@@ -349,6 +379,7 @@ class _SettingPageState extends State<SettingPage> {
       {
         'title': '문의하기',
         'image': 'email',
+        'icon': LucideIcons.mail,
         'description': '궁금한 점을 문의하세요',
         'onTap': () async {
           const String googleFormUrl =
@@ -373,8 +404,9 @@ class _SettingPageState extends State<SettingPage> {
         'trailing': null,
       },
       {
-        'title': '기여',
+        'title': '크레딧',
         'image': 'clapping',
+        'icon': LucideIcons.fileText,
         'description': '어플의 탄생에 도움을 준 분들을 확인해요',
         'onTap': () {
           _showAttributionDialog();
@@ -384,6 +416,7 @@ class _SettingPageState extends State<SettingPage> {
       {
         'title': '이용약관',
         'image': 'notepad',
+        'icon': LucideIcons.fileText,
         'description': '서비스 이용약관을 확인하세요',
         'onTap': () async {
           const String termsUrl =
@@ -405,7 +438,8 @@ class _SettingPageState extends State<SettingPage> {
       {
         'title': '버전',
         'image': 'info',
-        'description': '현재 버전 1.0.6 | 업데이트 날짜 2025-08-26',
+        'icon': LucideIcons.badgeInfo,
+        'description': '현재 버전 1.0.8 | 업데이트 날짜 2025-09-07',
         'onTap': () {},
         'trailing': null,
       },
@@ -442,32 +476,38 @@ class _SettingPageState extends State<SettingPage> {
                         }
                       },
                       child: ListTile(
-                        leading: Image.asset(
-                          getIconImage(items[i]['image']),
-                          width: context.xl,
-                          height: context.xl,
-                          errorBuilder: (context, error, stackTrace) {
-                            // 이미지를 로드하는 데 실패한 경우의 대체 표시
-                            return Container(
-                              width: context.xl,
-                              height: context.xl,
-                              color: Colors.grey.withValues(alpha: 0.2),
-                              child: Icon(
-                                Icons.broken_image,
-                                size: context.xl,
-                                color: Colors.grey,
-                              ),
-                            );
-                          },
-                        ),
+                        leading: Icon(items[i]['icon'], size: 20),
+                        // Image.asset(
+                        //   getIconImage(items[i]['image']),
+                        //   width: context.xl,
+                        //   height: context.xl,
+                        //   errorBuilder: (context, error, stackTrace) {
+                        //     // 이미지를 로드하는 데 실패한 경우의 대체 표시
+                        //     return Container(
+                        //       width: context.xl,
+                        //       height: context.xl,
+                        //       color: Colors.grey.withValues(alpha: 0.2),
+                        //       child: Icon(
+                        //         Icons.broken_image,
+                        //         size: context.xl,
+                        //         color: Colors.grey,
+                        //       ),
+                        //     );
+                        //   },
+                        // ),
                         title: Text(
                           items[i]['title'],
                           style: AppTextStyles.getBody(context).copyWith(
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        subtitle: Text(items[i]['description'],
-                            style: AppTextStyles.getCaption(context)),
+                        subtitle: items[i]['description'] != null &&
+                                items[i]['description'].isNotEmpty
+                            ? Text(
+                                items[i]['description'],
+                                style: AppTextStyles.getCaption(context),
+                              )
+                            : null,
                         trailing: items[i]['trailing'],
                       ),
                     ),
@@ -561,70 +601,6 @@ class _SettingPageState extends State<SettingPage> {
           ],
         ),
       ),
-    );
-  }
-
-  void _showPicker(BuildContext context) {
-    int tempValue = selectedValue;
-
-    showCupertinoModalPopup(
-      context: context,
-      builder: (BuildContext context) {
-        return Container(
-          height: 300,
-          color: Colors.white,
-          child: Column(
-            children: [
-              Expanded(
-                child: CupertinoPicker(
-                  scrollController: FixedExtentScrollController(
-                      initialItem: selectedValue ~/ 5),
-                  itemExtent: 40,
-                  onSelectedItemChanged: (int index) {
-                    setState(() {
-                      tempValue = values[index];
-                    });
-                  },
-                  children: values.map((value) {
-                    return Center(
-                      child: Text('$value 시간',
-                          style: AppTextStyles.getBody(context)),
-                    );
-                  }).toList(),
-                ),
-              ),
-              Container(
-                width: double.infinity,
-                margin: context.paddingSM,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.blueAccent,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    '확인',
-                    style: AppTextStyles.getBody(context)
-                        .copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  onPressed: () async {
-                    setState(() {
-                      selectedValue = tempValue; // "확인" 버튼을 눌렀을 때 상태 업데이트
-                    });
-                    await _saveTotalSeconds(selectedValue);
-                    HapticFeedback.lightImpact();
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
-              SizedBox(height: context.hp(2)),
-            ],
-          ),
-        );
-      },
     );
   }
 
