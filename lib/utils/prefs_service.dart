@@ -33,6 +33,7 @@ class PrefsService {
         'installDate', _prefs.getString('installDate') ?? installDateStr);
     await _prefs.setInt(
         'customDuration', _prefs.getInt('customDuration') ?? 3600);
+    await _prefs.setInt('textSizeLevel', _prefs.getInt('textSizeLevel') ?? 2);
 
     const pages = [
       'timer',
@@ -75,4 +76,45 @@ class PrefsService {
 
   int get customDuration => _prefs.getInt('customDuration')!;
   set customDuration(int v) => _prefs.setInt('customDuration', v);
+
+  int get textSizeLevel => _prefs.getInt('textSizeLevel') ?? 2;
+  set textSizeLevel(int v) {
+    if (v >= 0 && v <= 4) {
+      _prefs.setInt('textSizeLevel', v);
+    }
+  }
+
+  double get textScaleFactor {
+    switch (textSizeLevel) {
+      case 0:
+        return 0.85; // 가장 작게
+      case 1:
+        return 0.925; // 작게
+      case 2:
+        return 1.0; // 보통
+      case 3:
+        return 1.075; // 크게
+      case 4:
+        return 1.15; // 가장 크게
+      default:
+        return 1.0;
+    }
+  }
+
+  String get textSizeName {
+    switch (textSizeLevel) {
+      case 0:
+        return '가장 작게';
+      case 1:
+        return '작게';
+      case 2:
+        return '보통';
+      case 3:
+        return '크게';
+      case 4:
+        return '가장 크게';
+      default:
+        return '보통';
+    }
+  }
 }
