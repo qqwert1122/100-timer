@@ -439,7 +439,7 @@ class _SettingPageState extends State<SettingPage> {
         'title': '버전',
         'image': 'info',
         'icon': LucideIcons.badgeInfo,
-        'description': '현재 버전 1.0.8 | 업데이트 날짜 2025-09-07',
+        'description': '현재 버전 1.0.9 | 업데이트 날짜 2025-09-07',
         'onTap': () {},
         'trailing': null,
       },
