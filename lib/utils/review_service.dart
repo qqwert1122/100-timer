@@ -1,7 +1,7 @@
 import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_review/in_app_review.dart';
-import 'package:project1/config/store_secret.dart';
+import 'package:project1/config/store_secrets.dart';
 import 'package:project1/utils/logger_config.dart';
 import 'package:project1/utils/stats_provider.dart';
 import 'package:provider/provider.dart';
@@ -63,7 +63,8 @@ class ReviewService {
       const requiredHours = 3;
       bool meetsCondition = weeklyDuration >= (requiredHours * 3600);
 
-      logger.i('주간 사용 시간: ${weeklyDuration ~/ 3600}시간 ${(weeklyDuration % 3600) ~/ 60}분');
+      logger.i(
+          '주간 사용 시간: ${weeklyDuration ~/ 3600}시간 ${(weeklyDuration % 3600) ~/ 60}분');
       logger.i('리뷰 조건 충족: $meetsCondition (${requiredHours}시간 이상 필요)');
 
       return meetsCondition;
@@ -117,7 +118,8 @@ class ReviewService {
 
       logger.i('=== 리뷰 상태 디버깅 ===');
       logger.i('이미 요청함: $hasRequested');
-      logger.i('주간 사용 시간: ${weeklyDuration ~/ 3600}시간 ${(weeklyDuration % 3600) ~/ 60}분');
+      logger.i(
+          '주간 사용 시간: ${weeklyDuration ~/ 3600}시간 ${(weeklyDuration % 3600) ~/ 60}분');
       logger.i('조건 충족: ${weeklyDuration >= (3 * 3600)}');
       logger.i('=====================');
     } catch (e) {
